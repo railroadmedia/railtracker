@@ -2,7 +2,6 @@
 
 namespace Railroad\Railtracker\Tests\Integration;
 
-use Illuminate\Http\Request;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Tests\TestCase;
 
@@ -18,7 +17,7 @@ class ExampleIntegrationTest extends TestCase
     {
         $userId = $this->createAndLogInNewUser();
 
-        $request = Request::create('http://example.com/admin', 'GET');
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
