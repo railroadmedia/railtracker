@@ -1,0 +1,44 @@
+{
+  "name": "Railroad/Railtracker",
+  "type": "library",
+  "description": "Tracks user actions in your application.",
+  "keywords": [
+    "tracker",
+    "pageview",
+    "login",
+    "tracking"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Caleb Favor",
+      "email": "caleb@drumeo.com",
+      "role": "Developer"
+    }
+  ],
+  "prefer-stable": true,
+  "require": {
+    "php": "~7",
+    "laravel/framework": "5.*",
+    "guzzlehttp/guzzle": "~6.0",
+    "doctrine/dbal": "^2.5",
+    "ua-parser/uap-php": "^3.4",
+    "jenssegers/agent": "^2.5"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "~5.7",
+    "phpunit/php-code-coverage": "4.0.5",
+    "orchestra/database": "3.4.x@dev",
+    "orchestra/testbench": "~3.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Railroad\\Railtracker\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Railroad\\Railtracker\\Tests\\": "tests/"
+    }
+  }
+}
