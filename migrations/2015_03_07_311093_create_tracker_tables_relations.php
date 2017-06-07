@@ -36,7 +36,7 @@ class CreateTrackerTablesRelations extends Migration
                 ->onDelete('cascade');
         });
 
-        Schema::table('tracker_sessions', function ($table) {
+        Schema::table('tracker_requests', function ($table) {
             $table->foreign('device_id')
                 ->references('id')
                 ->on('tracker_devices')
@@ -44,7 +44,7 @@ class CreateTrackerTablesRelations extends Migration
                 ->onDelete('cascade');
         });
 
-        Schema::table('tracker_sessions', function ($table) {
+        Schema::table('tracker_requests', function ($table) {
             $table->foreign('agent_id')
                 ->references('id')
                 ->on('tracker_agents')
@@ -52,7 +52,7 @@ class CreateTrackerTablesRelations extends Migration
                 ->onDelete('cascade');
         });
 
-        Schema::table('tracker_sessions', function ($table) {
+        Schema::table('tracker_requests', function ($table) {
             $table->foreign('referer_id')
                 ->references('id')
                 ->on('tracker_referers')
@@ -60,15 +60,7 @@ class CreateTrackerTablesRelations extends Migration
                 ->onDelete('cascade');
         });
 
-        Schema::table('tracker_sessions', function ($table) {
-            $table->foreign('cookie_id')
-                ->references('id')
-                ->on('tracker_cookies')
-                ->onUpdate('cascade')
-                ->onDelete('cascade');
-        });
-
-        Schema::table('tracker_sessions', function ($table) {
+        Schema::table('tracker_requests', function ($table) {
             $table->foreign('geoip_id')
                 ->references('id')
                 ->on('tracker_geoip')

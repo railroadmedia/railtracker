@@ -2,29 +2,29 @@
 
 namespace Railroad\Railtracker\Models;
 
-class Session extends Base
+class Request extends Base
 {
-    protected $table = 'tracker_sessions';
+    protected $table = 'tracker_requests';
 
     protected $fillable = [
         'uuid',
         'user_id',
+        'domain_id',
         'device_id',
         'language_id',
         'agent_id',
         'client_ip',
-        'cookie_id',
         'referer_id',
         'geoip_id',
         'is_robot',
     ];
 
-    public function __construct(array $attributes = [])
+    public function user()
     {
-        parent::__construct($attributes);
+        return $this->belongsTo($this->getConfig()->get('user_model'));
     }
 
-    public function user()
+    public function domain()
     {
         return $this->belongsTo($this->getConfig()->get('user_model'));
     }

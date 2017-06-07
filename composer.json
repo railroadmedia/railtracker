@@ -23,7 +23,8 @@
     "guzzlehttp/guzzle": "~6.0",
     "doctrine/dbal": "^2.5",
     "ua-parser/uap-php": "^3.4",
-    "jenssegers/agent": "^2.5"
+    "jenssegers/agent": "^2.5",
+    "ramsey/uuid": "^3.6"
   },
   "require-dev": {
     "phpunit/phpunit": "~5.7",

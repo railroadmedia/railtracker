@@ -34,7 +34,7 @@ class RailtrackerMiddleware
      */
     public function handle($request, Closure $next)
     {
-        $this->tracker->track($request);
+        $this->tracker->trackRequest($request);
 
         return $next($request);
     }

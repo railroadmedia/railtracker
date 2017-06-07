@@ -3,14 +3,14 @@
 use \Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerSessionsTable extends Migration
+class CreateTrackerRequestsTable extends Migration
 {
     /**
      * Table related to this migration.
      *
      * @var string
      */
-    private $table = 'tracker_sessions';
+    private $table = 'tracker_requests';
 
     /**
      * Run the migrations.
@@ -26,11 +26,11 @@ class CreateTrackerSessionsTable extends Migration
 
                 $table->string('uuid')->unique()->index();
                 $table->bigInteger('user_id')->unsigned()->nullable()->index();
+                $table->bigInteger('domain_id')->unsigned()->nullable()->index();
                 $table->bigInteger('device_id')->unsigned()->nullable()->index();
                 $table->bigInteger('agent_id')->unsigned()->nullable()->index();
                 $table->string('client_ip')->index();
                 $table->bigInteger('referer_id')->unsigned()->nullable()->index();
-                $table->bigInteger('cookie_id')->unsigned()->nullable()->index();
                 $table->bigInteger('geoip_id')->unsigned()->nullable()->index();
                 $table->bigInteger('language_id')->unsigned()->nullable()->index();
 

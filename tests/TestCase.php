@@ -140,12 +140,16 @@ class TestCase extends BaseTestCase
     /**
      * @param $userAgent
      * @param string $url
+     * @param string $referer
+     * @param string $clientIp
      * @param string $method
      * @return Request
      */
     public function createRequest(
         $userAgent,
         $url = 'https://www.testing.com/?test=1',
+        $referer = 'http://www.referer-testing.com/?test=2',
+        $clientIp = '183.22.98.51',
         $method = 'GET'
     ) {
         return Request::create(
@@ -168,7 +172,7 @@ class TestCase extends BaseTestCase
                 'CONTEXT_PREFIX' => '',
                 'REQUEST_SCHEME' => 'http',
                 'DOCUMENT_ROOT' => '/var/www/',
-                'REMOTE_ADDR' => '10.0.75.1',
+                'REMOTE_ADDR' => $clientIp,
                 'SERVER_PORT' => '80',
                 'SERVER_ADDR' => '172.21.0.7',
                 'SERVER_NAME' => 'dev.drumeo.com',
@@ -177,6 +181,7 @@ class TestCase extends BaseTestCase
                 'HTTP_ACCEPT_ENCODING' => 'gzip, deflate, sdch',
                 'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'HTTP_USER_AGENT' => $userAgent,
+                'HTTP_REFERER' => 'http://dev.drumeo.com/drumshop',
                 'HTTP_UPGRADE_INSECURE_REQUESTS' => '1',
                 'HTTP_CONNECTION' => 'keep-alive',
                 'HTTP_HOST' => 'dev.drumeo.com',
