@@ -51,7 +51,7 @@ class Tracker
                 'geoip_id' => null,
                 'client_ip' => $request->getClientIp(),
                 'is_robot' => $agent->isRobot(),
-                'request_duration_ms' => null,
+                'request_duration_ms' => (microtime(true) - LARAVEL_START) * 100,
                 'request_time' => Carbon::now()->timestamp,
             ]
         )->id;
