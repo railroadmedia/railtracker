@@ -2,7 +2,9 @@
 
 namespace Railroad\Railtracker\Models;
 
-class Route extends Base
+use Illuminate\Database\Eloquent\Model;
+
+class Route extends Model
 {
     protected $table = 'tracker_routes';
 
@@ -10,9 +12,4 @@ class Route extends Base
         'name',
         'action',
     ];
-
-    public function paths()
-    {
-        return $this->hasMany($this->getConfig()->get('route_path_model'));
-    }
 }

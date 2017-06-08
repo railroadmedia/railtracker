@@ -8,8 +8,11 @@ use Railroad\Railtracker\Models\Agent as AgentModel;
 use Railroad\Railtracker\Models\Device;
 use Railroad\Railtracker\Models\Domain;
 use Railroad\Railtracker\Models\Language;
+use Railroad\Railtracker\Models\Path;
+use Railroad\Railtracker\Models\Query;
 use Railroad\Railtracker\Models\Referer;
 use Railroad\Railtracker\Models\Request as RequestModel;
+use Railroad\Railtracker\Models\Route;
 use Ramsey\Uuid\Uuid;
 
 class Tracker
@@ -18,16 +21,20 @@ class Tracker
      * @param Request $request
      * @return mixed
      */
-    public function trackRequest(Request $request)
+    public function trackRequest(Request $request): int
     {
         $agent = new Agent($request->server->all());
 
         $userId = $this->getAuthenticatedUserId($request);
+        $routeId = $this->trackRoute($request);
+
         $deviceId = $this->trackDevice($agent);
         $agentId = $this->trackAgent($agent);
         $languageId = $this->trackLanguage($agent);
 
         $domainId = $this->trackDomain($request->root());
+        $pathId = $this->trackPath($request->root());
+        $queryId = $this->trackQuery($request->root());
 
         $refererDomainId = $this->trackDomain($request->headers->get('referer'));
         $referrerId = $this->trackReferer($request->headers->get('referer'), $refererDomainId);
@@ -49,10 +56,54 @@ class Tracker
     }
 
     /**
+     * @param string $uri
+     * @return int
+     */
+    protected function trackPath(string $uri): int
+    {
+        $urlParts = parse_url($uri);
+
+        return Path::query()->updateOrCreate(
+            [
+                'path' => $urlParts['path'] ?? ''
+            ]
+        )->id;
+    }
+
+    /**
+     * @param string $uri
+     * @return int
+     */
+    protected function trackQuery(string $uri): int
+    {
+        $urlParts = parse_url($uri);
+
+        return Query::query()->updateOrCreate(
+            [
+                'string' => $urlParts['query'] ?? ''
+            ]
+        )->id;
+    }
+
+    /**
+     * @param Request $request
+     * @return int
+     */
+    protected function trackRoute(Request $request): int
+    {
+        return Route::query()->updateOrCreate(
+            [
+                'name' => $request->route()->getName(),
+                'action' => $request->route()->getActionName(),
+            ]
+        )->id;
+    }
+
+    /**
      * @param Agent $agent
      * @return int
      */
-    protected function trackDevice(Agent $agent)
+    protected function trackDevice(Agent $agent): int
     {
         return Device::query()->updateOrCreate(
             [
@@ -69,7 +120,7 @@ class Tracker
      * @param Agent $agent
      * @return int
      */
-    public function trackAgent(Agent $agent)
+    public function trackAgent(Agent $agent): int
     {
         return AgentModel::query()->updateOrCreate(
             [
@@ -84,7 +135,7 @@ class Tracker
      * @param string $uri
      * @return int
      */
-    public function trackDomain(string $uri)
+    public function trackDomain(string $uri): int
     {
         $urlParts = parse_url($uri);
 
@@ -100,7 +151,7 @@ class Tracker
      * @param int $refererDomainId
      * @return int
      */
-    public function trackReferer(string $refererUri, int $refererDomainId)
+    public function trackReferer(string $refererUri, int $refererDomainId): int
     {
         $urlParts = parse_url($refererUri);
 
@@ -122,7 +173,7 @@ class Tracker
      * @param Agent $agent
      * @return int
      */
-    public function trackLanguage(Agent $agent)
+    public function trackLanguage(Agent $agent): int
     {
         return Language::query()->updateOrCreate(
             [
@@ -136,7 +187,7 @@ class Tracker
      * @param Request $request
      * @return int|null
      */
-    protected function getAuthenticatedUserId(Request $request)
+    protected function getAuthenticatedUserId(Request $request): ?int
     {
         return $request->user()->id ?? null;
     }
@@ -145,7 +196,7 @@ class Tracker
      * @param Agent $agent
      * @return string
      */
-    protected function getDeviceKind(Agent $agent)
+    protected function getDeviceKind(Agent $agent): string
     {
         $kind = 'unavailable';
 

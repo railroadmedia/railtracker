@@ -2,7 +2,9 @@
 
 namespace Railroad\Railtracker\Models;
 
-class Language extends Base
+use Illuminate\Database\Eloquent\Model;
+
+class Language extends Model
 {
     protected $table = 'tracker_languages';
 

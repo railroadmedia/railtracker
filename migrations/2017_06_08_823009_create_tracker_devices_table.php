@@ -1,17 +1,11 @@
 <?php
 
-use \Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 class CreateTrackerDevicesTable extends Migration
 {
-    /**
-     * Table related to this migration.
-     *
-     * @var string
-     */
-    private $table = 'tracker_devices';
-
     /**
      * Run the migrations.
      *
@@ -20,8 +14,8 @@ class CreateTrackerDevicesTable extends Migration
     public function up()
     {
         Schema::create(
-            $this->table,
-            function ($table) {
+            'tracker_devices',
+            function (Blueprint $table) {
                 $table->bigIncrements('id');
 
                 $table->string('kind', 16)->index();
@@ -45,6 +39,6 @@ class CreateTrackerDevicesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists($this->table);
+        Schema::dropIfExists('tracker_devices');
     }
 }

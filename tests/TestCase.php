@@ -10,6 +10,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Tests\Resources\Models\User;
@@ -31,6 +32,11 @@ class TestCase extends BaseTestCase
      */
     protected $authManager;
 
+    /**
+     * @var Router
+     */
+    protected $router;
+
     const USER_AGENT_CHROME_WINDOWS_10 = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36';
 
     protected function setUp()
@@ -43,6 +49,7 @@ class TestCase extends BaseTestCase
         $this->faker = $this->app->make(Generator::class);
         $this->databaseManager = $this->app->make(DatabaseManager::class);
         $this->authManager = $this->app->make(AuthManager::class);
+        $this->router = $this->app->make(Router::class);
 
         Carbon::setTestNow(Carbon::now());
     }

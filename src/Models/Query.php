@@ -4,11 +4,11 @@ namespace Railroad\Railtracker\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Domain extends Model
+class Query extends Model
 {
-    protected $table = 'tracker_domains';
+    protected $table = 'tracker_queries';
 
     protected $fillable = [
-        'name',
+        'string',
     ];
 }

@@ -2,7 +2,9 @@
 
 namespace Railroad\Railtracker\Models;
 
-class Device extends Base
+use Illuminate\Database\Eloquent\Model;
+
+class Device extends Model
 {
     protected $table = 'tracker_devices';
 

@@ -1,17 +1,11 @@
 <?php
 
-use \Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerAgentsTable extends Migration
+class CreateTrackerLanguagesTable extends Migration
 {
-    /**
-     * Table related to this migration.
-     *
-     * @var string
-     */
-    private $table = 'tracker_agents';
-
     /**
      * Run the migrations.
      *
@@ -20,13 +14,14 @@ class CreateTrackerAgentsTable extends Migration
     public function up()
     {
         Schema::create(
-            $this->table,
-            function ($table) {
+            'tracker_languages',
+            function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->mediumText('name')->unique();
-                $table->string('browser')->index();
-                $table->string('browser_version');
+                $table->string('preference')->index();
+                $table->string('language-range')->index();
+
+                $table->unique(['preference', 'language-range']);
 
                 $table->timestamp('created_at')->index();
                 $table->timestamp('updated_at')->index();
@@ -41,6 +36,6 @@ class CreateTrackerAgentsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists($this->table);
+        Schema::dropIfExists('tracker_languages');
     }
 }

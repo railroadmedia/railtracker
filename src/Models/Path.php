@@ -2,7 +2,9 @@
 
 namespace Railroad\Railtracker\Models;
 
-class Path extends Base
+use Illuminate\Database\Eloquent\Model;
+
+class Path extends Model
 {
     protected $table = 'tracker_paths';
 

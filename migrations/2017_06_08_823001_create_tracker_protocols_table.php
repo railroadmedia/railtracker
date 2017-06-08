@@ -1,17 +1,11 @@
 <?php
 
-use \Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerPathsTable extends Migration
+class CreateTrackerProtocolsTable extends Migration
 {
-    /**
-     * Table related to this migration.
-     *
-     * @var string
-     */
-    private $table = 'tracker_paths';
-
     /**
      * Run the migrations.
      *
@@ -20,11 +14,11 @@ class CreateTrackerPathsTable extends Migration
     public function up()
     {
         Schema::create(
-            $this->table,
-            function ($table) {
+            'tracker_protocols',
+            function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('path')->index();
+                $table->string('protocol')->index();
 
                 $table->timestamp('created_at')->index();
                 $table->timestamp('updated_at')->index();
@@ -39,6 +33,6 @@ class CreateTrackerPathsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists($this->table);
+        Schema::dropIfExists('tracker_protocols');
     }
 }

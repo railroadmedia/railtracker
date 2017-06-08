@@ -1,17 +1,11 @@
 <?php
 
-use \Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerRoutesPathsTable extends Migration
+class CreateTrackerPathsTable extends Migration
 {
-    /**
-     * Table related to this migration.
-     *
-     * @var string
-     */
-    private $table = 'tracker_route_paths';
-
     /**
      * Run the migrations.
      *
@@ -20,11 +14,10 @@ class CreateTrackerRoutesPathsTable extends Migration
     public function up()
     {
         Schema::create(
-            $this->table,
-            function ($table) {
+            'tracker_paths',
+            function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->bigInteger('route_id')->unsigned()->index();
                 $table->string('path')->index();
 
                 $table->timestamp('created_at')->index();
@@ -40,6 +33,6 @@ class CreateTrackerRoutesPathsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists($this->table);
+        Schema::dropIfExists('tracker_paths');
     }
 }

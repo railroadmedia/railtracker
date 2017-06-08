@@ -101,6 +101,94 @@ class TrackerTest extends TestCase
         );
     }
 
+    public function test_route()
+    {
+        $path = '/test/path/1';
+        $query = 'test1=2&test2=3';
+        $routeName = 'test.route.name';
+        $routeAction = 'TestController@test';
+
+        $route = $this->router->get(
+            $path,
+            [
+                'as' => $routeName,
+                'uses' => $routeAction
+            ]
+        );
+
+        $request =
+            $this->createRequest(
+                TestCase::USER_AGENT_CHROME_WINDOWS_10,
+                'https://www.test.com' . $path . '$' . $query
+            );
+
+        $request->setRouteResolver(
+            function () use ($route) {
+                return $route;
+            }
+        );
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_routes',
+            [
+                'name' => $routeName,
+                'action' => $routeAction,
+            ]
+        );
+    }
+
+    public function test_route_path()
+    {
+        $path = '/test/path/1';
+        $query = 'test1=2&test2=3';
+        $routeName = 'test.route.name';
+        $routeAction = 'TestController@test';
+
+        $route = $this->router->get(
+            $path,
+            [
+                'as' => $routeName,
+                'uses' => $routeAction
+            ]
+        );
+
+        $request =
+            $this->createRequest(
+                TestCase::USER_AGENT_CHROME_WINDOWS_10,
+                'https://www.test.com' . $path . '$' . $query
+            );
+
+        $request->setRouteResolver(
+            function () use ($route) {
+                return $route;
+            }
+        );
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_route_paths',
+            [
+                'route_id' => 1,
+                'path' => '/test/path/1',
+            ]
+        );
+    }
+
     public function test_request()
     {
         $ip = '183.22.98.51';
