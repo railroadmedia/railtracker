@@ -20,8 +20,8 @@ class CreateTrackerUrlsTable extends Migration
 
                 $table->bigInteger('protocol_id')->unsigned()->index();
                 $table->bigInteger('domain_id')->unsigned()->index();
-                $table->bigInteger('path_id')->unsigned()->nullalbe()->index();
-                $table->bigInteger('query_id')->unsigned()->nullalbe()->index();
+                $table->bigInteger('path_id')->unsigned()->nullable()->index();
+                $table->bigInteger('query_id')->unsigned()->nullable()->index();
 
                 $table->timestamp('created_at')->index();
                 $table->timestamp('updated_at')->index();

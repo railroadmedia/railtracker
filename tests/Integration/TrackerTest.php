@@ -13,6 +13,246 @@ class TrackerTest extends TestCase
         parent::setUp();
     }
 
+    public function test_track_protocol_http()
+    {
+        $url = 'http://test.com/';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_protocols',
+            [
+                'protocol' => 'http',
+            ]
+        );
+    }
+
+    public function test_track_protocol_https()
+    {
+        $url = 'https://test.com/';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_protocols',
+            [
+                'protocol' => 'https',
+            ]
+        );
+    }
+
+    public function test_track_domain()
+    {
+        $url = 'https://test.com/';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_domains',
+            [
+                'name' => 'test.com',
+            ]
+        );
+    }
+
+    public function test_track_domain_sub()
+    {
+        $url = 'https://www.test.com/';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_domains',
+            [
+                'name' => 'www.test.com',
+            ]
+        );
+    }
+
+    public function test_track_path()
+    {
+        $url = 'https://www.test.com/test-path/test/test2/file.php';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_paths',
+            [
+                'path' => '/test-path/test/test2/file.php',
+            ]
+        );
+    }
+
+    public function test_track_path_no_file()
+    {
+        $url = 'https://www.test.com/test-path/test/test2';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_paths',
+            [
+                'path' => '/test-path/test/test2',
+            ]
+        );
+    }
+
+    public function test_track_path_leading_slash_removed()
+    {
+        $url = 'https://www.test.com/test-path/test/test2/';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_paths',
+            [
+                'path' => '/test-path/test/test2',
+            ]
+        );
+    }
+
+    public function test_track_query()
+    {
+        $url = 'https://www.test.com/test-path?test=1&test2=as7da98dsda3-23f23';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_queries',
+            [
+                'string' => 'test=1&test2=as7da98dsda3-23f23',
+            ]
+        );
+    }
+
+    public function test_track_url()
+    {
+        $url = 'https://www.test.com/test-path/test/test2?test=1&test2=as7da98dsda3-23f23';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_urls',
+            [
+                'protocol_id' => 1,
+                'domain_id' => 1,
+                'path_id' => 1,
+                'query_id' => 1,
+            ]
+        );
+    }
+
+    public function test_track_url_no_query()
+    {
+        $url = 'https://www.test.com/test-path/test/test2';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_urls',
+            [
+                'protocol_id' => 1,
+                'domain_id' => 1,
+                'path_id' => 1,
+                'query_id' => null,
+            ]
+        );
+    }
+
+    public function test_track_url_no_path()
+    {
+        $url = 'https://www.test.com/';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_urls',
+            [
+                'protocol_id' => 1,
+                'domain_id' => 1,
+                'path_id' => null,
+                'query_id' => null,
+            ]
+        );
+    }
+
     public function test_device_windows_10_chrome_webkit()
     {
         $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);

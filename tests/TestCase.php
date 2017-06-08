@@ -159,6 +159,8 @@ class TestCase extends BaseTestCase
         $clientIp = '183.22.98.51',
         $method = 'GET'
     ) {
+        $a = parse_url($url);
+
         return Request::create(
             $url,
             $method,
@@ -166,8 +168,8 @@ class TestCase extends BaseTestCase
             [],
             [],
             [
-                'SCRIPT_NAME' => '/index.php',
-                'REQUEST_URI' => '/',
+                'SCRIPT_NAME' => parse_url($url)['path'],
+                'REQUEST_URI' => parse_url($url)['path'],
                 'QUERY_STRING' => '',
                 'REQUEST_METHOD' => 'GET',
                 'SERVER_PROTOCOL' => 'HTTP/1.1',
@@ -182,7 +184,7 @@ class TestCase extends BaseTestCase
                 'REMOTE_ADDR' => $clientIp,
                 'SERVER_PORT' => '80',
                 'SERVER_ADDR' => '172.21.0.7',
-                'SERVER_NAME' => 'dev.drumeo.com',
+                'SERVER_NAME' => parse_url($url)['host'],
                 'SERVER_SOFTWARE' => 'Apache/2.4.18 (Ubuntu)',
                 'HTTP_ACCEPT_LANGUAGE' => 'en-GB,en-US;q=0.8,en;q=0.6',
                 'HTTP_ACCEPT_ENCODING' => 'gzip, deflate, sdch',
@@ -191,7 +193,7 @@ class TestCase extends BaseTestCase
                 'HTTP_REFERER' => 'http://dev.drumeo.com/drumshop',
                 'HTTP_UPGRADE_INSECURE_REQUESTS' => '1',
                 'HTTP_CONNECTION' => 'keep-alive',
-                'HTTP_HOST' => 'dev.drumeo.com',
+                'HTTP_HOST' => parse_url($url)['host'],
                 'FCGI_ROLE' => 'RESPONDER',
                 'PHP_SELF' => '/index.php',
                 'REQUEST_TIME_FLOAT' => 1496790020.5194,
