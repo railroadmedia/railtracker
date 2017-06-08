@@ -455,7 +455,6 @@ class TrackerTest extends TestCase
                 'geoip_id' => null,
                 'client_ip' => $clientIp,
                 'is_robot' => 0,
-                'request_duration_ms' => null,
                 'request_time' => Carbon::now()->timestamp,
             ]
         );
@@ -522,7 +521,6 @@ class TrackerTest extends TestCase
                 'geoip_id' => null,
                 'client_ip' => $clientIp,
                 'is_robot' => 0,
-                'request_duration_ms' => null,
                 'request_time' => Carbon::now()->timestamp,
             ]
         );

@@ -24,7 +24,8 @@ class Tracker
 
     /**
      * @param Request $request
-     * @return mixed
+     * @param Repository|null $cache
+     * @return int|mixed
      */
     public function trackRequest(Request $request, Repository $cache = null): int
     {
@@ -34,9 +35,9 @@ class Tracker
         $urlId = $this->trackUrl($request->fullUrl(), $cache);
         $refererUrlId = $this->trackUrl($request->headers->get('referer'), $cache);
         $routeId = $this->trackRoute($request, $cache);
-        $agentId = $this->trackAgent($agent);
-        $deviceId = $this->trackDevice($agent);
-        $languageId = $this->trackLanguage($agent);
+        $agentId = $this->trackAgent($agent, $cache);
+        $deviceId = $this->trackDevice($agent, $cache);
+        $languageId = $this->trackLanguage($agent, $cache);
 
         return RequestModel::query()->updateOrCreate(
             [
@@ -64,25 +65,20 @@ class Tracker
      */
     public function trackUrl($url, Repository $cache = null): int
     {
-        $protocolId = $this->trackProtocol($url, $cache);
-        $domainId = $this->trackDomain($url, $cache);
-        $pathId = $this->trackPath($url, $cache);
-        $queryId = $this->trackQuery($url, $cache);
+        $data = [
+            'protocol_id' => $this->trackProtocol($url, $cache),
+            'domain_id' => $this->trackDomain($url, $cache),
+            'path_id' => $this->trackPath($url, $cache),
+            'query_id' => $this->trackQuery($url, $cache),
+        ];
 
-        $callback = function () use ($protocolId, $domainId, $pathId, $queryId) {
-            return Url::query()->updateOrCreate(
-                [
-                    'protocol_id' => $protocolId,
-                    'domain_id' => $domainId,
-                    'path_id' => $pathId,
-                    'query_id' => $queryId,
-                ]
-            )->id;
+        $callback = function () use ($data) {
+            return Url::query()->updateOrCreate($data)->id;
         };
 
         if (!is_null($cache)) {
             return $cache->remember(
-                'url-id-' . $protocolId . '-' . $domainId . '-' . $pathId . '-' . $queryId,
+                'railtracker_url_id_' . serialize($data),
                 self::CACHE_TIME,
                 $callback
             );
@@ -96,22 +92,19 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackProtocol($url, Repository $cache = null): string
+    public function trackProtocol($url, Repository $cache = null): int
     {
-        $urlParts = parse_url($url);
-        $protocol = $urlParts['scheme'] ?? '';
+        $protocol = parse_url($url)['scheme'] ?? '';
 
-        $callback = function () use ($protocol) {
-            return Protocol::query()->updateOrCreate(
-                [
-                    'protocol' => $protocol
-                ]
-            )->id;
+        $data = ['protocol' => $protocol];
+
+        $callback = function () use ($data) {
+            return Protocol::query()->updateOrCreate($data)->id;
         };
 
         if (!is_null($cache)) {
             return $cache->remember(
-                'protocol-id-' . $protocol,
+                md5('railtracker_protocol_id_' . serialize($data)),
                 self::CACHE_TIME,
                 $callback
             );
@@ -125,22 +118,19 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackDomain($url, Repository $cache = null): string
+    public function trackDomain($url, Repository $cache = null): int
     {
-        $urlParts = parse_url($url);
-        $domain = $urlParts['host'] ?? '';
+        $domain = parse_url($url)['host'] ?? '';
 
-        $callback = function () use ($domain) {
-            return Domain::query()->updateOrCreate(
-                [
-                    'name' => $domain
-                ]
-            )->id;
+        $data = ['name' => $domain];
+
+        $callback = function () use ($data) {
+            return Domain::query()->updateOrCreate($data)->id;
         };
 
         if (!is_null($cache)) {
             return $cache->remember(
-                'domain-id-' . $domain,
+                md5('railtracker_domain_id_' . serialize($data)),
                 self::CACHE_TIME,
                 $callback
             );
@@ -156,24 +146,21 @@ class Tracker
      */
     public function trackPath($url, Repository $cache = null): ?int
     {
-        $urlParts = parse_url($url);
-        $path = $urlParts['path'] ?? '';
+        $path = parse_url($url)['path'] ?? '';
 
         if (empty($path)) {
             return null;
         }
 
-        $callback = function () use ($path) {
-            return Path::query()->updateOrCreate(
-                [
-                    'path' => $path
-                ]
-            )->id;
+        $data = ['path' => $path];
+
+        $callback = function () use ($data) {
+            return Path::query()->updateOrCreate($data)->id;
         };
 
         if (!is_null($cache)) {
             return $cache->remember(
-                'path-id-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($path)),
+                md5('railtracker_path_id_' . serialize($data)),
                 self::CACHE_TIME,
                 $callback
             );
@@ -189,24 +176,21 @@ class Tracker
      */
     public function trackQuery($url, Repository $cache = null): ?int
     {
-        $urlParts = parse_url($url);
-        $query = $urlParts['query'] ?? '';
+        $query = parse_url($url)['query'] ?? '';
 
         if (empty($query)) {
             return null;
         }
 
-        $callback = function () use ($query) {
-            return Query::query()->updateOrCreate(
-                [
-                    'string' => $query
-                ]
-            )->id;
+        $data = ['string' => $query];
+
+        $callback = function () use ($data) {
+            return Query::query()->updateOrCreate($data)->id;
         };
 
         if (!is_null($cache)) {
             return $cache->remember(
-                'query-id-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($query)),
+                md5('railtracker_query_id_' . serialize($data)),
                 self::CACHE_TIME,
                 $callback
             );
@@ -217,6 +201,7 @@ class Tracker
 
     /**
      * @param Request $request
+     * @param Repository|null $cache
      * @return int|null
      */
     protected function trackRoute(Request $request, Repository $cache = null): ?int
@@ -228,23 +213,18 @@ class Tracker
             return null;
         }
 
-        $routeName = $request->route()->getName();
-        $routeAction = $request->route()->getActionName();
+        $data = [
+            'name' => $request->route()->getName(),
+            'action' => $request->route()->getActionName(),
+        ];
 
-        $callback = function () use ($routeName, $routeAction) {
-            return Route::query()->updateOrCreate(
-                [
-                    'name' => $routeName,
-                    'action' => $routeAction,
-                ]
-            )->id;
+        $callback = function () use ($data) {
+            return Route::query()->updateOrCreate($data)->id;
         };
 
         if (!is_null($cache)) {
             return $cache->remember(
-                'route-id-' .
-                preg_replace('/[^a-z0-9]+/', '-', strtolower($routeName)) .
-                preg_replace('/[^a-z0-9]+/', '-', strtolower($routeAction)),
+                md5('railtracker_route_id_' . serialize($data)),
                 self::CACHE_TIME,
                 $callback
             );
@@ -255,71 +235,87 @@ class Tracker
 
     /**
      * @param Agent $agent
+     * @param Repository|null $cache
      * @return int
      */
-    protected function trackDevice(Agent $agent): int
+    protected function trackDevice(Agent $agent, Repository $cache = null): int
     {
-        return Device::query()->updateOrCreate(
-            [
-                'platform' => $agent->platform(),
-                'platform_version' => $agent->version($agent->platform()),
-                'kind' => $this->getDeviceKind($agent),
-                'model' => $agent->device(),
-                'is_mobile' => $agent->isMobile(),
-            ]
-        )->id;
+        $data = [
+            'platform' => $agent->platform(),
+            'platform_version' => $agent->version($agent->platform()),
+            'kind' => $this->getDeviceKind($agent),
+            'model' => $agent->device(),
+            'is_mobile' => $agent->isMobile(),
+        ];
+
+        $callback = function () use ($data) {
+            return Device::query()->updateOrCreate($data)->id;
+        };
+
+        if (!is_null($cache)) {
+            return $cache->remember(
+                md5('railtracker_device_id_' . serialize($data)),
+                self::CACHE_TIME,
+                $callback
+            );
+        }
+
+        return $callback();
     }
 
     /**
      * @param Agent $agent
+     * @param Repository|null $cache
      * @return int
      */
-    public function trackAgent(Agent $agent): int
+    public function trackAgent(Agent $agent, Repository $cache = null): int
     {
-        return AgentModel::query()->updateOrCreate(
-            [
-                'name' => $agent->getUserAgent() ?: 'Other',
-                'browser' => $agent->browser(),
-                'browser_version' => $agent->version($agent->browser()),
-            ]
-        )->id;
-    }
+        $data = [
+            'name' => $agent->getUserAgent() ?: 'Other',
+            'browser' => $agent->browser(),
+            'browser_version' => $agent->version($agent->browser()),
+        ];
 
-    /**
-     * @param string $refererUri
-     * @param int $refererDomainId
-     * @return int
-     */
-    public function trackReferer(string $refererUri, int $refererDomainId): int
-    {
-        $urlParts = parse_url($refererUri);
+        $callback = function () use ($data) {
+            return AgentModel::query()->updateOrCreate($data)->id;
+        };
 
-        // medium, source, and search terms should be calculated later based on needs during data analysis
+        if (!is_null($cache)) {
+            return $cache->remember(
+                md5('railtracker_agent_id_' . serialize($data)),
+                self::CACHE_TIME,
+                $callback
+            );
+        }
 
-        return Referer::query()->updateOrCreate(
-            [
-                'url' => $refererUri,
-                'host' => $urlParts['host'],
-                'domain_id' => $refererDomainId,
-                'medium' => null,
-                'source' => null,
-                'search_terms_hash' => null,
-            ]
-        )->id;
+        return $callback();
     }
 
     /**
      * @param Agent $agent
+     * @param Repository|null $cache
      * @return int
      */
-    public function trackLanguage(Agent $agent): int
+    public function trackLanguage(Agent $agent, Repository $cache = null): int
     {
-        return Language::query()->updateOrCreate(
-            [
-                'preference' => $agent->languages()[0] ?? 'en',
-                'language-range' => implode(',', $agent->languages()),
-            ]
-        )->id;
+        $data = [
+            'preference' => $agent->languages()[0] ?? 'en',
+            'language-range' => implode(',', $agent->languages()),
+        ];
+
+        $callback = function () use ($data) {
+            return Language::query()->updateOrCreate($data)->id;
+        };
+
+        if (!is_null($cache)) {
+            return $cache->remember(
+                md5('railtracker_language_id_' . serialize($data)),
+                self::CACHE_TIME,
+                $callback
+            );
+        }
+
+        return $callback();
     }
 
     /**
@@ -348,5 +344,10 @@ class Tracker
         }
 
         return $kind;
+    }
+
+    private function alphaNumDashOnly($string)
+    {
+        return preg_replace('/[^a-z0-9]+/', '-', strtolower($string));
     }
 }
