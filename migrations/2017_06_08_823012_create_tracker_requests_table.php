@@ -22,7 +22,7 @@ class CreateTrackerRequestsTable extends Migration
 
                 $table->bigInteger('user_id')->unsigned()->nullable()->index();
                 $table->bigInteger('url_id')->unsigned()->index();
-                $table->bigInteger('route_id')->unsigned()->index();
+                $table->bigInteger('route_id')->unsigned()->nullable()->index();
                 $table->bigInteger('device_id')->unsigned()->index();
                 $table->bigInteger('agent_id')->unsigned()->index();
                 $table->bigInteger('referer_url_id')->unsigned()->nullable()->index();
@@ -33,7 +33,7 @@ class CreateTrackerRequestsTable extends Migration
 
                 $table->boolean('is_robot')->index();
 
-                $table->bigInteger('request_duration_ms');
+                $table->bigInteger('request_duration_ms')->nullable();
 
                 $table->timestamp('request_time')->index();
                 $table->timestamp('created_at')->index();

@@ -2,6 +2,7 @@
 
 namespace Railroad\Railtracker\Tests\Integration;
 
+use Carbon\Carbon;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Tests\Resources\Models\User;
 use Railroad\Railtracker\Tests\TestCase;
@@ -253,9 +254,11 @@ class TrackerTest extends TestCase
         );
     }
 
-    public function test_device_windows_10_chrome_webkit()
+    public function test_track_referer()
     {
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
+        $url = 'https://www.test.com/';
+        $refererUrl = 'https://www.referer.com/345/2?test=1';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url, $refererUrl);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -266,82 +269,17 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_devices',
+            'tracker_urls',
             [
-                'platform' => 'Windows',
-                'platform_version' => '10.0',
-                'kind' => 'desktop',
-                'model' => 'WebKit',
-                'is_mobile' => false
+                'protocol_id' => 1,
+                'domain_id' => 2,
+                'path_id' => 1,
+                'query_id' => 1,
             ]
         );
     }
 
-    public function test_agent_chrome_webkit()
-    {
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
-
-        $middleware = $this->app->make(RailtrackerMiddleware::class);
-
-        $middleware->handle(
-            $request,
-            function () {
-            }
-        );
-
-        $this->assertDatabaseHas(
-            'tracker_agents',
-            [
-                'name' => TestCase::USER_AGENT_CHROME_WINDOWS_10,
-                'browser' => 'Chrome',
-                'browser_version' => '58.0.3029.110',
-            ]
-        );
-    }
-
-    public function test_request_domain_drumeo_dev()
-    {
-        $url = 'https://www.testing.com/?test=1';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
-
-        $middleware = $this->app->make(RailtrackerMiddleware::class);
-
-        $middleware->handle(
-            $request,
-            function () {
-            }
-        );
-
-        $this->assertDatabaseHas(
-            'tracker_domains',
-            [
-                'name' => 'www.testing.com',
-            ]
-        );
-    }
-
-    public function test_request_referer_domain_drumeo_dev()
-    {
-        $refererUrl = 'http://www.referer-testing.com/?test=2';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $refererUrl);
-
-        $middleware = $this->app->make(RailtrackerMiddleware::class);
-
-        $middleware->handle(
-            $request,
-            function () {
-            }
-        );
-
-        $this->assertDatabaseHas(
-            'tracker_domains',
-            [
-                'name' => 'www.referer-testing.com',
-            ]
-        );
-    }
-
-    public function test_route()
+    public function test_track_route()
     {
         $path = '/test/path/1';
         $query = 'test1=2&test2=3';
@@ -385,32 +323,32 @@ class TrackerTest extends TestCase
         );
     }
 
-    public function test_route_path()
+    public function test_track_route_non_existing()
     {
-        $path = '/test/path/1';
-        $query = 'test1=2&test2=3';
-        $routeName = 'test.route.name';
-        $routeAction = 'TestController@test';
-
-        $route = $this->router->get(
-            $path,
-            [
-                'as' => $routeName,
-                'uses' => $routeAction
-            ]
-        );
-
         $request =
             $this->createRequest(
-                TestCase::USER_AGENT_CHROME_WINDOWS_10,
-                'https://www.test.com' . $path . '$' . $query
+                TestCase::USER_AGENT_CHROME_WINDOWS_10
             );
 
-        $request->setRouteResolver(
-            function () use ($route) {
-                return $route;
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
             }
         );
+
+        $this->assertDatabaseMissing(
+            'tracker_routes',
+            [
+                'id' => 1,
+            ]
+        );
+    }
+
+    public function test_agent_chrome_webkit()
+    {
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -421,25 +359,73 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_route_paths',
+            'tracker_agents',
             [
-                'route_id' => 1,
-                'path' => '/test/path/1',
+                'name' => TestCase::USER_AGENT_CHROME_WINDOWS_10,
+                'browser' => 'Chrome',
+                'browser_version' => '58.0.3029.110',
             ]
         );
     }
 
-    public function test_request()
+    public function test_device_windows_10_chrome_webkit()
     {
-        $ip = '183.22.98.51';
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
 
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_devices',
+            [
+                'platform' => 'Windows',
+                'platform_version' => '10.0',
+                'kind' => 'desktop',
+                'model' => 'WebKit',
+                'is_mobile' => false
+            ]
+        );
+    }
+
+    public function test_track_language()
+    {
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_languages',
+            [
+                'preference' => 'en-gb',
+                'language-range' => 'en-gb,en-us,en',
+            ]
+        );
+    }
+
+    public function test_request_no_route()
+    {
         $userId = $this->createAndLogInNewUser();
+
+        $url = 'https://www.testing.com/?test=1';
+        $refererUrl = 'http://www.referer-testing.com/?test=2';
+        $clientIp = '183.22.98.51';
 
         $request = $this->createRequest(
             TestCase::USER_AGENT_CHROME_WINDOWS_10,
-            null,
-            null,
-            $ip
+            $url,
+            $refererUrl,
+            $clientIp
         );
 
         $request->setUserResolver(
@@ -459,15 +445,85 @@ class TrackerTest extends TestCase
         $this->assertDatabaseHas(
             'tracker_requests',
             [
-                'user_id' => $userId,
-                'domain_id' => 1,
+                'user_id' => 1,
+                'url_id' => 1,
+                'route_id' => null,
                 'device_id' => 1,
-                'client_ip' => $ip,
-                'geoip_id' => null, // this can be calculated afterwards during data analysis
                 'agent_id' => 1,
-                'referer_id' => 1,
+                'referer_url_id' => 2,
                 'language_id' => 1,
-                'is_robot' => 0
+                'geoip_id' => null,
+                'client_ip' => $clientIp,
+                'is_robot' => 0,
+                'request_duration_ms' => null,
+                'request_time' => Carbon::now()->timestamp,
+            ]
+        );
+    }
+
+    public function test_request_with_route()
+    {
+        $userId = $this->createAndLogInNewUser();
+
+        $path = '/test/path/1';
+        $query = 'test1=2&test2=3';
+        $routeName = 'test.route.name';
+        $routeAction = 'TestController@test';
+
+        $url = 'https://www.testing.com' . $path . '?' . $query;
+        $refererUrl = 'http://www.referer-testing.com/?test=2';
+        $clientIp = '183.22.98.51';
+
+        $route = $this->router->get(
+            $path,
+            [
+                'as' => $routeName,
+                'uses' => $routeAction
+            ]
+        );
+
+        $request = $this->createRequest(
+            TestCase::USER_AGENT_CHROME_WINDOWS_10,
+            $url,
+            $refererUrl,
+            $clientIp
+        );
+
+        $request->setRouteResolver(
+            function () use ($route) {
+                return $route;
+            }
+        );
+
+        $request->setUserResolver(
+            function () use ($userId) {
+                return User::query()->find($userId);
+            }
+        );
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            'tracker_requests',
+            [
+                'user_id' => 1,
+                'url_id' => 1,
+                'route_id' => 1,
+                'device_id' => 1,
+                'agent_id' => 1,
+                'referer_url_id' => 2,
+                'language_id' => 1,
+                'geoip_id' => null,
+                'client_ip' => $clientIp,
+                'is_robot' => 0,
+                'request_duration_ms' => null,
+                'request_time' => Carbon::now()->timestamp,
             ]
         );
     }

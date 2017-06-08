@@ -190,7 +190,7 @@ class TestCase extends BaseTestCase
                 'HTTP_ACCEPT_ENCODING' => 'gzip, deflate, sdch',
                 'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'HTTP_USER_AGENT' => $userAgent,
-                'HTTP_REFERER' => 'http://dev.drumeo.com/drumshop',
+                'HTTP_REFERER' => $referer,
                 'HTTP_UPGRADE_INSECURE_REQUESTS' => '1',
                 'HTTP_CONNECTION' => 'keep-alive',
                 'HTTP_HOST' => parse_url($url)['host'],

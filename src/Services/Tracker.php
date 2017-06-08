@@ -2,6 +2,7 @@
 
 namespace Railroad\Railtracker\Services;
 
+use Carbon\Carbon;
 use Illuminate\Cache\Repository;
 use Illuminate\Http\Request;
 use Jenssegers\Agent\Agent;
@@ -12,7 +13,6 @@ use Railroad\Railtracker\Models\Language;
 use Railroad\Railtracker\Models\Path;
 use Railroad\Railtracker\Models\Protocol;
 use Railroad\Railtracker\Models\Query;
-use Railroad\Railtracker\Models\Referer;
 use Railroad\Railtracker\Models\Request as RequestModel;
 use Railroad\Railtracker\Models\Route;
 use Railroad\Railtracker\Models\Url;
@@ -30,24 +30,31 @@ class Tracker
     {
         $agent = new Agent($request->server->all());
 
-        $urlId = $this->trackUrl($request->fullUrl());
+        $userId = $this->getAuthenticatedUserId($request);
+        $urlId = $this->trackUrl($request->fullUrl(), $cache);
+        $refererUrlId = $this->trackUrl($request->headers->get('referer'), $cache);
+        $routeId = $this->trackRoute($request, $cache);
+        $agentId = $this->trackAgent($agent);
+        $deviceId = $this->trackDevice($agent);
+        $languageId = $this->trackLanguage($agent);
 
-//        return RequestModel::query()->updateOrCreate(
-//            [
-//                'uuid' => Uuid::uuid4(),
-//                'user_id' => $userId,
-//                'domain_id' => $domainId,
-//                'device_id' => $deviceId,
-//                'client_ip' => $request->getClientIp(),
-//                'geoip_id' => null, // this can be calculated afterwards during data analysis
-//                'agent_id' => $agentId,
-//                'referer_id' => $referrerId,
-//                'language_id' => $languageId,
-//                'is_robot' => $agent->isRobot()
-//            ]
-//        )->id;
-
-        return 1;
+        return RequestModel::query()->updateOrCreate(
+            [
+                'uuid' => Uuid::uuid4(),
+                'user_id' => $userId,
+                'url_id' => $urlId,
+                'route_id' => $routeId,
+                'device_id' => $deviceId,
+                'agent_id' => $agentId,
+                'referer_url_id' => $refererUrlId,
+                'language_id' => $languageId,
+                'geoip_id' => null,
+                'client_ip' => $request->getClientIp(),
+                'is_robot' => $agent->isRobot(),
+                'request_duration_ms' => null,
+                'request_time' => Carbon::now()->timestamp,
+            ]
+        )->id;
     }
 
     /**
@@ -55,7 +62,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackUrl($url, Repository $cache = null)
+    public function trackUrl($url, Repository $cache = null): int
     {
         $protocolId = $this->trackProtocol($url, $cache);
         $domainId = $this->trackDomain($url, $cache);
@@ -89,7 +96,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackProtocol($url, Repository $cache = null)
+    public function trackProtocol($url, Repository $cache = null): string
     {
         $urlParts = parse_url($url);
         $protocol = $urlParts['scheme'] ?? '';
@@ -118,7 +125,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackDomain($url, Repository $cache = null)
+    public function trackDomain($url, Repository $cache = null): string
     {
         $urlParts = parse_url($url);
         $domain = $urlParts['host'] ?? '';
@@ -147,7 +154,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackPath($url, Repository $cache = null)
+    public function trackPath($url, Repository $cache = null): ?int
     {
         $urlParts = parse_url($url);
         $path = $urlParts['path'] ?? '';
@@ -180,7 +187,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackQuery($url, Repository $cache = null)
+    public function trackQuery($url, Repository $cache = null): ?int
     {
         $urlParts = parse_url($url);
         $query = $urlParts['query'] ?? '';
@@ -210,16 +217,40 @@ class Tracker
 
     /**
      * @param Request $request
-     * @return int
+     * @return int|null
      */
-    protected function trackRoute(Request $request): int
+    protected function trackRoute(Request $request, Repository $cache = null): ?int
     {
-        return Route::query()->updateOrCreate(
-            [
-                'name' => $request->route()->getName(),
-                'action' => $request->route()->getActionName(),
-            ]
-        )->id;
+        if (empty($request->route()) ||
+            empty($request->route()->getName()) ||
+            empty($request->route()->getActionName())
+        ) {
+            return null;
+        }
+
+        $routeName = $request->route()->getName();
+        $routeAction = $request->route()->getActionName();
+
+        $callback = function () use ($routeName, $routeAction) {
+            return Route::query()->updateOrCreate(
+                [
+                    'name' => $routeName,
+                    'action' => $routeAction,
+                ]
+            )->id;
+        };
+
+        if (!is_null($cache)) {
+            return $cache->remember(
+                'route-id-' .
+                preg_replace('/[^a-z0-9]+/', '-', strtolower($routeName)) .
+                preg_replace('/[^a-z0-9]+/', '-', strtolower($routeAction)),
+                self::CACHE_TIME,
+                $callback
+            );
+        }
+
+        return $callback();
     }
 
     /**
