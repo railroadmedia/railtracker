@@ -18,10 +18,10 @@ class CreateTrackerQueriesTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('string')->index();
+                $table->string('string', 840);
 
-                $table->timestamp('created_at')->index();
-                $table->timestamp('updated_at')->index();
+                $table->timestamp('created_at')->nullable()->index();
+                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

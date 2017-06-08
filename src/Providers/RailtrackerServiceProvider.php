@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Schema;
 
 class RailtrackerServiceProvider extends ServiceProvider
 {
@@ -19,7 +20,7 @@ class RailtrackerServiceProvider extends ServiceProvider
 
         $this->publishes(
             [
-                __DIR__ . '/../config/railtracker.php' => config_path('railtracker.php'),
+                __DIR__ . '/../../config/railtracker.php' => config_path('railtracker.php'),
             ]
         );
     }

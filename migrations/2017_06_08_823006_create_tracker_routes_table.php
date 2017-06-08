@@ -18,11 +18,11 @@ class CreateTrackerRoutesTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name')->index();
-                $table->string('action')->index();
+                $table->string('name', 180)->index();
+                $table->string('action', 180)->index();
 
-                $table->timestamp('created_at')->index();
-                $table->timestamp('updated_at')->index();
+                $table->timestamp('created_at')->nullable()->index();
+                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

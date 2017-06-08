@@ -18,10 +18,10 @@ class CreateTrackerProtocolsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('protocol')->index();
+                $table->string('protocol', 5)->index();
 
-                $table->timestamp('created_at')->index();
-                $table->timestamp('updated_at')->index();
+                $table->timestamp('created_at')->nullable()->index();
+                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

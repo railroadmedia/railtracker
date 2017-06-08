@@ -1,5 +1,5 @@
 {
-  "name": "Railroad/Railtracker",
+  "name": "railroad/railtracker",
   "type": "library",
   "description": "Tracks user actions in your application.",
   "keywords": [

@@ -18,14 +18,14 @@ class CreateTrackerAgentsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->mediumText('name')->unique();
-                $table->string('browser')->index();
-                $table->string('browser_version');
+                $table->string('name', 140)->unique();
+                $table->string('browser', 64)->index();
+                $table->string('browser_version', 32);
 
                 $table->unique(['name', 'browser', 'browser_version']);
 
-                $table->timestamp('created_at')->index();
-                $table->timestamp('updated_at')->index();
+                $table->timestamp('created_at')->nullable()->index();
+                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }
