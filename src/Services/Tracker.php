@@ -27,7 +27,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int|mixed
      */
-    public function trackRequest(Request $request, Repository $cache = null): int
+    public function trackRequest(Request $request, Repository $cache = null)
     {
         $agent = new Agent($request->server->all());
 
@@ -63,7 +63,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int|null
      */
-    public function trackUrl($url, Repository $cache = null): ?int
+    public function trackUrl($url, Repository $cache = null)
     {
         if (empty($url) || parse_url($url) === false) {
             return null;
@@ -96,7 +96,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackProtocol($url, Repository $cache = null): int
+    public function trackProtocol($url, Repository $cache = null)
     {
         $protocol = parse_url($url)['scheme'] ?? '';
 
@@ -122,7 +122,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackDomain($url, Repository $cache = null): int
+    public function trackDomain($url, Repository $cache = null)
     {
         $domain = parse_url($url)['host'] ?? '';
 
@@ -148,7 +148,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackPath($url, Repository $cache = null): ?int
+    public function trackPath($url, Repository $cache = null)
     {
         $path = parse_url($url)['path'] ?? '';
 
@@ -178,7 +178,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackQuery($url, Repository $cache = null): ?int
+    public function trackQuery($url, Repository $cache = null)
     {
         $query = parse_url($url)['query'] ?? '';
 
@@ -208,7 +208,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int|null
      */
-    protected function trackRoute(Request $request, Repository $cache = null): ?int
+    protected function trackRoute(Request $request, Repository $cache = null)
     {
         if (empty($request->route()) ||
             empty($request->route()->getName()) ||
@@ -242,7 +242,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    protected function trackDevice(Agent $agent, Repository $cache = null): int
+    protected function trackDevice(Agent $agent, Repository $cache = null)
     {
         $data = [
             'platform' => $agent->platform(),
@@ -272,7 +272,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackAgent(Agent $agent, Repository $cache = null): int
+    public function trackAgent(Agent $agent, Repository $cache = null)
     {
         $data = [
             'name' => $agent->getUserAgent() ?: 'Other',
@@ -300,7 +300,7 @@ class Tracker
      * @param Repository|null $cache
      * @return int
      */
-    public function trackLanguage(Agent $agent, Repository $cache = null): int
+    public function trackLanguage(Agent $agent, Repository $cache = null)
     {
         $data = [
             'preference' => $agent->languages()[0] ?? 'en',
@@ -326,7 +326,7 @@ class Tracker
      * @param Request $request
      * @return int|null
      */
-    protected function getAuthenticatedUserId(Request $request): ?int
+    protected function getAuthenticatedUserId(Request $request)
     {
         return $request->user()->id ?? null;
     }
@@ -335,7 +335,7 @@ class Tracker
      * @param Agent $agent
      * @return string
      */
-    protected function getDeviceKind(Agent $agent): string
+    protected function getDeviceKind(Agent $agent)
     {
         $kind = 'unavailable';
 
