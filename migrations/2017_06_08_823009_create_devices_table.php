@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerAgentsTable extends Migration
+class CreateDevicesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,15 +14,17 @@ class CreateTrackerAgentsTable extends Migration
     public function up()
     {
         Schema::create(
-            'tracker_agents',
+            'railtracker_devices',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 140)->unique();
-                $table->string('browser', 64)->index();
-                $table->string('browser_version', 32);
+                $table->string('kind', 16)->index();
+                $table->string('model', 64)->index();
+                $table->string('platform', 64)->index();
+                $table->string('platform_version', 16)->index();
+                $table->boolean('is_mobile');
 
-                $table->unique(['name', 'browser', 'browser_version']);
+                $table->unique(['kind', 'model', 'platform', 'platform_version']);
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -37,6 +39,6 @@ class CreateTrackerAgentsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tracker_agents');
+        Schema::dropIfExists('railtracker_devices');
     }
 }

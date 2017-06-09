@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Url extends Model
 {
-    protected $table = 'tracker_urls';
+    protected $table = 'railtracker_urls';
 
     protected $fillable = [
         'protocol_id',

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Route extends Model
 {
-    protected $table = 'tracker_routes';
+    protected $table = 'railtracker_routes';
 
     protected $fillable = [
         'name',

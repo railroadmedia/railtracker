@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Request extends Model
 {
-    protected $table = 'tracker_requests';
+    protected $table = 'railtracker_requests';
 
     protected $fillable = [
         'uuid',

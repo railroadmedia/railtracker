@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerQueriesTable extends Migration
+class CreateDomainsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,11 +14,11 @@ class CreateTrackerQueriesTable extends Migration
     public function up()
     {
         Schema::create(
-            'tracker_queries',
+            'railtracker_domains',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('string', 840);
+                $table->string('name', 160)->index();
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -33,6 +33,6 @@ class CreateTrackerQueriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tracker_queries');
+        Schema::dropIfExists('railtracker_domains');
     }
 }

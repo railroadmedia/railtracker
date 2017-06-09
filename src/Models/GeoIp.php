@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class GeoIp extends Model
 {
-    protected $table = 'tracker_geoip';
+    protected $table = 'railtracker_geoip';
 
     protected $fillable = [
         'latitude',

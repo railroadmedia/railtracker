@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Language extends Model
 {
-    protected $table = 'tracker_languages';
+    protected $table = 'railtracker_languages';
 
-    protected $fillable = ['preference', 'language-range'];
+    protected $fillable = ['preference', 'language_range'];
 }

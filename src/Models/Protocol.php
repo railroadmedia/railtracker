@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Protocol extends Model
 {
-    protected $table = 'tracker_protocols';
+    protected $table = 'railtracker_protocols';
 
     protected $fillable = [
         'protocol',

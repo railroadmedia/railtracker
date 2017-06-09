@@ -43,6 +43,10 @@ class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        if (!defined('LARAVEL_START')) {
+            define('LARAVEL_START', microtime(true));
+        }
+
         $this->artisan('migrate', []);
         $this->artisan('cache:clear', []);
 
@@ -153,14 +157,12 @@ class TestCase extends BaseTestCase
      * @return Request
      */
     public function createRequest(
-        $userAgent,
+        $userAgent = self::USER_AGENT_CHROME_WINDOWS_10,
         $url = 'https://www.testing.com/?test=1',
         $referer = 'http://www.referer-testing.com/?test=2',
         $clientIp = '183.22.98.51',
         $method = 'GET'
     ) {
-        $a = parse_url($url);
-
         return Request::create(
             $url,
             $method,

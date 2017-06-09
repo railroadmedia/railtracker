@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Device extends Model
 {
-    protected $table = 'tracker_devices';
+    protected $table = 'railtracker_devices';
 
     protected $fillable = [
         'kind',

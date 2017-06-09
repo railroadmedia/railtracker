@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Agent extends Model
 {
-    protected $table = 'tracker_agents';
+    protected $table = 'railtracker_agents';
 
     protected $fillable = [
         'name',

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerUrlsTable extends Migration
+class CreateRoutesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,14 +14,12 @@ class CreateTrackerUrlsTable extends Migration
     public function up()
     {
         Schema::create(
-            'tracker_urls',
+            'railtracker_routes',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->bigInteger('protocol_id')->unsigned()->index();
-                $table->bigInteger('domain_id')->unsigned()->index();
-                $table->bigInteger('path_id')->unsigned()->nullable()->index();
-                $table->bigInteger('query_id')->unsigned()->nullable()->index();
+                $table->string('name', 180)->index();
+                $table->string('action', 180)->index();
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -36,6 +34,6 @@ class CreateTrackerUrlsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tracker_urls');
+        Schema::dropIfExists('railtracker_routes');
     }
 }

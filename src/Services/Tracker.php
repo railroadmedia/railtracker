@@ -300,7 +300,7 @@ class Tracker
     {
         $data = [
             'preference' => $agent->languages()[0] ?? 'en',
-            'language-range' => implode(',', $agent->languages()),
+            'language_range' => implode(',', $agent->languages()),
         ];
 
         $callback = function () use ($data) {

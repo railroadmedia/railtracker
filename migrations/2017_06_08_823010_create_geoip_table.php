@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerProtocolsTable extends Migration
+class CreateGeoipTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,11 +14,18 @@ class CreateTrackerProtocolsTable extends Migration
     public function up()
     {
         Schema::create(
-            'tracker_protocols',
+            'railtracker_geoip',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('protocol', 5)->index();
+                $table->double('latitude')->nullable()->index();
+                $table->double('longitude')->nullable()->index();
+
+                $table->string('country_code', 2)->nullable()->index();
+                $table->string('country_name', 84)->nullable()->index();
+                $table->string('region', 2)->nullable();
+                $table->string('city', 50)->nullable()->index();
+                $table->string('postal_code', 20)->nullable();
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -33,6 +40,6 @@ class CreateTrackerProtocolsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tracker_protocols');
+        Schema::dropIfExists('railtracker_geoip');
     }
 }

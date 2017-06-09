@@ -28,7 +28,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_protocols',
+            'railtracker_protocols',
             [
                 'protocol' => 'http',
             ]
@@ -49,7 +49,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_protocols',
+            'railtracker_protocols',
             [
                 'protocol' => 'https',
             ]
@@ -70,7 +70,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_domains',
+            'railtracker_domains',
             [
                 'name' => 'test.com',
             ]
@@ -91,7 +91,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_domains',
+            'railtracker_domains',
             [
                 'name' => 'www.test.com',
             ]
@@ -112,7 +112,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_paths',
+            'railtracker_paths',
             [
                 'path' => '/test-path/test/test2/file.php',
             ]
@@ -133,7 +133,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_paths',
+            'railtracker_paths',
             [
                 'path' => '/test-path/test/test2',
             ]
@@ -154,7 +154,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_paths',
+            'railtracker_paths',
             [
                 'path' => '/test-path/test/test2',
             ]
@@ -175,7 +175,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_queries',
+            'railtracker_queries',
             [
                 'string' => 'test=1&test2=as7da98dsda3-23f23',
             ]
@@ -196,7 +196,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_urls',
+            'railtracker_urls',
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -220,7 +220,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_urls',
+            'railtracker_urls',
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -244,7 +244,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_urls',
+            'railtracker_urls',
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -269,7 +269,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_urls',
+            'railtracker_urls',
             [
                 'protocol_id' => 1,
                 'domain_id' => 2,
@@ -315,7 +315,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_routes',
+            'railtracker_routes',
             [
                 'name' => $routeName,
                 'action' => $routeAction,
@@ -339,7 +339,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseMissing(
-            'tracker_routes',
+            'railtracker_routes',
             [
                 'id' => 1,
             ]
@@ -359,7 +359,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_agents',
+            'railtracker_agents',
             [
                 'name' => TestCase::USER_AGENT_CHROME_WINDOWS_10,
                 'browser' => 'Chrome',
@@ -381,7 +381,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_devices',
+            'railtracker_devices',
             [
                 'platform' => 'Windows',
                 'platform_version' => '10.0',
@@ -405,10 +405,10 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_languages',
+            'railtracker_languages',
             [
                 'preference' => 'en-gb',
-                'language-range' => 'en-gb,en-us,en',
+                'language_range' => 'en-gb,en-us,en',
             ]
         );
     }
@@ -443,7 +443,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_requests',
+            'railtracker_requests',
             [
                 'user_id' => 1,
                 'url_id' => 1,
@@ -509,7 +509,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'tracker_requests',
+            'railtracker_requests',
             [
                 'user_id' => 1,
                 'url_id' => 1,

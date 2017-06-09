@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerGeoipTable extends Migration
+class CreateQueriesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,18 +14,11 @@ class CreateTrackerGeoipTable extends Migration
     public function up()
     {
         Schema::create(
-            'tracker_geoip',
+            'railtracker_queries',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->double('latitude')->nullable()->index();
-                $table->double('longitude')->nullable()->index();
-
-                $table->string('country_code', 2)->nullable()->index();
-                $table->string('country_name', 84)->nullable()->index();
-                $table->string('region', 2)->nullable();
-                $table->string('city', 50)->nullable()->index();
-                $table->string('postal_code', 20)->nullable();
+                $table->string('string', 840);
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -40,6 +33,6 @@ class CreateTrackerGeoipTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tracker_geoip');
+        Schema::dropIfExists('railtracker_queries');
     }
 }

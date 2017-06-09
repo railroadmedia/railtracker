@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Query extends Model
 {
-    protected $table = 'tracker_queries';
+    protected $table = 'railtracker_queries';
 
     protected $fillable = [
         'string',

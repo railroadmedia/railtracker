@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrackerRequestsTable extends Migration
+class CreateRequestsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,7 @@ class CreateTrackerRequestsTable extends Migration
     public function up()
     {
         Schema::create(
-            'tracker_requests',
+            'railtracker_requests',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -49,6 +49,6 @@ class CreateTrackerRequestsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tracker_requests');
+        Schema::dropIfExists('railtracker_requests');
     }
 }
