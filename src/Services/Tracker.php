@@ -61,10 +61,14 @@ class Tracker
     /**
      * @param $url
      * @param Repository|null $cache
-     * @return int
+     * @return int|null
      */
-    public function trackUrl($url, Repository $cache = null): int
+    public function trackUrl($url, Repository $cache = null): ?int
     {
+        if (empty($url) || parse_url($url) === false) {
+            return null;
+        }
+
         $data = [
             'protocol_id' => $this->trackProtocol($url, $cache),
             'domain_id' => $this->trackDomain($url, $cache),
