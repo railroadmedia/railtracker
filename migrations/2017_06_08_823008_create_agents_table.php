@@ -18,7 +18,7 @@ class CreateAgentsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 180)->unique();
+                $table->string('name', 140)->unique();
                 $table->string('browser', 64)->index();
                 $table->string('browser_version', 32);
 

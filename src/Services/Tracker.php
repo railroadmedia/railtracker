@@ -126,7 +126,7 @@ class Tracker
     {
         $domain = parse_url($url)['host'] ?? '';
 
-        $data = ['name' => $domain];
+        $data = ['name' => substr($domain, 0, 170)];
 
         $callback = function () use ($data) {
             return Domain::query()->updateOrCreate($data)->id;
@@ -156,7 +156,7 @@ class Tracker
             return null;
         }
 
-        $data = ['path' => $path];
+        $data = ['path' => substr($path, 0, 170)];
 
         $callback = function () use ($data) {
             return Path::query()->updateOrCreate($data)->id;
@@ -218,8 +218,8 @@ class Tracker
         }
 
         $data = [
-            'name' => $request->route()->getName(),
-            'action' => $request->route()->getActionName(),
+            'name' => substr($request->route()->getName(), 0, 170),
+            'action' => substr($request->route()->getActionName(), 0, 170),
         ];
 
         $callback = function () use ($data) {
