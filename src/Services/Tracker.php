@@ -275,7 +275,7 @@ class Tracker
     public function trackAgent(Agent $agent, Repository $cache = null)
     {
         $data = [
-            'name' => $agent->getUserAgent() ?: 'Other',
+            'name' => substr($agent->getUserAgent() ?: 'Other', 0, 170),
             'browser' => $agent->browser(),
             'browser_version' => $agent->version($agent->browser()),
         ];

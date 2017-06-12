@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Middleware;
 
 use Closure;
+use Exception;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
@@ -29,15 +30,19 @@ class RailtrackerMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  Request  $request
-     * @param  Closure  $next
+     * @param  Request $request
+     * @param  Closure $next
      * @return mixed
      */
     public function handle($request, Closure $next)
     {
         $response = $next($request);
 
-        $this->tracker->trackRequest($request, app(Repository::class));
+        try {
+            $this->tracker->trackRequest($request, app(Repository::class));
+        } catch (Exception $exception) {
+            error_log($exception);
+        }
 
         return $response;
     }
