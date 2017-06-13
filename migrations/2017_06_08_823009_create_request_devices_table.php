@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateProtocolsTable extends Migration
+class CreateRequestDevicesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,11 +14,17 @@ class CreateProtocolsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_protocols',
+            'railtracker_request_devices',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('protocol', 5)->index();
+                $table->string('kind', 16)->index();
+                $table->string('model', 64)->index();
+                $table->string('platform', 64)->index();
+                $table->string('platform_version', 16)->index();
+                $table->boolean('is_mobile');
+
+                $table->unique(['kind', 'model', 'platform', 'platform_version']);
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -33,6 +39,6 @@ class CreateProtocolsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_protocols');
+        Schema::dropIfExists('railtracker_request_devices');
     }
 }

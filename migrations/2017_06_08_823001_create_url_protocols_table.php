@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateQueriesTable extends Migration
+class CreateUrlProtocolsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,11 +14,11 @@ class CreateQueriesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_queries',
+            'railtracker_url_protocols',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('string', 840);
+                $table->string('protocol', 6)->index();
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -33,6 +33,6 @@ class CreateQueriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_queries');
+        Schema::dropIfExists('railtracker_url_protocols');
     }
 }

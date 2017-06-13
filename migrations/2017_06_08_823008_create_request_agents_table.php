@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateDomainsTable extends Migration
+class CreateRequestAgentsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,11 +14,15 @@ class CreateDomainsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_domains',
+            'railtracker_request_agents',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 160)->index();
+                $table->string('name', 140)->unique();
+                $table->string('browser', 64)->index();
+                $table->string('browser_version', 32);
+
+                $table->unique(['name', 'browser', 'browser_version']);
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -33,6 +37,6 @@ class CreateDomainsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_domains');
+        Schema::dropIfExists('railtracker_request_agents');
     }
 }

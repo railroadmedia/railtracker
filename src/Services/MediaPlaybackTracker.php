@@ -27,7 +27,7 @@ class RequestTracker
      * @param Repository|null $cache
      * @return int|mixed
      */
-    public function trackRequest(Request $request, Repository $cache = null)
+    public function trackPlayback(Request $request, Repository $cache = null)
     {
         $agent = new Agent($request->server->all());
 
@@ -100,7 +100,7 @@ class RequestTracker
     {
         $protocol = parse_url($url)['scheme'] ?? '';
 
-        $data = ['protocol' => substr($protocol, 0, 6)];
+        $data = ['protocol' => substr($protocol, 0, 5)];
 
         $callback = function () use ($data) {
             return Protocol::query()->updateOrCreate($data)->id;

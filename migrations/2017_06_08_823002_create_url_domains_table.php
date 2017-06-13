@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateDevicesTable extends Migration
+class CreateUrlDomainsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,17 +14,11 @@ class CreateDevicesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_devices',
+            'railtracker_url_domains',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('kind', 16)->index();
-                $table->string('model', 64)->index();
-                $table->string('platform', 64)->index();
-                $table->string('platform_version', 16)->index();
-                $table->boolean('is_mobile');
-
-                $table->unique(['kind', 'model', 'platform', 'platform_version']);
+                $table->string('name', 180)->index();
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -39,6 +33,6 @@ class CreateDevicesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_devices');
+        Schema::dropIfExists('railtracker_url_domains');
     }
 }

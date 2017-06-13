@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreatePathsTable extends Migration
+class CreateUrlPathsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,7 @@ class CreatePathsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_paths',
+            'railtracker_url_paths',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -33,6 +33,6 @@ class CreatePathsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_paths');
+        Schema::dropIfExists('railtracker_url_paths');
     }
 }

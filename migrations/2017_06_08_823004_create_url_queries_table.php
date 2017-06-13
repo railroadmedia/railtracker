@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateAgentsTable extends Migration
+class CreateUrlQueriesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,15 +14,11 @@ class CreateAgentsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_agents',
+            'railtracker_url_queries',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 140)->unique();
-                $table->string('browser', 64)->index();
-                $table->string('browser_version', 32);
-
-                $table->unique(['name', 'browser', 'browser_version']);
+                $table->string('string', 840);
 
                 $table->timestamp('created_at')->nullable()->index();
                 $table->timestamp('updated_at')->nullable()->index();
@@ -37,6 +33,6 @@ class CreateAgentsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_agents');
+        Schema::dropIfExists('railtracker_url_queries');
     }
 }
