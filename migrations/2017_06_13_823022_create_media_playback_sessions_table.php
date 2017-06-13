@@ -18,26 +18,17 @@ class CreateMediaPlaybackSessionsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('uuid', 64)->unique()->index();
+                $table->string('media_id', 64)->index();
+
                 $table->bigInteger('user_id')->unsigned()->nullable()->index();
-                $table->string('media_id')->unsigned()->index();
-                $table->string('media_type')->unsigned()->index();
-                $table->bigInteger('route_id')->unsigned()->nullable()->index();
-                $table->bigInteger('device_id')->unsigned()->index();
-                $table->bigInteger('agent_id')->unsigned()->index();
-                $table->bigInteger('referer_url_id')->unsigned()->nullable()->index();
-                $table->bigInteger('language_id')->unsigned()->index();
-                $table->bigInteger('geoip_id')->unsigned()->nullable()->index();
+                $table->string('type_id')->unsigned()->index();
 
-                $table->string('client_ip', 36)->index();
+                $table->integer('seconds_watched')->unsigned();
+                $table->integer('current_second')->unsigned();
+                $table->integer('length')->unsigned();
 
-                $table->boolean('is_robot')->index();
-
-                $table->bigInteger('request_duration_ms')->nullable();
-
-                $table->integer('request_time')->index();
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
+                $table->dateTime('started_on')->index();
+                $table->dateTime('last_updated_on')->index();
             }
         );
     }

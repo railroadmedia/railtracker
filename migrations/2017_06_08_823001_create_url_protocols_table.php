@@ -18,10 +18,7 @@ class CreateUrlProtocolsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('protocol', 6)->index();
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
+                $table->string('protocol', 6)->unique();
             }
         );
     }

@@ -25,9 +25,6 @@ class CreateRequestDevicesTable extends Migration
                 $table->boolean('is_mobile');
 
                 $table->unique(['kind', 'model', 'platform', 'platform_version']);
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

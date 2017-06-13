@@ -18,10 +18,8 @@ class CreateMediaPlaybackTypesTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('media_type', 64)->unsigned()->index();
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
+                $table->string('type', 128)->index();
+                $table->string('category', 128)->index();
             }
         );
     }

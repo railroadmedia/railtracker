@@ -29,15 +29,13 @@ class CreateRequestsTable extends Migration
                 $table->bigInteger('language_id')->unsigned()->index();
                 $table->bigInteger('geoip_id')->unsigned()->nullable()->index();
 
-                $table->string('client_ip', 36)->index();
+                $table->string('client_ip', 64)->index();
 
                 $table->boolean('is_robot')->index();
 
-                $table->bigInteger('request_duration_ms')->nullable();
+                $table->bigInteger('request_duration_ms');
 
-                $table->integer('request_time')->index();
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
+                $table->dateTime('requested_on')->index();
             }
         );
     }

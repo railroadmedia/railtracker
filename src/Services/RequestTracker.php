@@ -208,7 +208,7 @@ class RequestTracker
      * @param Repository|null $cache
      * @return int|null
      */
-    protected function trackRoute(Request $request, Repository $cache = null)
+    public function trackRoute(Request $request, Repository $cache = null)
     {
         if (empty($request->route()) ||
             empty($request->route()->getName()) ||
@@ -242,7 +242,7 @@ class RequestTracker
      * @param Repository|null $cache
      * @return int
      */
-    protected function trackDevice(Agent $agent, Repository $cache = null)
+    public function trackDevice(Agent $agent, Repository $cache = null)
     {
         $data = [
             'platform' => substr($agent->platform(), 0, 64),
@@ -275,7 +275,7 @@ class RequestTracker
     public function trackAgent(Agent $agent, Repository $cache = null)
     {
         $data = [
-            'name' => substr($agent->getUserAgent() ?: 'Other', 0, 170),
+            'name' => substr($agent->getUserAgent() ?: 'Other', 0, 180),
             'browser' => substr($agent->browser(), 0, 64),
             'browser_version' => substr($agent->version($agent->browser()), 0, 32),
         ];

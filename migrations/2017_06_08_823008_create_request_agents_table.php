@@ -18,14 +18,11 @@ class CreateRequestAgentsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 140)->unique();
+                $table->string('name', 180)->index();
                 $table->string('browser', 64)->index();
                 $table->string('browser_version', 32);
 
                 $table->unique(['name', 'browser', 'browser_version']);
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

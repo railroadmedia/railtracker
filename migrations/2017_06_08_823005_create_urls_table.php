@@ -23,8 +23,8 @@ class CreateUrlsTable extends Migration
                 $table->bigInteger('path_id')->unsigned()->nullable()->index();
                 $table->bigInteger('query_id')->unsigned()->nullable()->index();
 
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
+                $table->unique(['protocol_id', 'domain_id', 'path_id', 'query_id']);
+
             }
         );
     }

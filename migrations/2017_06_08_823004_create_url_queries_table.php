@@ -19,9 +19,6 @@ class CreateUrlQueriesTable extends Migration
                 $table->bigIncrements('id');
 
                 $table->string('string', 840);
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

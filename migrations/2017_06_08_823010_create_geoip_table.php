@@ -26,9 +26,6 @@ class CreateGeoipTable extends Migration
                 $table->string('region', 2)->nullable();
                 $table->string('city', 50)->nullable()->index();
                 $table->string('postal_code', 20)->nullable();
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

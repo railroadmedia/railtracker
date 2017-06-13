@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateLanguagesTable extends Migration
+class CreateResponsesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,17 +14,15 @@ class CreateLanguagesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_languages',
+            'railtracker_responses',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('preference', 12)->index();
-                $table->string('language_range', 180)->index();
+                $table->bigInteger('request_id')->unsigned()->index();
+                $table->bigInteger('status_code_id')->unsigned()->index();
+                $table->bigInteger('error_id')->unsigned()->nullable()->index();
 
-                $table->unique(['preference', 'language_range']);
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
+                $table->dateTime('responded_on')->index();
             }
         );
     }
@@ -36,6 +34,6 @@ class CreateLanguagesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_languages');
+        Schema::dropIfExists('railtracker_responses');
     }
 }

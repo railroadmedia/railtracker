@@ -18,10 +18,7 @@ class CreateUrlPathsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('path', 180)->index();
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
+                $table->string('path', 180)->unique();
             }
         );
     }

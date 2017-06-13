@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateRoutesTable extends Migration
+class CreateRequestLanguagesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,14 +14,14 @@ class CreateRoutesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_routes',
+            'railtracker_request_languages',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 180)->index();
-                $table->string('action', 180)->index();
+                $table->string('preference', 12)->index();
+                $table->string('language_range', 180)->index();
 
-                $table->unique(['name', 'action']);
+                $table->unique(['preference', 'language_range']);
             }
         );
     }
@@ -33,6 +33,6 @@ class CreateRoutesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_routes');
+        Schema::dropIfExists('railtracker_request_languages');
     }
 }

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateRoutesTable extends Migration
+class CreateResponseErrorsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,14 +14,15 @@ class CreateRoutesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_routes',
+            'railtracker_response_errors',
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 180)->index();
-                $table->string('action', 180)->index();
-
-                $table->unique(['name', 'action']);
+                $table->bigInteger('code')->unsigned()->index();
+                $table->bigInteger('line')->unsigned()->index();
+                $table->string('file', 1064);
+                $table->text('message');
+                $table->text('trace');
             }
         );
     }
@@ -33,6 +34,6 @@ class CreateRoutesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_routes');
+        Schema::dropIfExists('railtracker_response_errors');
     }
 }
