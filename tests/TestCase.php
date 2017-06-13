@@ -184,6 +184,7 @@ class TestCase extends BaseTestCase
                 'REQUEST_SCHEME' => 'http',
                 'DOCUMENT_ROOT' => '/var/www/',
                 'REMOTE_ADDR' => $clientIp,
+                'HTTP_X_FORWARDED_FOR' => $clientIp,
                 'SERVER_PORT' => '80',
                 'SERVER_ADDR' => '172.21.0.7',
                 'SERVER_NAME' => parse_url($url)['host'],

@@ -50,7 +50,7 @@ class Tracker
                 'referer_url_id' => $refererUrlId,
                 'language_id' => $languageId,
                 'geoip_id' => null,
-                'client_ip' => $request->getClientIp(),
+                'client_ip' => $this->getClientIp($request),
                 'is_robot' => $agent->isRobot(),
                 'request_duration_ms' => (microtime(true) - LARAVEL_START) * 100,
                 'request_time' => Carbon::now()->timestamp,
@@ -350,8 +350,20 @@ class Tracker
         return $kind;
     }
 
-    private function alphaNumDashOnly($string)
+    /**
+     * @param Request $request
+     * @return string
+     */
+    protected function getClientIp(Request $request)
     {
-        return preg_replace('/[^a-z0-9]+/', '-', strtolower($string));
+        if (!empty($request->server('HTTP_CLIENT_IP'))) {
+            $ip = $request->server('HTTP_CLIENT_IP');
+        } elseif (!empty($request->server('HTTP_X_FORWARDED_FOR'))) {
+            $ip = $request->server('HTTP_X_FORWARDED_FOR');
+        } else {
+            $ip = $request->server('REMOTE_ADDR');
+        }
+
+        return explode(',', $ip)[0] ?? '';
     }
 }
