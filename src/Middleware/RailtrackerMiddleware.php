@@ -7,7 +7,7 @@ use Exception;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
-use Railroad\Railtracker\Services\Tracker;
+use Railroad\Railtracker\Services\RequestTracker;
 
 class RailtrackerMiddleware
 {
@@ -17,14 +17,14 @@ class RailtrackerMiddleware
     protected $auth;
 
     /**
-     * @var Tracker
+     * @var RequestTracker
      */
-    private $tracker;
+    private $requestTracker;
 
-    public function __construct(Guard $auth, Tracker $tracker)
+    public function __construct(Guard $auth, RequestTracker $requestTracker)
     {
         $this->auth = $auth;
-        $this->tracker = $tracker;
+        $this->requestTracker = $requestTracker;
     }
 
     /**
@@ -39,7 +39,7 @@ class RailtrackerMiddleware
         $response = $next($request);
 
         try {
-            $this->tracker->trackRequest($request, app(Repository::class));
+            $this->requestTracker->trackRequest($request, app(Repository::class));
         } catch (Exception $exception) {
             error_log($exception);
         }

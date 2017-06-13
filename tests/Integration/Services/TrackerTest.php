@@ -1,6 +1,6 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Integration;
+namespace Railroad\Railtracker\Tests\Integration\Services;
 
 use Carbon\Carbon;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;

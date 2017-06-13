@@ -18,7 +18,7 @@ use Railroad\Railtracker\Models\Route;
 use Railroad\Railtracker\Models\Url;
 use Ramsey\Uuid\Uuid;
 
-class Tracker
+class RequestTracker
 {
     const CACHE_TIME = 60 * 60 * 24 * 30; // 30 days
 
@@ -50,7 +50,7 @@ class Tracker
                 'referer_url_id' => $refererUrlId,
                 'language_id' => $languageId,
                 'geoip_id' => null,
-                'client_ip' => $this->getClientIp($request),
+                'client_ip' => substr($this->getClientIp($request), 0, 34),
                 'is_robot' => $agent->isRobot(),
                 'request_duration_ms' => (microtime(true) - LARAVEL_START) * 100,
                 'request_time' => Carbon::now()->timestamp,
@@ -100,7 +100,7 @@ class Tracker
     {
         $protocol = parse_url($url)['scheme'] ?? '';
 
-        $data = ['protocol' => $protocol];
+        $data = ['protocol' => substr($protocol, 0, 5)];
 
         $callback = function () use ($data) {
             return Protocol::query()->updateOrCreate($data)->id;
@@ -186,7 +186,7 @@ class Tracker
             return null;
         }
 
-        $data = ['string' => $query];
+        $data = ['string' => substr($query, 0, 840)];
 
         $callback = function () use ($data) {
             return Query::query()->updateOrCreate($data)->id;
@@ -245,10 +245,10 @@ class Tracker
     protected function trackDevice(Agent $agent, Repository $cache = null)
     {
         $data = [
-            'platform' => $agent->platform(),
-            'platform_version' => $agent->version($agent->platform()),
-            'kind' => $this->getDeviceKind($agent),
-            'model' => $agent->device(),
+            'platform' => substr($agent->platform(), 0, 64),
+            'platform_version' => substr($agent->version($agent->platform()), 0, 16),
+            'kind' => substr($this->getDeviceKind($agent), 0, 16),
+            'model' => substr($agent->device(), 0, 64),
             'is_mobile' => $agent->isMobile(),
         ];
 
@@ -276,8 +276,8 @@ class Tracker
     {
         $data = [
             'name' => substr($agent->getUserAgent() ?: 'Other', 0, 170),
-            'browser' => $agent->browser(),
-            'browser_version' => $agent->version($agent->browser()),
+            'browser' => substr($agent->browser(), 0, 64),
+            'browser_version' => substr($agent->version($agent->browser()), 0, 32),
         ];
 
         $callback = function () use ($data) {
@@ -303,8 +303,8 @@ class Tracker
     public function trackLanguage(Agent $agent, Repository $cache = null)
     {
         $data = [
-            'preference' => $agent->languages()[0] ?? 'en',
-            'language_range' => implode(',', $agent->languages()),
+            'preference' => substr($agent->languages()[0] ?? 'en', 0, 12),
+            'language_range' => substr(implode(',', $agent->languages()), 0, 180),
         ];
 
         $callback = function () use ($data) {

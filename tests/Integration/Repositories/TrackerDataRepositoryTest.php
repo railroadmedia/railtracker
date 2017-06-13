@@ -1,6 +1,6 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Integration;
+namespace Railroad\Railtracker\Tests\Integration\Repositories;
 
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Repositories\TrackerDataRepository;
