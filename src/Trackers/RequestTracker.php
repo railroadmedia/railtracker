@@ -3,7 +3,7 @@
 namespace Railroad\Railtracker\Trackers;
 
 use Carbon\Carbon;
-use Illuminate\Http\Request as ServerRequest;
+use Illuminate\Http\Request;
 use Jenssegers\Agent\Agent;
 use Railroad\Railtracker\Services\ConfigService;
 use Ramsey\Uuid\Uuid;
@@ -13,13 +13,13 @@ class RequestTracker extends TrackerBase
     /**
      * @var int|null
      */
-    public $lastTrackedRequestId;
+    public static $lastTrackedRequestId;
 
     /**
-     * @param ServerRequest $serverRequest
+     * @param Request $serverRequest
      * @return int|mixed
      */
-    public function trackRequest(ServerRequest $serverRequest)
+    public function trackRequest(Request $serverRequest)
     {
         $agent = new Agent($serverRequest->server->all());
 
@@ -31,7 +31,7 @@ class RequestTracker extends TrackerBase
         $deviceId = $this->trackDevice($agent);
         $languageId = $this->trackLanguage($agent);
 
-        return $this->query(ConfigService::$tableRequests)->insertGetId(
+        $requestId = $this->query(ConfigService::$tableRequests)->insertGetId(
             [
                 'uuid' => Uuid::uuid4(),
                 'user_id' => $userId,
@@ -47,6 +47,10 @@ class RequestTracker extends TrackerBase
                 'requested_on' => Carbon::now()->toDateTimeString(),
             ]
         );
+
+        self::$lastTrackedRequestId = $requestId;
+
+        return $requestId;
     }
 
     /**
@@ -130,10 +134,10 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param ServerRequest $serverRequest
+     * @param Request $serverRequest
      * @return int|null
      */
-    public function trackRoute(ServerRequest $serverRequest)
+    public function trackRoute(Request $serverRequest)
     {
         if (empty($serverRequest->route()) ||
             empty($serverRequest->route()->getName()) ||
@@ -223,10 +227,10 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param ServerRequest $serverRequest
+     * @param Request $serverRequest
      * @return int|null
      */
-    protected function getAuthenticatedUserId(ServerRequest $serverRequest)
+    protected function getAuthenticatedUserId(Request $serverRequest)
     {
         return $serverRequest->user()->id ?? null;
     }
@@ -251,10 +255,10 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param ServerRequest $serverRequest
+     * @param Request $serverRequest
      * @return string
      */
-    protected function getClientIp(ServerRequest $serverRequest)
+    protected function getClientIp(Request $serverRequest)
     {
         if (!empty($serverRequest->server('HTTP_CLIENT_IP'))) {
             $ip = $serverRequest->server('HTTP_CLIENT_IP');

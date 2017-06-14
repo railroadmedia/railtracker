@@ -544,6 +544,5 @@ class RequestTrackerTest extends TestCase
                 ]
             );
         }
-
     }
 }
