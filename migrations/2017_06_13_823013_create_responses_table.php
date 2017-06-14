@@ -21,7 +21,6 @@ class CreateResponsesTable extends Migration
 
                 $table->bigInteger('request_id')->unsigned()->index();
                 $table->bigInteger('status_code_id')->unsigned()->index();
-                $table->bigInteger('error_id')->unsigned()->nullable()->index();
 
                 $table->bigInteger('response_duration_ms')->unsigned();
 

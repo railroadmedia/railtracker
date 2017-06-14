@@ -201,32 +201,6 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param array $data
-     * @param string $table
-     * @return int
-     */
-    public function store(array $data, $table)
-    {
-        $id = $this->cache->get(md5($table . '_id_' . serialize($data)));
-
-        if (empty($id)) {
-            $id = $this->query($table)->where($data)->first(['id'])->id ?? null;
-
-            if (empty($id)) {
-                $id = $this->query($table)->insertGetId($data);
-            }
-
-            $this->cache->put(
-                md5($table . '_id_' . serialize($data)),
-                $id,
-                ConfigService::$cacheTime
-            );
-        }
-
-        return $id;
-    }
-
-    /**
      * @param Request $serverRequest
      * @return int|null
      */

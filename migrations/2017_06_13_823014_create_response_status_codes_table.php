@@ -20,9 +20,6 @@ class CreateResponseStatusCodesTable extends Migration
                 $table->bigIncrements('id');
 
                 $table->integer('code')->unsigned()->index();
-
-                $table->timestamp('created_at')->nullable()->index();
-                $table->timestamp('updated_at')->nullable()->index();
             }
         );
     }

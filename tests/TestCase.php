@@ -157,6 +157,15 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * @param string $statusCode
+     * @return \Illuminate\Http\Response
+     */
+    public function createResponse($statusCode)
+    {
+        return response()->json([true], $statusCode);
+    }
+
+    /**
      * @param $userAgent
      * @param string $url
      * @param string $referer
