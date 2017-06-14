@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateMediaPlaybackTypesTable extends Migration
 {
@@ -14,7 +15,7 @@ class CreateMediaPlaybackTypesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_media_playback_types',
+            ConfigService::$tableMediaPlaybackTypes,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -31,6 +32,6 @@ class CreateMediaPlaybackTypesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_media_playback_types');
+        Schema::dropIfExists(ConfigService::$tableMediaPlaybackTypes);
     }
 }

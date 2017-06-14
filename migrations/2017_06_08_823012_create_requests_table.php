@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateRequestsTable extends Migration
 {
@@ -14,14 +15,14 @@ class CreateRequestsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_requests',
+            ConfigService::$tableRequests,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
                 $table->string('uuid', 64)->unique()->index();
 
                 $table->bigInteger('user_id')->unsigned()->nullable()->index();
-                $table->bigInteger('url_id')->unsigned()->index();
+                $table->bigInteger('url_id')->unsigned()->nullable()->index();
                 $table->bigInteger('route_id')->unsigned()->nullable()->index();
                 $table->bigInteger('device_id')->unsigned()->index();
                 $table->bigInteger('agent_id')->unsigned()->index();
@@ -32,8 +33,6 @@ class CreateRequestsTable extends Migration
                 $table->string('client_ip', 64)->index();
 
                 $table->boolean('is_robot')->index();
-
-                $table->bigInteger('request_duration_ms');
 
                 $table->dateTime('requested_on')->index();
             }
@@ -47,6 +46,6 @@ class CreateRequestsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_requests');
+        Schema::dropIfExists(ConfigService::$tableRequests);
     }
 }

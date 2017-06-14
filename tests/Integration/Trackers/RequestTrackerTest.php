@@ -1,13 +1,14 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Integration\Services;
+namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
+use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\Resources\Models\User;
 use Railroad\Railtracker\Tests\TestCase;
 
-class TrackerTest extends TestCase
+class RequestTrackerTest extends TestCase
 {
     protected function setUp()
     {
@@ -28,7 +29,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_protocols',
+            ConfigService::$tableUrlProtocols,
             [
                 'protocol' => 'http',
             ]
@@ -49,7 +50,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_protocols',
+            ConfigService::$tableUrlProtocols,
             [
                 'protocol' => 'https',
             ]
@@ -70,7 +71,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_domains',
+            ConfigService::$tableUrlDomains,
             [
                 'name' => 'test.com',
             ]
@@ -91,7 +92,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_domains',
+            ConfigService::$tableUrlDomains,
             [
                 'name' => 'www.test.com',
             ]
@@ -112,7 +113,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_paths',
+            ConfigService::$tableUrlPaths,
             [
                 'path' => '/test-path/test/test2/file.php',
             ]
@@ -133,7 +134,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_paths',
+            ConfigService::$tableUrlPaths,
             [
                 'path' => '/test-path/test/test2',
             ]
@@ -154,7 +155,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_paths',
+            ConfigService::$tableUrlPaths,
             [
                 'path' => '/test-path/test/test2',
             ]
@@ -175,7 +176,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_queries',
+            ConfigService::$tableUrlQueries,
             [
                 'string' => 'test=1&test2=as7da98dsda3-23f23',
             ]
@@ -196,7 +197,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_urls',
+            ConfigService::$tableUrls,
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -220,7 +221,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_urls',
+            ConfigService::$tableUrls,
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -244,7 +245,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_urls',
+            ConfigService::$tableUrls,
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -269,7 +270,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_urls',
+            ConfigService::$tableUrls,
             [
                 'protocol_id' => 1,
                 'domain_id' => 2,
@@ -315,7 +316,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_routes',
+            ConfigService::$tableRoutes,
             [
                 'name' => $routeName,
                 'action' => $routeAction,
@@ -339,7 +340,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseMissing(
-            'railtracker_routes',
+            ConfigService::$tableRoutes,
             [
                 'id' => 1,
             ]
@@ -359,7 +360,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_agents',
+            ConfigService::$tableRequestAgents,
             [
                 'name' => TestCase::USER_AGENT_CHROME_WINDOWS_10,
                 'browser' => 'Chrome',
@@ -381,7 +382,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_devices',
+            ConfigService::$tableRequestDevices,
             [
                 'platform' => 'Windows',
                 'platform_version' => '10.0',
@@ -405,7 +406,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_languages',
+            ConfigService::$tableRequestLanguages,
             [
                 'preference' => 'en-gb',
                 'language_range' => 'en-gb,en-us,en',
@@ -443,7 +444,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_requests',
+            ConfigService::$tableRequests,
             [
                 'user_id' => 1,
                 'url_id' => 1,
@@ -509,7 +510,7 @@ class TrackerTest extends TestCase
         );
 
         $this->assertDatabaseHas(
-            'railtracker_requests',
+            ConfigService::$tableRequests,
             [
                 'user_id' => 1,
                 'url_id' => 1,

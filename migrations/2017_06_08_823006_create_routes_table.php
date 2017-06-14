@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateRoutesTable extends Migration
 {
@@ -14,7 +15,7 @@ class CreateRoutesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_routes',
+            ConfigService::$tableRoutes,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -33,6 +34,6 @@ class CreateRoutesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_routes');
+        Schema::dropIfExists(ConfigService::$tableRoutes);
     }
 }

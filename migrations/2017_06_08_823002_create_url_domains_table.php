@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateUrlDomainsTable extends Migration
 {
@@ -14,7 +15,7 @@ class CreateUrlDomainsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_url_domains',
+            ConfigService::$tableUrlDomains,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -30,6 +31,6 @@ class CreateUrlDomainsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_url_domains');
+        Schema::dropIfExists(ConfigService::$tableUrlDomains);
     }
 }

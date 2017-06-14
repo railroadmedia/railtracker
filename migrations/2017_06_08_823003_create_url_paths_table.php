@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateUrlPathsTable extends Migration
 {
@@ -14,7 +15,7 @@ class CreateUrlPathsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_url_paths',
+            ConfigService::$tableUrlPaths,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -30,6 +31,6 @@ class CreateUrlPathsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_url_paths');
+        Schema::dropIfExists(ConfigService::$tableUrlPaths);
     }
 }

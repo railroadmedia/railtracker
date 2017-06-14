@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateUrlProtocolsTable extends Migration
 {
@@ -14,7 +15,7 @@ class CreateUrlProtocolsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_url_protocols',
+            ConfigService::$tableUrlProtocols,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -30,6 +31,6 @@ class CreateUrlProtocolsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_url_protocols');
+        Schema::dropIfExists(ConfigService::$tableUrlProtocols);
     }
 }

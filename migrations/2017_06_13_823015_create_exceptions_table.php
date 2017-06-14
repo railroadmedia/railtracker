@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Railroad\Railtracker\Services\ConfigService;
 
-class CreateRequestAgentsTable extends Migration
+class CreateExceptionsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -15,15 +15,16 @@ class CreateRequestAgentsTable extends Migration
     public function up()
     {
         Schema::create(
-            ConfigService::$tableRequestAgents,
+            ConfigService::$tableExceptions,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('name', 180)->index();
-                $table->string('browser', 64)->index();
-                $table->string('browser_version', 32);
-
-                $table->unique(['name', 'browser', 'browser_version']);
+                $table->bigInteger('code')->unsigned()->index();
+                $table->bigInteger('line')->unsigned()->index();
+                $table->string('exception_class', 1064);
+                $table->string('file', 1064);
+                $table->text('message');
+                $table->text('trace');
             }
         );
     }
@@ -35,6 +36,6 @@ class CreateRequestAgentsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists(ConfigService::$tableRequestAgents);
+        Schema::dropIfExists(ConfigService::$tableExceptions);
     }
 }

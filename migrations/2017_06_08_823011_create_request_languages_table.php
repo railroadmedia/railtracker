@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateRequestLanguagesTable extends Migration
 {
@@ -14,7 +15,7 @@ class CreateRequestLanguagesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_request_languages',
+            ConfigService::$tableRequestLanguages,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -33,6 +34,6 @@ class CreateRequestLanguagesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_request_languages');
+        Schema::dropIfExists(ConfigService::$tableRequestLanguages);
     }
 }

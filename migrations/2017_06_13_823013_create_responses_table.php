@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateResponsesTable extends Migration
 {
@@ -14,13 +15,15 @@ class CreateResponsesTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_responses',
+            ConfigService::$tableResponses,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
                 $table->bigInteger('request_id')->unsigned()->index();
                 $table->bigInteger('status_code_id')->unsigned()->index();
                 $table->bigInteger('error_id')->unsigned()->nullable()->index();
+
+                $table->bigInteger('response_duration_ms')->unsigned();
 
                 $table->dateTime('responded_on')->index();
             }
@@ -34,6 +37,6 @@ class CreateResponsesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_responses');
+        Schema::dropIfExists(ConfigService::$tableResponses);
     }
 }

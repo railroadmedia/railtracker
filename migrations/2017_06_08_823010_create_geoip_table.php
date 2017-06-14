@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
 class CreateGeoipTable extends Migration
 {
@@ -14,7 +15,7 @@ class CreateGeoipTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_geoip',
+            ConfigService::$tableGeoIP,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
@@ -37,6 +38,6 @@ class CreateGeoipTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_geoip');
+        Schema::dropIfExists(ConfigService::$tableGeoIP);
     }
 }

@@ -4,26 +4,18 @@ namespace Railroad\Railtracker\Middleware;
 
 use Closure;
 use Exception;
-use Illuminate\Cache\Repository;
-use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
-use Railroad\Railtracker\Services\RequestTracker;
+use Railroad\Railtracker\Trackers\RequestTracker;
 
 class RailtrackerMiddleware
 {
-    /**
-     * @var Guard
-     */
-    protected $auth;
-
     /**
      * @var RequestTracker
      */
     private $requestTracker;
 
-    public function __construct(Guard $auth, RequestTracker $requestTracker)
+    public function __construct(RequestTracker $requestTracker)
     {
-        $this->auth = $auth;
         $this->requestTracker = $requestTracker;
     }
 
@@ -36,10 +28,16 @@ class RailtrackerMiddleware
      */
     public function handle($request, Closure $next)
     {
+        try {
+            $this->requestTracker->trackRequest($request);
+        } catch (Exception $exception) {
+            error_log($exception);
+        }
+
         $response = $next($request);
 
         try {
-            $this->requestTracker->trackRequest($request, app(Repository::class));
+            $this->requestTracker->trackRequest($request);
         } catch (Exception $exception) {
             error_log($exception);
         }

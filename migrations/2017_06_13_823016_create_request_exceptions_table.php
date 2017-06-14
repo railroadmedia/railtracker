@@ -3,8 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Railroad\Railtracker\Services\ConfigService;
 
-class CreateResponseErrorsTable extends Migration
+class CreateRequestExceptionsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,15 +15,14 @@ class CreateResponseErrorsTable extends Migration
     public function up()
     {
         Schema::create(
-            'railtracker_response_errors',
+            ConfigService::$tableRequestExceptions,
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->bigInteger('code')->unsigned()->index();
-                $table->bigInteger('line')->unsigned()->index();
-                $table->string('file', 1064);
-                $table->text('message');
-                $table->text('trace');
+                $table->bigInteger('exception_id')->unsigned()->index();
+                $table->bigInteger('request_id')->unsigned()->index();
+
+                $table->bigInteger('created_on_ms')->unsigned()->index();
             }
         );
     }
@@ -34,6 +34,6 @@ class CreateResponseErrorsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('railtracker_response_errors');
+        Schema::dropIfExists(ConfigService::$tableRequestExceptions);
     }
 }
