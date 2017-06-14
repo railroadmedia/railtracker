@@ -18,7 +18,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_protocol_http()
     {
         $url = 'http://test.com/';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -39,7 +39,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_protocol_https()
     {
         $url = 'https://test.com/';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -60,7 +60,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_domain()
     {
         $url = 'https://test.com/';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -81,7 +81,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_domain_sub()
     {
         $url = 'https://www.test.com/';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -102,7 +102,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_path()
     {
         $url = 'https://www.test.com/test-path/test/test2/file.php';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -123,7 +123,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_path_no_file()
     {
         $url = 'https://www.test.com/test-path/test/test2';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -144,7 +144,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_path_leading_slash_removed()
     {
         $url = 'https://www.test.com/test-path/test/test2/';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -165,7 +165,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_query()
     {
         $url = 'https://www.test.com/test-path?test=1&test2=as7da98dsda3-23f23';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -186,7 +186,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_url()
     {
         $url = 'https://www.test.com/test-path/test/test2?test=1&test2=as7da98dsda3-23f23';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -210,7 +210,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_url_no_query()
     {
         $url = 'https://www.test.com/test-path/test/test2';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -234,7 +234,7 @@ class RequestTrackerTest extends TestCase
     public function test_track_url_no_path()
     {
         $url = 'https://www.test.com/';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url);
+        $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -259,7 +259,7 @@ class RequestTrackerTest extends TestCase
     {
         $url = 'https://www.test.com/';
         $refererUrl = 'https://www.referer.com/345/2?test=1';
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10, $url, $refererUrl);
+        $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -297,7 +297,7 @@ class RequestTrackerTest extends TestCase
 
         $request =
             $this->createRequest(
-                TestCase::USER_AGENT_CHROME_WINDOWS_10,
+                $this->faker->userAgent,
                 'https://www.test.com' . $path . '$' . $query
             );
 
@@ -326,10 +326,7 @@ class RequestTrackerTest extends TestCase
 
     public function test_track_route_non_existing()
     {
-        $request =
-            $this->createRequest(
-                TestCase::USER_AGENT_CHROME_WINDOWS_10
-            );
+        $request = $this->createRequest();
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -456,7 +453,7 @@ class RequestTrackerTest extends TestCase
                 'geoip_id' => null,
                 'client_ip' => $clientIp,
                 'is_robot' => 0,
-                'request_time' => Carbon::now()->timestamp,
+                'requested_on' => Carbon::now()->toDateTimeString(),
             ]
         );
     }
@@ -522,8 +519,31 @@ class RequestTrackerTest extends TestCase
                 'geoip_id' => null,
                 'client_ip' => $clientIp,
                 'is_robot' => 0,
-                'request_time' => Carbon::now()->timestamp,
+                'requested_on' => Carbon::now()->toDateTimeString(),
             ]
         );
+    }
+
+    public function test_requests_random()
+    {
+        for ($i = 0; $i < 50; $i++) {
+            $request = $this->randomRequest();
+
+            $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+            $middleware->handle(
+                $request,
+                function () {
+                }
+            );
+
+            $this->assertDatabaseHas(
+                ConfigService::$tableRequests,
+                [
+                    'id' => $i + 1,
+                ]
+            );
+        }
+
     }
 }

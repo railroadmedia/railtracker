@@ -36,12 +36,6 @@ class RailtrackerMiddleware
 
         $response = $next($request);
 
-        try {
-            $this->requestTracker->trackRequest($request);
-        } catch (Exception $exception) {
-            error_log($exception);
-        }
-
         return $response;
     }
 }
