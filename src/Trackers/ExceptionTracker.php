@@ -14,9 +14,10 @@ class ExceptionTracker extends TrackerBase
 
     /**
      * @param Exception $exception
+     * @param bool $attachRequest
      * @return int|null
      */
-    public function trackException(Exception $exception)
+    public function trackException(Exception $exception, $attachRequest = true)
     {
         $exceptionId = $this->store(
             [
@@ -29,6 +30,10 @@ class ExceptionTracker extends TrackerBase
             ],
             ConfigService::$tableExceptions
         );
+
+        if ($attachRequest && !empty(RequestTracker::$lastTrackedRequestId)) {
+            $this->trackRequestException($exceptionId, RequestTracker::$lastTrackedRequestId);
+        }
 
         self::$lastCreatedErrorId = $exceptionId;
 
