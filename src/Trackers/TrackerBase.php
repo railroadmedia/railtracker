@@ -6,6 +6,7 @@ use Illuminate\Cache\Repository;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 use Railroad\Railtracker\Services\ConfigService;
 
 class TrackerBase
@@ -14,6 +15,11 @@ class TrackerBase
      * @var DatabaseManager
      */
     protected $databaseManager;
+
+    /**
+     * @var Router
+     */
+    protected $router;
 
     /**
      * @var Repository
@@ -25,9 +31,10 @@ class TrackerBase
      *
      * @param DatabaseManager $databaseManager
      */
-    public function __construct(DatabaseManager $databaseManager, Repository $cache = null)
+    public function __construct(DatabaseManager $databaseManager, Router $router, Repository $cache = null)
     {
         $this->databaseManager = $databaseManager;
+        $this->router = $router;
         $this->cache = $cache;
     }
 

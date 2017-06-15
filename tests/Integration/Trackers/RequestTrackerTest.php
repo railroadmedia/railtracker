@@ -298,7 +298,7 @@ class RequestTrackerTest extends TestCase
         $request =
             $this->createRequest(
                 $this->faker->userAgent,
-                'https://www.test.com' . $path . '$' . $query
+                'https://www.test.com' . $path . '?' . $query
             );
 
         $request->setRouteResolver(

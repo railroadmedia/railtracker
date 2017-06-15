@@ -187,9 +187,9 @@ class TestCase extends BaseTestCase
             [],
             [],
             [
-                'SCRIPT_NAME' => parse_url($url)['path'],
-                'REQUEST_URI' => parse_url($url)['path'],
-                'QUERY_STRING' => '',
+                'SCRIPT_NAME' => parse_url($url)['path'] ?? '',
+                'REQUEST_URI' => parse_url($url)['path'] ?? '',
+                'QUERY_STRING' => parse_url($url)['query'] ?? '',
                 'REQUEST_METHOD' => 'GET',
                 'SERVER_PROTOCOL' => 'HTTP/1.1',
                 'GATEWAY_INTERFACE' => 'CGI/1.1',

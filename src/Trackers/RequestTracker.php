@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Trackers;
 
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Jenssegers\Agent\Agent;
 use Railroad\Railtracker\Services\ConfigService;
@@ -141,16 +142,22 @@ class RequestTracker extends TrackerBase
      */
     public function trackRoute(Request $serverRequest)
     {
-        if (empty($serverRequest->route()) ||
-            empty($serverRequest->route()->getName()) ||
-            empty($serverRequest->route()->getActionName())
+        try {
+            $route = $this->router->getRoutes()->match($serverRequest);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if (empty($route) ||
+            empty($route->getName()) ||
+            empty($route->getActionName())
         ) {
             return null;
         }
 
         $data = [
-            'name' => substr($serverRequest->route()->getName(), 0, 170),
-            'action' => substr($serverRequest->route()->getActionName(), 0, 170),
+            'name' => substr($route->getName(), 0, 170),
+            'action' => substr($route->getActionName(), 0, 170),
         ];
 
         return $this->store($data, ConfigService::$tableRoutes);
