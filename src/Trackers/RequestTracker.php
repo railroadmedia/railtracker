@@ -27,6 +27,7 @@ class RequestTracker extends TrackerBase
         $urlId = $this->trackUrl($serverRequest->fullUrl());
         $refererUrlId = $this->trackUrl($serverRequest->headers->get('referer'));
         $routeId = $this->trackRoute($serverRequest);
+        $methodId = $this->trackMethod($serverRequest->method());
         $agentId = $this->trackAgent($agent);
         $deviceId = $this->trackDevice($agent);
         $languageId = $this->trackLanguage($agent);
@@ -39,6 +40,7 @@ class RequestTracker extends TrackerBase
                 'route_id' => $routeId,
                 'device_id' => $deviceId,
                 'agent_id' => $agentId,
+                'method_id' => $methodId,
                 'referer_url_id' => $refererUrlId,
                 'language_id' => $languageId,
                 'geoip_id' => null,
@@ -184,6 +186,19 @@ class RequestTracker extends TrackerBase
         ];
 
         return $this->store($data, ConfigService::$tableRequestAgents);
+    }
+
+    /**
+     * @param $method
+     * @return int
+     */
+    public function trackMethod($method)
+    {
+        $data = [
+            'method' => substr($method, 0, 8),
+        ];
+
+        return $this->store($data, ConfigService::$tableRequestMethods);
     }
 
     /**

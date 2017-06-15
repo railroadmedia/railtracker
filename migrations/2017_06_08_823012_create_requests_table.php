@@ -26,6 +26,7 @@ class CreateRequestsTable extends Migration
                 $table->bigInteger('route_id')->unsigned()->nullable()->index();
                 $table->bigInteger('device_id')->unsigned()->index();
                 $table->bigInteger('agent_id')->unsigned()->index();
+                $table->bigInteger('method_id')->unsigned()->index();
                 $table->bigInteger('referer_url_id')->unsigned()->nullable()->index();
                 $table->bigInteger('language_id')->unsigned()->index();
                 $table->bigInteger('geoip_id')->unsigned()->nullable()->index();

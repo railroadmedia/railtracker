@@ -22,7 +22,7 @@ class CreateMediaPlaybackSessionsTable extends Migration
                 $table->string('media_id', 64)->index();
 
                 $table->bigInteger('user_id')->unsigned()->nullable()->index();
-                $table->string('type_id')->unsigned()->index();
+                $table->bigInteger('type_id')->unsigned()->index();
 
                 $table->integer('seconds_watched')->unsigned();
                 $table->integer('current_second')->unsigned();

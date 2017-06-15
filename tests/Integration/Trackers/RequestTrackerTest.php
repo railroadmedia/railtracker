@@ -344,6 +344,26 @@ class RequestTrackerTest extends TestCase
         );
     }
 
+    public function test_request_method()
+    {
+        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            ConfigService::$tableRequestMethods,
+            [
+                'method' => 'GET',
+            ]
+        );
+    }
+
     public function test_agent_chrome_webkit()
     {
         $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
@@ -448,6 +468,7 @@ class RequestTrackerTest extends TestCase
                 'route_id' => null,
                 'device_id' => 1,
                 'agent_id' => 1,
+                'method_id' => 1,
                 'referer_url_id' => 2,
                 'language_id' => 1,
                 'geoip_id' => null,
@@ -514,6 +535,7 @@ class RequestTrackerTest extends TestCase
                 'route_id' => 1,
                 'device_id' => 1,
                 'agent_id' => 1,
+                'method_id' => 1,
                 'referer_url_id' => 2,
                 'language_id' => 1,
                 'geoip_id' => null,

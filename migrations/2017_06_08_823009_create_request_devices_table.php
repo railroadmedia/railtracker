@@ -25,7 +25,7 @@ class CreateRequestDevicesTable extends Migration
                 $table->string('platform_version', 16)->index();
                 $table->boolean('is_mobile');
 
-                $table->unique(['kind', 'model', 'platform', 'platform_version']);
+                $table->unique(['kind', 'model', 'platform', 'platform_version'], 'k_m_p_p');
             }
         );
     }
