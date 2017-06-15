@@ -18,9 +18,9 @@ class ResponseTracker extends TrackerBase
      * @param int $requestId
      * @return int|null
      */
-    public function trackResponse(Response $response, $requestId)
+    public function trackResponse(Response $response = null, $requestId = null)
     {
-        if (empty($requestId)) {
+        if (empty($requestId) || empty($response)) {
             return null;
         }
 

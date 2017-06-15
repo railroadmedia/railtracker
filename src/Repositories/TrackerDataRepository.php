@@ -35,8 +35,8 @@ class TrackerDataRepository
                 'railtracker_requests.url_id'
             )
             ->join(
-                'railtracker_protocols',
-                'railtracker_protocols.id',
+                'railtracker_url_protocols',
+                'railtracker_url_protocols.id',
                 '=',
                 'railtracker_urls.protocol_id'
             )
