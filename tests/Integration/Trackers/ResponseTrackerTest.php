@@ -75,9 +75,8 @@ class ResponseTrackerTest extends TestCase
         $this->assertDatabaseHas(
             ConfigService::$tableResponses,
             [
-                'request_id' => '1',
-                'status_code_id' => '1',
-                'response_duration_ms' => '',
+                'request_id' => 1,
+                'status_code_id' => 1,
                 'responded_on' => Carbon::now()->toDateTimeString(),
             ]
         );

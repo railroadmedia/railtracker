@@ -22,7 +22,7 @@ class CreateRequestExceptionsTable extends Migration
                 $table->bigInteger('exception_id')->unsigned()->index();
                 $table->bigInteger('request_id')->unsigned()->index();
 
-                $table->bigInteger('created_on_ms')->unsigned()->index();
+                $table->bigInteger('created_at_timestamp_ms')->unsigned()->index();
             }
         );
     }
