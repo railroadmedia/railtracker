@@ -188,4 +188,58 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             ]
         );
     }
+
+    public function test_track_media_playback_sessions_stress()
+    {
+        for ($c = 0; $c < 15; $c++) {
+            $userId = $this->createAndLogInNewUser();
+
+            $mediaId = $this->faker->word . rand();
+            $mediaLength = rand();
+            $mediaType = $this->faker->word;
+            $mediaCategory = $this->faker->word;
+
+            $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType($mediaType, $mediaCategory);
+
+            $sessionId = $this->mediaPlaybackTracker->trackMediaPlaybackStart(
+                $mediaId,
+                $mediaLength,
+                $userId,
+                $mediaTypeId
+            );
+
+            $secondsPlayed = rand();
+            $currentSecond = rand();
+
+            for ($i = 0; $i < 5; $i++) {
+                $this->mediaPlaybackTracker->trackMediaPlaybackProgress(
+                    $sessionId,
+                    rand(),
+                    rand()
+                );
+            }
+
+            $updated = $this->mediaPlaybackTracker->trackMediaPlaybackProgress(
+                $sessionId,
+                $secondsPlayed,
+                $currentSecond
+            );
+
+            $this->assertEquals(1, $updated);
+
+            $this->assertDatabaseHas(
+                ConfigService::$tableMediaPlaybackSessions,
+                [
+                    'media_id' => $mediaId,
+                    'media_length_seconds' => $mediaLength,
+                    'user_id' => $userId,
+                    'type_id' => $mediaTypeId,
+                    'seconds_played' => $secondsPlayed,
+                    'current_second' => $currentSecond,
+                    'started_on' => Carbon::now()->toDateTimeString(),
+                    'last_updated_on' => Carbon::now()->toDateTimeString(),
+                ]
+            );
+        }
+    }
 }
