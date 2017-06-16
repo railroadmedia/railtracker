@@ -52,7 +52,7 @@ class TrackerBase
      * @param string $table
      * @return int
      */
-    public function store(array $data, $table)
+    public function storeAndCache(array $data, $table)
     {
         $id = $this->cache->get(md5($table . '_id_' . serialize($data)));
 

@@ -7,21 +7,12 @@ use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
-use Railroad\Railtracker\Tests\TestCase;
+use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class ExceptionTrackerTest extends TestCase
+class ExceptionTrackerTest extends RailtrackerTestCase
 {
-    protected $exceptionTracker;
-
-    protected function setUp()
-    {
-        parent::setUp();
-
-        $this->exceptionTracker = app(ExceptionTracker::class);
-    }
-
     public function test_track_404_exception()
     {
         $this->app->singleton(

@@ -6,15 +6,10 @@ use Carbon\Carbon;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\Resources\Models\User;
-use Railroad\Railtracker\Tests\TestCase;
+use Railroad\Railtracker\Tests\RailtrackerTestCase;
 
-class RequestTrackerTest extends TestCase
+class RequestTrackerTest extends RailtrackerTestCase
 {
-    protected function setUp()
-    {
-        parent::setUp();
-    }
-
     public function test_track_protocol_http()
     {
         $url = 'http://test.com/';
@@ -346,7 +341,7 @@ class RequestTrackerTest extends TestCase
 
     public function test_request_method()
     {
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
+        $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -366,7 +361,7 @@ class RequestTrackerTest extends TestCase
 
     public function test_agent_chrome_webkit()
     {
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
+        $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -379,7 +374,7 @@ class RequestTrackerTest extends TestCase
         $this->assertDatabaseHas(
             ConfigService::$tableRequestAgents,
             [
-                'name' => TestCase::USER_AGENT_CHROME_WINDOWS_10,
+                'name' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
                 'browser' => 'Chrome',
                 'browser_version' => '58.0.3029.110',
             ]
@@ -388,7 +383,7 @@ class RequestTrackerTest extends TestCase
 
     public function test_device_windows_10_chrome_webkit()
     {
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
+        $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -412,7 +407,7 @@ class RequestTrackerTest extends TestCase
 
     public function test_track_language()
     {
-        $request = $this->createRequest(TestCase::USER_AGENT_CHROME_WINDOWS_10);
+        $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -440,7 +435,7 @@ class RequestTrackerTest extends TestCase
         $clientIp = '183.22.98.51';
 
         $request = $this->createRequest(
-            TestCase::USER_AGENT_CHROME_WINDOWS_10,
+            RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
             $url,
             $refererUrl,
             $clientIp
@@ -501,7 +496,7 @@ class RequestTrackerTest extends TestCase
         );
 
         $request = $this->createRequest(
-            TestCase::USER_AGENT_CHROME_WINDOWS_10,
+            RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
             $url,
             $refererUrl,
             $clientIp

@@ -13,12 +13,12 @@ class RailtrackerMiddleware
     /**
      * @var RequestTracker
      */
-    private $requestTracker;
+    protected $requestTracker;
 
     /**
      * @var ResponseTracker
      */
-    private $responseTracker;
+    protected $responseTracker;
 
     public function __construct(RequestTracker $requestTracker, ResponseTracker $responseTracker)
     {

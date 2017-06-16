@@ -15,7 +15,7 @@ use Orchestra\Testbench\TestCase as BaseTestCase;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Tests\Resources\Models\User;
 
-class TestCase extends BaseTestCase
+class RailtrackerTestCase extends BaseTestCase
 {
     /**
      * @var Generator
