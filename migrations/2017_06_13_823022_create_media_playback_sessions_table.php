@@ -19,13 +19,15 @@ class CreateMediaPlaybackSessionsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
+                $table->string('uuid', 64)->unique()->nullable()->index();
+
                 $table->string('media_id', 64)->index();
                 $table->integer('media_length_seconds')->unsigned();
 
                 $table->bigInteger('user_id')->unsigned()->nullable()->index();
                 $table->bigInteger('type_id')->unsigned()->index();
 
-                $table->bigInteger('seconds_watched')->unsigned();
+                $table->bigInteger('seconds_played')->unsigned();
                 $table->bigInteger('current_second')->unsigned();
 
                 $table->dateTime('started_on')->index();
