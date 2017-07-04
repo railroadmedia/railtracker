@@ -50,6 +50,6 @@ class ResponseTracker extends TrackerBase
             'code' => $statusCode,
         ];
 
-        return $this->store($data, ConfigService::$tableResponseStatusCodes);
+        return $this->storeAndCache($data, ConfigService::$tableResponseStatusCodes);
     }
 }

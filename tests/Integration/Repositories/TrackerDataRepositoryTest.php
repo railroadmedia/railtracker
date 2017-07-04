@@ -5,9 +5,9 @@ namespace Railroad\Railtracker\Tests\Integration\Repositories;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Repositories\TrackerDataRepository;
 use Railroad\Railtracker\Tests\Resources\Models\User;
-use Railroad\Railtracker\Tests\TestCase;
+use Railroad\Railtracker\Tests\RailtrackerTestCase;
 
-class TrackerDataRepositoryTest extends TestCase
+class TrackerDataRepositoryTest extends RailtrackerTestCase
 {
     /**
      * @var TrackerDataRepository
@@ -32,7 +32,7 @@ class TrackerDataRepositoryTest extends TestCase
 
         $request =
             $this->createRequest(
-                TestCase::USER_AGENT_CHROME_WINDOWS_10,
+                RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
                 'https://www.test.com' . $path . '?' . $query
             );
 

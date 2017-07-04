@@ -73,7 +73,7 @@ class RequestTracker extends TrackerBase
             'query_id' => $this->trackQuery($url),
         ];
 
-        return $this->store($data, ConfigService::$tableUrls);
+        return $this->storeAndCache($data, ConfigService::$tableUrls);
     }
 
     /**
@@ -86,7 +86,7 @@ class RequestTracker extends TrackerBase
 
         $data = ['protocol' => substr($protocol, 0, 6)];
 
-        return $this->store($data, ConfigService::$tableUrlProtocols);
+        return $this->storeAndCache($data, ConfigService::$tableUrlProtocols);
     }
 
     /**
@@ -99,7 +99,7 @@ class RequestTracker extends TrackerBase
 
         $data = ['name' => substr($domain, 0, 180)];
 
-        return $this->store($data, ConfigService::$tableUrlDomains);
+        return $this->storeAndCache($data, ConfigService::$tableUrlDomains);
     }
 
     /**
@@ -116,7 +116,7 @@ class RequestTracker extends TrackerBase
 
         $data = ['path' => substr($path, 0, 180)];
 
-        return $this->store($data, ConfigService::$tableUrlPaths);
+        return $this->storeAndCache($data, ConfigService::$tableUrlPaths);
     }
 
     /**
@@ -133,7 +133,7 @@ class RequestTracker extends TrackerBase
 
         $data = ['string' => substr($query, 0, 840)];
 
-        return $this->store($data, ConfigService::$tableUrlQueries);
+        return $this->storeAndCache($data, ConfigService::$tableUrlQueries);
     }
 
     /**
@@ -160,7 +160,7 @@ class RequestTracker extends TrackerBase
             'action' => substr($route->getActionName(), 0, 170),
         ];
 
-        return $this->store($data, ConfigService::$tableRoutes);
+        return $this->storeAndCache($data, ConfigService::$tableRoutes);
     }
 
     /**
@@ -177,7 +177,7 @@ class RequestTracker extends TrackerBase
             'is_mobile' => $agent->isMobile(),
         ];
 
-        return $this->store($data, ConfigService::$tableRequestDevices);
+        return $this->storeAndCache($data, ConfigService::$tableRequestDevices);
     }
 
     /**
@@ -192,7 +192,7 @@ class RequestTracker extends TrackerBase
             'browser_version' => substr($agent->version($agent->browser()), 0, 32),
         ];
 
-        return $this->store($data, ConfigService::$tableRequestAgents);
+        return $this->storeAndCache($data, ConfigService::$tableRequestAgents);
     }
 
     /**
@@ -205,7 +205,7 @@ class RequestTracker extends TrackerBase
             'method' => substr($method, 0, 8),
         ];
 
-        return $this->store($data, ConfigService::$tableRequestMethods);
+        return $this->storeAndCache($data, ConfigService::$tableRequestMethods);
     }
 
     /**
@@ -219,16 +219,7 @@ class RequestTracker extends TrackerBase
             'language_range' => substr(implode(',', $agent->languages()), 0, 180),
         ];
 
-        return $this->store($data, ConfigService::$tableRequestLanguages);
-    }
-
-    /**
-     * @param Request $serverRequest
-     * @return int|null
-     */
-    protected function getAuthenticatedUserId(Request $serverRequest)
-    {
-        return $serverRequest->user()->id ?? null;
+        return $this->storeAndCache($data, ConfigService::$tableRequestLanguages);
     }
 
     /**
@@ -248,22 +239,5 @@ class RequestTracker extends TrackerBase
         }
 
         return $kind;
-    }
-
-    /**
-     * @param Request $serverRequest
-     * @return string
-     */
-    protected function getClientIp(Request $serverRequest)
-    {
-        if (!empty($serverRequest->server('HTTP_CLIENT_IP'))) {
-            $ip = $serverRequest->server('HTTP_CLIENT_IP');
-        } elseif (!empty($serverRequest->server('HTTP_X_FORWARDED_FOR'))) {
-            $ip = $serverRequest->server('HTTP_X_FORWARDED_FOR');
-        } else {
-            $ip = $serverRequest->server('REMOTE_ADDR');
-        }
-
-        return explode(',', $ip)[0] ?? '';
     }
 }
