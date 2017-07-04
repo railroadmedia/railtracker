@@ -5,15 +5,10 @@ namespace Railroad\Railtracker\Tests\Integration\Trackers;
 use Carbon\Carbon;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
-use Railroad\Railtracker\Tests\TestCase;
+use Railroad\Railtracker\Tests\RailtrackerTestCase;
 
-class ResponseTrackerTest extends TestCase
+class ResponseTrackerTest extends RailtrackerTestCase
 {
-    protected function setUp()
-    {
-        parent::setUp();
-    }
-
     public function test_track_response_status_code()
     {
         $request = $this->randomRequest();

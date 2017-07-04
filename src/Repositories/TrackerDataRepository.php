@@ -24,7 +24,7 @@ class TrackerDataRepository
         $userId,
         $limit = 25,
         $skip = 0,
-        $orderByColumn = 'railtracker_requests.created_at',
+        $orderByColumn = 'railtracker_requests.requested_on',
         $orderByDirection = 'desc'
     ) {
         $rows = $this->databaseManager->connection()->table('railtracker_requests')
@@ -41,20 +41,20 @@ class TrackerDataRepository
                 'railtracker_urls.protocol_id'
             )
             ->join(
-                'railtracker_domains',
-                'railtracker_domains.id',
+                'railtracker_url_domains',
+                'railtracker_url_domains.id',
                 '=',
                 'railtracker_urls.domain_id'
             )
             ->leftJoin(
-                'railtracker_paths',
-                'railtracker_paths.id',
+                'railtracker_url_paths',
+                'railtracker_url_paths.id',
                 '=',
                 'railtracker_urls.path_id'
             )
             ->leftJoin(
-                'railtracker_queries',
-                'railtracker_queries.id',
+                'railtracker_url_queries',
+                'railtracker_url_queries.id',
                 '=',
                 'railtracker_urls.query_id'
             )
@@ -65,20 +65,20 @@ class TrackerDataRepository
                 'railtracker_requests.route_id'
             )
             ->join(
-                'railtracker_agents',
-                'railtracker_agents.id',
+                'railtracker_request_agents',
+                'railtracker_request_agents.id',
                 '=',
                 'railtracker_requests.agent_id'
             )
             ->join(
-                'railtracker_devices',
-                'railtracker_devices.id',
+                'railtracker_request_devices',
+                'railtracker_request_devices.id',
                 '=',
                 'railtracker_requests.device_id'
             )
             ->join(
-                'railtracker_languages',
-                'railtracker_languages.id',
+                'railtracker_request_languages',
+                'railtracker_request_languages.id',
                 '=',
                 'railtracker_requests.language_id'
             )
@@ -86,22 +86,22 @@ class TrackerDataRepository
                 [
                     'railtracker_requests.id as id',
                     'railtracker_requests.uuid as uuid',
-                    'railtracker_protocols.protocol as protocol',
-                    'railtracker_domains.name as domain',
-                    'railtracker_paths.path as path',
-                    'railtracker_queries.string as query',
+                    'railtracker_url_protocols.protocol as protocol',
+                    'railtracker_url_domains.name as domain',
+                    'railtracker_url_paths.path as path',
+                    'railtracker_url_queries.string as query',
                     'railtracker_routes.name as route_name',
                     'railtracker_routes.action as route_action',
-                    'railtracker_agents.name as agent',
-                    'railtracker_agents.browser as agent_browser',
-                    'railtracker_agents.browser_version as agent_browser_version',
-                    'railtracker_devices.kind as device_type',
-                    'railtracker_devices.model as device_model',
-                    'railtracker_devices.platform as device_platform',
-                    'railtracker_devices.platform_version as device_platform_version',
-                    'railtracker_devices.is_mobile as device_is_mobile',
-                    'railtracker_languages.preference as language_preference',
-                    'railtracker_languages.language_range as language_range',
+                    'railtracker_request_agents.name as agent',
+                    'railtracker_request_agents.browser as agent_browser',
+                    'railtracker_request_agents.browser_version as agent_browser_version',
+                    'railtracker_request_devices.kind as device_type',
+                    'railtracker_request_devices.model as device_model',
+                    'railtracker_request_devices.platform as device_platform',
+                    'railtracker_request_devices.platform_version as device_platform_version',
+                    'railtracker_request_devices.is_mobile as device_is_mobile',
+                    'railtracker_request_languages.preference as language_preference',
+                    'railtracker_request_languages.language_range as language_range',
                 ]
             )
             ->where('railtracker_requests.user_id', '=', $userId)

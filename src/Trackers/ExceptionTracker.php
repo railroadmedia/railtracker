@@ -19,7 +19,7 @@ class ExceptionTracker extends TrackerBase
      */
     public function trackException(Exception $exception, $attachRequest = true)
     {
-        $exceptionId = $this->store(
+        $exceptionId = $this->storeAndCache(
             [
                 'code' => $exception->getCode(),
                 'line' => $exception->getLine(),
