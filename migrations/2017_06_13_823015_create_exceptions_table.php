@@ -19,7 +19,7 @@ class CreateExceptionsTable extends Migration
             function (Blueprint $table) {
                 $table->bigIncrements('id');
 
-                $table->string('code')->index();
+                $table->string('code', 64)->index();
                 $table->bigInteger('line')->unsigned()->index();
                 $table->string('exception_class', 1064);
                 $table->string('file', 1064);
