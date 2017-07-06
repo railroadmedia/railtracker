@@ -45,6 +45,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         $mediaLength = rand();
         $mediaType = $this->faker->word;
         $mediaCategory = $this->faker->word;
+        $currentSecond = rand();
 
         $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType($mediaType, $mediaCategory);
 
@@ -52,7 +53,8 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             $mediaId,
             $mediaLength,
             $userId,
-            $mediaTypeId
+            $mediaTypeId,
+            $currentSecond
         );
 
         $this->assertDatabaseHas(
@@ -63,7 +65,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
                 'user_id' => $userId,
                 'type_id' => $mediaTypeId,
                 'seconds_played' => 0,
-                'current_second' => 0,
+                'current_second' => $currentSecond,
                 'started_on' => Carbon::now()->toDateTimeString(),
                 'last_updated_on' => Carbon::now()->toDateTimeString(),
             ]

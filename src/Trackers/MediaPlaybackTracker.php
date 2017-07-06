@@ -15,6 +15,7 @@ class MediaPlaybackTracker extends TrackerBase
      * @param int $mediaLengthSeconds
      * @param int $userId
      * @param int $typeId
+     * @param int $currentSecond
      * @param string $startedOn
      * @return int
      */
@@ -23,6 +24,7 @@ class MediaPlaybackTracker extends TrackerBase
         $mediaLengthSeconds,
         $userId,
         $typeId,
+        $currentSecond = 0,
         $startedOn = null
     ) {
         if (empty($startedOn)) {
@@ -36,7 +38,7 @@ class MediaPlaybackTracker extends TrackerBase
             'user_id' => $userId,
             'type_id' => $typeId,
             'seconds_played' => 0,
-            'current_second' => 0,
+            'current_second' => $currentSecond,
             'started_on' => $startedOn,
             'last_updated_on' => $startedOn,
         ];

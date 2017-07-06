@@ -49,6 +49,12 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
                     ),
                 ]
             )
+            ->groupBy(
+                [
+                    'railtracker_media_playback_sessions.media_id',
+                    'railtracker_media_playback_sessions.current_second'
+                ]
+            )
             ->get();
 
         $array = $this->collectionToMultiDimensionalArray($rows);
