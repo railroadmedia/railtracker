@@ -70,7 +70,7 @@ class TrackerBase
         if (empty($id)) {
             $id = $this->connection()->transaction(
                 function () use ($data, $table, $id) {
-                    $this->query($table)->$id = $this->query($table)->where($data)->first(['id'])->id ?? null;
+                    $id = $this->query($table)->where($data)->first(['id'])->id ?? null;
 
                     if (empty($id)) {
                         $id = $this->query($table)->insertGetId($data);
