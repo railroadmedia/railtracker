@@ -51,6 +51,7 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
             )
             ->groupBy(
                 [
+                    'last_updated_on',
                     'railtracker_media_playback_sessions.media_id',
                     'railtracker_media_playback_sessions.current_second'
                 ]
