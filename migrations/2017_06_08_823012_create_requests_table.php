@@ -22,6 +22,7 @@ class CreateRequestsTable extends Migration
                 $table->string('uuid', 64)->unique()->index();
 
                 $table->bigInteger('user_id')->unsigned()->nullable()->index();
+                $table->string('cookie_id')->nullable()->index();
                 $table->bigInteger('url_id')->unsigned()->nullable()->index();
                 $table->bigInteger('route_id')->unsigned()->nullable()->index();
                 $table->bigInteger('device_id')->unsigned()->index();

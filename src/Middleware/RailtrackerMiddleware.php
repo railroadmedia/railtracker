@@ -7,6 +7,8 @@ use Exception;
 use Illuminate\Http\Request;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
+use Cookie;
+use Ramsey\Uuid\Uuid;
 
 class RailtrackerMiddleware
 {
@@ -36,6 +38,7 @@ class RailtrackerMiddleware
     public function handle($request, Closure $next)
     {
         $requestId = null;
+        $userId = $request->user();
 
         try {
             $requestId = $this->requestTracker->trackRequest($request);
@@ -51,6 +54,20 @@ class RailtrackerMiddleware
             error_log($exception);
         }
 
+        if(is_null($userId)&&(!array_key_exists('user',$_COOKIE)&&(!is_null($response)))){
+            $this->setCookie($response);
+        }
+
         return $response;
+    }
+
+    /**
+     * Send a cookie with 'user' key to the response
+     * @return mixed
+     */
+    protected function setCookie($response)
+    {
+        $key = Uuid::uuid4();
+        return $response->withCookie(cookie()->forever('user', $key));
     }
 }

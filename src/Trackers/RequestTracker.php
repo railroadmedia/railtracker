@@ -25,6 +25,7 @@ class RequestTracker extends TrackerBase
         $agent = new Agent($serverRequest->server->all());
 
         $userId = $this->getAuthenticatedUserId($serverRequest);
+        $cookieId = $serverRequest->cookie('user');
         $urlId = $this->trackUrl($serverRequest->fullUrl());
         $refererUrlId = $this->trackUrl($serverRequest->headers->get('referer'));
         $routeId = $this->trackRoute($serverRequest);
@@ -37,6 +38,7 @@ class RequestTracker extends TrackerBase
             [
                 'uuid' => Uuid::uuid4(),
                 'user_id' => $userId,
+                'cookie_id' => $cookieId,
                 'url_id' => $urlId,
                 'route_id' => $routeId,
                 'device_id' => $deviceId,
@@ -53,6 +55,11 @@ class RequestTracker extends TrackerBase
 
         self::$lastTrackedRequestId = $requestId;
 
+        if($userId)
+        {
+            $this->setUserIdOnOldRequests($userId, $cookieId);
+            $this->deleteCookieForAuthenticatedUser();
+        }
         return $requestId;
     }
 
@@ -239,5 +246,29 @@ class RequestTracker extends TrackerBase
         }
 
         return $kind;
+    }
+
+    /**
+     * Set user_id on old requests
+     * @param $userId
+     * @param $cookieId
+     */
+    protected function setUserIdOnOldRequests ($userId, $cookieId)
+    {
+        $data = [
+            'user_id' => $userId,
+        ];
+
+        return $this->query(ConfigService::$tableRequests)
+            ->where(['cookie_id' => $cookieId])
+            ->update($data);
+    }
+
+    /**
+     * Delete user cookie
+     */
+    protected function deleteCookieForAuthenticatedUser ()
+    {
+        \Cookie::queue(\Cookie::forget('user'));
     }
 }
