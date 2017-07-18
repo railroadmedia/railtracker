@@ -178,13 +178,14 @@ class RailtrackerTestCase extends BaseTestCase
         $url = 'https://www.testing.com/?test=1',
         $referer = 'http://www.referer-testing.com/?test=2',
         $clientIp = '183.22.98.51',
-        $method = 'GET'
+        $method = 'GET',
+        $cookies = array()
     ) {
         return Request::create(
             $url,
             $method,
             [],
-            [],
+            $cookies,
             [],
             [
                 'SCRIPT_NAME' => parse_url($url)['path'] ?? '',
