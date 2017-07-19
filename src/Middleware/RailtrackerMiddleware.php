@@ -9,6 +9,7 @@ use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
 use Cookie;
 use Ramsey\Uuid\Uuid;
+use Railroad\Railtracker\Services\ConfigService;
 
 class RailtrackerMiddleware
 {
@@ -40,22 +41,25 @@ class RailtrackerMiddleware
         $requestId = null;
         $userId = $request->user();
 
-        try {
-            $requestId = $this->requestTracker->trackRequest($request);
-        } catch (Exception $exception) {
-            error_log($exception);
-        }
+        if(!in_array($request->path(), ConfigService::$requestExclusionPaths)) {
+            try {
+                $requestId = $this->requestTracker->trackRequest($request);
+            } catch (Exception $exception) {
+                error_log($exception);
+            }
+            $response = $next($request);
 
-        $response = $next($request);
+            try {
+                $this->responseTracker->trackResponse($response, $requestId);
+            } catch (Exception $exception) {
+                error_log($exception);
+            }
 
-        try {
-            $this->responseTracker->trackResponse($response, $requestId);
-        } catch (Exception $exception) {
-            error_log($exception);
-        }
-
-        if(is_null($userId)&&(!array_key_exists('user',$_COOKIE)&&(!is_null($response)))){
-            $this->setCookie($response);
+            if (is_null($userId) && (!array_key_exists('user', $_COOKIE)) && (!is_null($response))) {
+                $this->setCookie($response);
+            }
+        } else {
+            $response = $next($request);
         }
 
         return $response;
@@ -65,7 +69,7 @@ class RailtrackerMiddleware
      * Send a cookie with 'user' key to the response
      * @return mixed
      */
-    protected function setCookie($response)
+   protected function setCookie($response)
     {
         $key = Uuid::uuid4();
         return $response->withCookie(cookie()->forever('user', $key));

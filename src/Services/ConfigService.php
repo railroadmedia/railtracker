@@ -104,4 +104,9 @@ class ConfigService
      */
     public static $tableMediaPlaybackSessions;
 
+    /**
+     * @var array
+     */
+    public static $requestExclusionPaths;
+
 }

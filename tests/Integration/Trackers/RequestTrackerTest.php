@@ -680,4 +680,46 @@ class RequestTrackerTest extends RailtrackerTestCase
         $firstRequest = DB::table(ConfigService::$tableRequests)->first();
         $this->assertEquals($userId,$firstRequest->user_id);
     }
+
+    public function test_track_request_with_not_excluded_paths()
+    {
+        $url = 'https://www.test.com/test1';
+        $request = $this->createRequest($this->faker->userAgent, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            ConfigService::$tableUrlPaths,
+            [
+                'path' => '/test1',
+            ]
+        );
+    }
+
+    public function test_not_track_request_from_excluded_paths()
+    {
+        $url = 'https://www.test.com/members/are-we-live-poll';
+        $request = $this->createRequest($this->faker->userAgent, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseMissing(
+            ConfigService::$tableUrlPaths,
+            [
+                'path' => '/members/are-we-live-poll',
+            ]
+        );
+    }
 }

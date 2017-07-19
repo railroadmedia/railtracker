@@ -25,5 +25,6 @@ return [
         'request_exceptions' => 'railtracker_request_exceptions',
         'media_playback_types' => 'railtracker_media_playback_types',
         'media_playback_sessions' => 'railtracker_media_playback_sessions',
-    ]
+    ],
+    'requestExclusionPaths'=> ['members/are-we-live-poll'],
 ];

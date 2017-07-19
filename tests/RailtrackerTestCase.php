@@ -73,6 +73,7 @@ class RailtrackerTestCase extends BaseTestCase
         $app['config']->set('railtracker.tables', $defaultConfig['tables']);
         $app['config']->set('railtracker.database_connection_name', 'testbench');
         $app['config']->set('railtracker.cache_duration', 60);
+        $app['config']->set('railtracker.requestExclusionPaths', $defaultConfig['requestExclusionPaths']);
 
         // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');

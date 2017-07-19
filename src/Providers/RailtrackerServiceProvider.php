@@ -64,5 +64,8 @@ class RailtrackerServiceProvider extends ServiceProvider
         ConfigService::$tableRequestExceptions = config('railtracker.tables.request_exceptions');
         ConfigService::$tableMediaPlaybackTypes = config('railtracker.tables.media_playback_types');
         ConfigService::$tableMediaPlaybackSessions = config('railtracker.tables.media_playback_sessions');
+
+        //Excluded requests
+        ConfigService::$requestExclusionPaths = config('railtracker.requestExclusionPaths');
     }
 }
