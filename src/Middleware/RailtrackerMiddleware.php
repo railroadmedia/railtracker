@@ -3,13 +3,13 @@
 namespace Railroad\Railtracker\Middleware;
 
 use Closure;
+use Cookie;
 use Exception;
 use Illuminate\Http\Request;
+use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
-use Cookie;
 use Ramsey\Uuid\Uuid;
-use Railroad\Railtracker\Services\ConfigService;
 
 class RailtrackerMiddleware
 {
@@ -41,12 +41,13 @@ class RailtrackerMiddleware
         $requestId = null;
         $userId = $request->user();
 
-        if(!in_array($request->path(), ConfigService::$requestExclusionPaths)) {
+        if (!in_array($request->path(), ConfigService::$requestExclusionPaths)) {
             try {
                 $requestId = $this->requestTracker->trackRequest($request);
             } catch (Exception $exception) {
                 error_log($exception);
             }
+
             $response = $next($request);
 
             try {
@@ -67,9 +68,10 @@ class RailtrackerMiddleware
 
     /**
      * Send a cookie with 'user' key to the response
+     *
      * @return mixed
      */
-   protected function setCookie($response)
+    protected function setCookie($response)
     {
         $key = Uuid::uuid4();
         return $response->withCookie(cookie()->forever('user', $key));

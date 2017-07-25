@@ -107,6 +107,6 @@ class ConfigService
     /**
      * @var array
      */
-    public static $requestExclusionPaths;
+    public static $requestExclusionPaths = [];
 
 }

@@ -55,8 +55,7 @@ class RequestTracker extends TrackerBase
 
         self::$lastTrackedRequestId = $requestId;
 
-        if($userId)
-        {
+        if ($userId) {
             $this->setUserIdOnOldRequests($userId, $cookieId);
             $this->deleteCookieForAuthenticatedUser();
         }
@@ -250,10 +249,12 @@ class RequestTracker extends TrackerBase
 
     /**
      * Set user_id on old requests
+     *
      * @param $userId
      * @param $cookieId
+     * @return int
      */
-    protected function setUserIdOnOldRequests ($userId, $cookieId)
+    protected function setUserIdOnOldRequests($userId, $cookieId)
     {
         $data = [
             'user_id' => $userId,
@@ -267,8 +268,8 @@ class RequestTracker extends TrackerBase
     /**
      * Delete user cookie
      */
-    protected function deleteCookieForAuthenticatedUser ()
+    protected function deleteCookieForAuthenticatedUser()
     {
-        \Cookie::queue(\Cookie::forget('user'));
+        $this->cookieJar->queue($this->cookieJar->forget('user'));
     }
 }

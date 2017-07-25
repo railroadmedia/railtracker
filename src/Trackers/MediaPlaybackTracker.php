@@ -38,7 +38,7 @@ class MediaPlaybackTracker extends TrackerBase
             'user_id' => $userId,
             'type_id' => $typeId,
             'seconds_played' => 0,
-            'current_second' => $currentSecond,
+            'current_second' => max($currentSecond, 0),
             'started_on' => $startedOn,
             'last_updated_on' => $startedOn,
         ];
@@ -67,7 +67,7 @@ class MediaPlaybackTracker extends TrackerBase
 
         $data = [
             'seconds_played' => $secondsPlayed,
-            'current_second' => $currentSecond,
+            'current_second' => max($currentSecond, 0),
             'last_updated_on' => $lastUpdatedOn,
         ];
 

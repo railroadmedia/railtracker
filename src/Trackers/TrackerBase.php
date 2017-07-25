@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Trackers;
 
 use Illuminate\Cache\Repository;
+use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
@@ -28,15 +29,28 @@ class TrackerBase
     protected $cache;
 
     /**
+     * @var CookieJar
+     */
+    protected $cookieJar;
+
+    /**
      * TrackerBase constructor.
      *
      * @param DatabaseManager $databaseManager
+     * @param Router $router
+     * @param CookieJar $cookieJar
+     * @param Repository|null $cache
      */
-    public function __construct(DatabaseManager $databaseManager, Router $router, Repository $cache = null)
-    {
+    public function __construct(
+        DatabaseManager $databaseManager,
+        Router $router,
+        CookieJar $cookieJar,
+        Repository $cache = null
+    ) {
         $this->databaseManager = $databaseManager;
         $this->router = $router;
         $this->cache = $cache;
+        $this->cookieJar = $cookieJar;
     }
 
     /**
