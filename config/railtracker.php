@@ -26,5 +26,5 @@ return [
         'media_playback_types' => 'railtracker_media_playback_types',
         'media_playback_sessions' => 'railtracker_media_playback_sessions',
     ],
-    'requestExclusionPaths'=> ['members/are-we-live-poll'],
+    'exclusion_regex_paths'=> ['/^media\-playback\-tracking\/media\-playback\-session*$/'],
 ];

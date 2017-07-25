@@ -40,8 +40,15 @@ class RailtrackerMiddleware
     {
         $requestId = null;
         $userId = $request->user();
+        $exclude = false;
 
-        if (!in_array($request->path(), ConfigService::$requestExclusionPaths)) {
+        foreach (ConfigService::$exclusionRegexPaths as $exclusionRegexPath) {
+            if (preg_match($exclusionRegexPath, $request->path())) {
+                $exclude = true;
+            }
+        }
+
+        if (!$exclude) {
             try {
                 $requestId = $this->requestTracker->trackRequest($request);
             } catch (Exception $exception) {

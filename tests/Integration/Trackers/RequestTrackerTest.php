@@ -704,7 +704,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
     public function test_not_track_request_from_excluded_paths()
     {
-        $url = 'https://www.test.com/members/are-we-live-poll';
+        $url = 'https://www.test.com/media-playback-tracking/media-playback-session';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
@@ -718,7 +718,28 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseMissing(
             ConfigService::$tableUrlPaths,
             [
-                'path' => '/members/are-we-live-poll',
+                'path' => '/media-playback-tracking/media-playback-session',
+            ]
+        );
+    }
+
+    public function test_not_track_request_from_excluded_paths_wildcard_regex()
+    {
+        $url = 'https://www.test.com/media-playback-tracking/media-playback-session/123';
+        $request = $this->createRequest($this->faker->userAgent, $url);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseMissing(
+            ConfigService::$tableUrlPaths,
+            [
+                'path' => '/media-playback-tracking/media-playback-session',
             ]
         );
     }
