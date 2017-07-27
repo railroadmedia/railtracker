@@ -55,10 +55,11 @@ class RequestTracker extends TrackerBase
 
         self::$lastTrackedRequestId = $requestId;
 
-        if ($userId) {
+        if (!empty($userId) && !empty($cookieId)) {
             $this->setUserIdOnOldRequests($userId, $cookieId);
             $this->deleteCookieForAuthenticatedUser();
         }
+
         return $requestId;
     }
 
