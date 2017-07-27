@@ -3,11 +3,11 @@
 namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
-use Railroad\Railtracker\Tests\Resources\Models\User;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
-use Illuminate\Support\Facades\DB;
+use Railroad\Railtracker\Tests\Resources\Models\User;
 
 class RequestTrackerTest extends RailtrackerTestCase
 {
@@ -571,20 +571,21 @@ class RequestTrackerTest extends RailtrackerTestCase
         $clientIp = '183.22.98.51';
         $_COOKIE['user'] = 'kmn234';
 
-        $request = $this->createRequest($this->faker->userAgent,$url,$refererUrl,$clientIp,'GET',$_COOKIE );
+        $request =
+            $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
         $middleware->handle(
             $request,
-            function ()  {
+            function () {
 
             }
         );
         $this->assertDatabaseHas(
             ConfigService::$tableRequests,
             [
-                'user_id'   => null,
+                'user_id' => null,
                 'cookie_id' => 'kmn234',
             ]
         );
@@ -598,7 +599,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $clientIp = '183.22.98.51';
         $_COOKIE['user'] = 'kmn234';
 
-        $request = $this->createRequest($this->faker->userAgent,$url,$refererUrl,$clientIp,'GET',$_COOKIE );
+        $request =
+            $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
         $request->setUserResolver(
             function () use ($userId) {
@@ -610,20 +612,18 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         $middleware->handle(
             $request,
-            function ()  {
+            function () {
 
             }
         );
         $this->assertDatabaseHas(
             ConfigService::$tableRequests,
             [
-                'user_id'   => $userId,
+                'user_id' => $userId,
                 'cookie_id' => 'kmn234',
             ]
         );
     }
-
-
 
     public function test_user_id_set_on_old_requests_after_authentication()
     {
@@ -632,7 +632,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $clientIp = '183.22.98.51';
         $_COOKIE['user'] = 'kmn234';
 
-        $request = $this->createRequest($this->faker->userAgent,$url,$refererUrl,$clientIp,'GET',$_COOKIE );
+        $request =
+            $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
@@ -645,7 +646,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             ConfigService::$tableRequests,
             [
-                'user_id'   =>null,
+                'user_id' => null,
                 'cookie_id' => 'kmn234',
             ]
         );
@@ -653,7 +654,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $userId = $this->createAndLogInNewUser();
         $_COOKIE['user'] = 'kmn234';
 
-        $request = $this->createRequest($this->faker->userAgent,$url,$refererUrl,$clientIp,'GET',$_COOKIE );
+        $request =
+            $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
         $request->setUserResolver(
             function () use ($userId) {
@@ -665,20 +667,82 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         $middleware->handle(
             $request,
-            function ()  {
+            function () {
 
             }
         );
         $this->assertDatabaseHas(
             ConfigService::$tableRequests,
             [
-                'user_id'   => $userId,
+                'user_id' => $userId,
                 'cookie_id' => 'kmn234',
             ]
         );
 
         $firstRequest = DB::table(ConfigService::$tableRequests)->first();
-        $this->assertEquals($userId,$firstRequest->user_id);
+        $this->assertEquals($userId, $firstRequest->user_id);
+    }
+
+    public function test_user_id_set_on_old_requests_after_authentication_not_all_nullable()
+    {
+        // Make request with no cookie id
+        $url = 'https://www.testing.com/?test=1';
+        $refererUrl = 'http://www.referer-testing.com/?test=2';
+        $clientIp = '183.22.98.51';
+
+        $request =
+            $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertDatabaseHas(
+            ConfigService::$tableRequests,
+            [
+                'user_id' => null,
+                'cookie_id' => null,
+            ]
+        );
+
+        // Login the user and see make sure unrelated request isn't updated
+        $userId = $this->createAndLogInNewUser();
+
+        $request =
+            $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
+
+        $request->setUserResolver(
+            function () use ($userId) {
+                return User::query()->find($userId);
+            }
+        );
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+
+            }
+        );
+        $this->assertDatabaseHas(
+            ConfigService::$tableRequests,
+            [
+                'user_id' => $userId,
+                'cookie_id' => null,
+            ]
+        );
+        $this->assertDatabaseHas(
+            ConfigService::$tableRequests,
+            [
+                'user_id' => null,
+                'cookie_id' => null,
+            ]
+        );
     }
 
     public function test_track_request_with_not_excluded_paths()
