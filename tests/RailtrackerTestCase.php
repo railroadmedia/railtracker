@@ -167,11 +167,12 @@ class RailtrackerTestCase extends BaseTestCase
     }
 
     /**
-     * @param $userAgent
+     * @param string $userAgent
      * @param string $url
      * @param string $referer
      * @param string $clientIp
      * @param string $method
+     * @param array $cookies
      * @return Request
      */
     public function createRequest(

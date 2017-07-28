@@ -3,7 +3,6 @@
 namespace Railroad\Railtracker\Middleware;
 
 use Closure;
-use Cookie;
 use Exception;
 use Illuminate\Http\Request;
 use Railroad\Railtracker\Services\ConfigService;
@@ -23,6 +22,12 @@ class RailtrackerMiddleware
      */
     protected $responseTracker;
 
+    /**
+     * RailtrackerMiddleware constructor.
+     *
+     * @param RequestTracker $requestTracker
+     * @param ResponseTracker $responseTracker
+     */
     public function __construct(RequestTracker $requestTracker, ResponseTracker $responseTracker)
     {
         $this->requestTracker = $requestTracker;
@@ -41,6 +46,7 @@ class RailtrackerMiddleware
         $requestId = null;
         $userId = $request->user();
         $exclude = false;
+        $cookie = null;
 
         foreach (ConfigService::$exclusionRegexPaths as $exclusionRegexPath) {
             if (preg_match($exclusionRegexPath, $request->path())) {
@@ -49,6 +55,16 @@ class RailtrackerMiddleware
         }
 
         if (!$exclude) {
+
+            // if no cookie is set and the user is logged out, create and attach one to the current request
+            if (is_null($userId) && !$request->cookies->has(RequestTracker::$cookieKey)) {
+                $cookieId = Uuid::uuid4()->toString();
+                $cookie = cookie()->forever(RequestTracker::$cookieKey, $cookieId);
+
+                $request->cookies->set(RequestTracker::$cookieKey, $cookieId);
+            }
+
+            // track the request
             try {
                 $requestId = $this->requestTracker->trackRequest($request);
             } catch (Exception $exception) {
@@ -57,30 +73,22 @@ class RailtrackerMiddleware
 
             $response = $next($request);
 
+            // track the response after the application has handled it
             try {
                 $this->responseTracker->trackResponse($response, $requestId);
             } catch (Exception $exception) {
                 error_log($exception);
             }
 
-            if (is_null($userId) && (!array_key_exists('user', $_COOKIE)) && (!is_null($response))) {
-                $this->setCookie($response);
+            // set tracking cookie on response
+            if (!empty($cookie) && !empty($response)) {
+                $response->withCookie($cookie);
             }
+
         } else {
             $response = $next($request);
         }
 
         return $response;
-    }
-
-    /**
-     * Send a cookie with 'user' key to the response
-     *
-     * @return mixed
-     */
-    protected function setCookie($response)
-    {
-        $key = Uuid::uuid4();
-        return $response->withCookie(cookie()->forever('user', $key));
     }
 }

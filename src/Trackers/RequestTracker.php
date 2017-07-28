@@ -17,6 +17,16 @@ class RequestTracker extends TrackerBase
     public static $lastTrackedRequestId;
 
     /**
+     * @var string
+     */
+    public static $cookieKey = 'railtracker_visitor';
+
+    /**
+     * @var int
+     */
+    public static $maxAnonymousRowsUpdated = 450;
+
+    /**
      * @param Request $serverRequest
      * @return int|mixed
      */
@@ -25,7 +35,7 @@ class RequestTracker extends TrackerBase
         $agent = new Agent($serverRequest->server->all());
 
         $userId = $this->getAuthenticatedUserId($serverRequest);
-        $cookieId = $serverRequest->cookie('user');
+        $cookieId = $serverRequest->cookie(self::$cookieKey);
         $urlId = $this->trackUrl($serverRequest->fullUrl());
         $refererUrlId = $this->trackUrl($serverRequest->headers->get('referer'));
         $routeId = $this->trackRoute($serverRequest);
@@ -261,8 +271,12 @@ class RequestTracker extends TrackerBase
             'user_id' => $userId,
         ];
 
+        // mysql only, this may not work with other database types
         return $this->query(ConfigService::$tableRequests)
             ->where(['cookie_id' => $cookieId])
+            ->whereRaw(
+                'id IS NOT NULL ORDER BY requested_on DESC LIMIT ' . self::$maxAnonymousRowsUpdated
+            )
             ->update($data);
     }
 
@@ -271,6 +285,6 @@ class RequestTracker extends TrackerBase
      */
     protected function deleteCookieForAuthenticatedUser()
     {
-        $this->cookieJar->queue($this->cookieJar->forget('user'));
+        $this->cookieJar->queue($this->cookieJar->forget(self::$cookieKey));
     }
 }
