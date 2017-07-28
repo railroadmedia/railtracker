@@ -77,7 +77,7 @@ class TrackerBase
      */
     public function storeAndCache(array $data, $table)
     {
-        $cacheKey = md5($table . '_id_' . serialize($data));
+        $cacheKey = 'railtracker_' . md5($table . '_id_' . serialize($data));
 
         $id = $this->cache->get($cacheKey);
 
