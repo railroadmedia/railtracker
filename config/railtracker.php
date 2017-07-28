@@ -6,7 +6,7 @@ return [
     'cache_duration' => 60 * 60 * 24 * 30,
     'database_connection_name' => 'mysql',
 
-    'exclusion_regex_paths'=> ['/^media\-playback\-tracking\/media\-playback\-session*$/'],
+    'exclusion_regex_paths'=> ['/media\-playback\-tracking\/media\-playback\-session*/'],
 
     'tables' => [
         'url_protocols' => 'railtracker_url_protocols',
