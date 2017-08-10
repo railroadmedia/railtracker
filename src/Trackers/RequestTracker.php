@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Jenssegers\Agent\Agent;
+use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Services\ConfigService;
 use Ramsey\Uuid\Uuid;
 
@@ -43,6 +44,8 @@ class RequestTracker extends TrackerBase
         $agentId = $this->trackAgent($agent);
         $deviceId = $this->trackDevice($agent);
         $languageId = $this->trackLanguage($agent);
+        $requestedOn = Carbon::now()->toDateTimeString();
+        $previousRequestedOn = $this->getUsersLastRequestedOn($userId);
 
         $requestId = $this->query(ConfigService::$tableRequests)->insertGetId(
             [
@@ -59,7 +62,7 @@ class RequestTracker extends TrackerBase
                 'geoip_id' => null,
                 'client_ip' => substr($this->getClientIp($serverRequest), 0, 64),
                 'is_robot' => $agent->isRobot(),
-                'requested_on' => Carbon::now()->toDateTimeString(),
+                'requested_on' => $requestedOn,
             ]
         );
 
@@ -69,6 +72,8 @@ class RequestTracker extends TrackerBase
             $this->setUserIdOnOldRequests($userId, $cookieId);
             $this->deleteCookieForAuthenticatedUser();
         }
+
+        event(new RequestTracked($requestId, $userId, $requestedOn, $previousRequestedOn));
 
         return $requestId;
     }
@@ -286,5 +291,19 @@ class RequestTracker extends TrackerBase
     protected function deleteCookieForAuthenticatedUser()
     {
         $this->cookieJar->queue($this->cookieJar->forget(self::$cookieKey));
+    }
+
+    /**
+     * @param $userId
+     * @return string|null
+     */
+    protected function getUsersLastRequestedOn($userId)
+    {
+        return $this->query(ConfigService::$tableRequests)
+                ->select(['requested_on'])
+                ->where('user_id', $userId)
+                ->orderBy('requested_on', 'desc')
+                ->first('requested_on')
+                ->requested_on ?? null;
     }
 }

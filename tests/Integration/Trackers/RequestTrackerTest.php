@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
@@ -745,5 +746,49 @@ class RequestTrackerTest extends RailtrackerTestCase
                 'path' => '/media-playback-tracking/media-playback-session',
             ]
         );
+    }
+
+    public function test_request_last_requested_on_for_user()
+    {
+        $request = $this->randomRequest();
+
+        $userId = $this->createAndLogInNewUser();
+
+        $request->setUserResolver(
+            function () use ($userId) {
+                return User::query()->find($userId);
+            }
+        );
+
+        $middleware = $this->app->make(RailtrackerMiddleware::class);
+
+        $this->expectsEvents(RequestTracked::class);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertEquals($this->firedEvents[0]->requestId, 1);
+        $this->assertEquals($this->firedEvents[0]->userId, $userId);
+        $this->assertEquals($this->firedEvents[0]->requestedOnDateTime, Carbon::now());
+        $this->assertEquals($this->firedEvents[0]->usersPreviousRequestedOnDateTime, null);
+
+        $now = Carbon::now();
+        $hourLater = Carbon::now()->addHour();
+
+        Carbon::setTestNow($hourLater);
+
+        $middleware->handle(
+            $request,
+            function () {
+            }
+        );
+
+        $this->assertEquals($this->firedEvents[1]->requestId, 2);
+        $this->assertEquals($this->firedEvents[1]->userId, $userId);
+        $this->assertEquals($this->firedEvents[1]->requestedOnDateTime, $hourLater);
+        $this->assertEquals($this->firedEvents[1]->usersPreviousRequestedOnDateTime, $now);
     }
 }
