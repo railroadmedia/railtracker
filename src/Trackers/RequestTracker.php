@@ -299,6 +299,10 @@ class RequestTracker extends TrackerBase
      */
     protected function getUsersLastRequestedOn($userId)
     {
+        if (empty($userId)) {
+            return null;
+        }
+
         return $this->query(ConfigService::$tableRequests)
                 ->select(['requested_on'])
                 ->where('user_id', $userId)
