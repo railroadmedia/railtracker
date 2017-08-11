@@ -46,6 +46,7 @@ class RequestTracker extends TrackerBase
         $languageId = $this->trackLanguage($agent);
         $requestedOn = Carbon::now()->toDateTimeString();
         $previousRequestedOn = $this->getUsersLastRequestedOn($userId);
+        $clientIp = substr($this->getClientIp($serverRequest), 0, 64);
 
         $requestId = $this->query(ConfigService::$tableRequests)->insertGetId(
             [
@@ -60,7 +61,7 @@ class RequestTracker extends TrackerBase
                 'referer_url_id' => $refererUrlId,
                 'language_id' => $languageId,
                 'geoip_id' => null,
-                'client_ip' => substr($this->getClientIp($serverRequest), 0, 64),
+                'client_ip' => $clientIp,
                 'is_robot' => $agent->isRobot(),
                 'requested_on' => $requestedOn,
             ]
@@ -73,7 +74,16 @@ class RequestTracker extends TrackerBase
             $this->deleteCookieForAuthenticatedUser();
         }
 
-        event(new RequestTracked($requestId, $userId, $requestedOn, $previousRequestedOn));
+        event(
+            new RequestTracked(
+                $requestId,
+                $userId,
+                $clientIp,
+                $agent->getUserAgent() ?? '',
+                $requestedOn,
+                $previousRequestedOn
+            )
+        );
 
         return $requestId;
     }
