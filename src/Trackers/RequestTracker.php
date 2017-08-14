@@ -175,7 +175,11 @@ class RequestTracker extends TrackerBase
     public function trackRoute(Request $serverRequest)
     {
         try {
-            $route = $this->router->getRoutes()->match($serverRequest);
+            if (!empty($this->router->current())) {
+                $route = $this->router->current();
+            } else {
+                $route = $this->router->getRoutes()->match($serverRequest);
+            }
         } catch (Exception $e) {
             return null;
         }
