@@ -2,6 +2,7 @@
 
 namespace Railroad\Railtracker\Providers;
 
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Railroad\Railtracker\Services\ConfigService;
 
@@ -12,9 +13,9 @@ class RailtrackerServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(Dispatcher $events)
     {
-        parent::boot();
+        parent::boot($events);
 
         $this->setupConfig();
 

@@ -19,7 +19,7 @@
   "prefer-stable": true,
   "require": {
     "php": "~7",
-    "laravel/framework": "5.*",
+    "laravel/framework": "^5.2",
     "guzzlehttp/guzzle": "~6.0",
     "doctrine/dbal": "^2.5",
     "ua-parser/uap-php": "^3.4",
