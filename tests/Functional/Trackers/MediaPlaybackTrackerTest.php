@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Tests\Functional\Trackers;
 
 use Carbon\Carbon;
+use Railroad\Railtracker\Events\MediaPlaybackTracked;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Trackers\MediaPlaybackTracker;
@@ -49,6 +50,8 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
 
         $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType($mediaType, $mediaCategory);
 
+        $this->expectsEvents([MediaPlaybackTracked::class]);
+
         $this->mediaPlaybackTracker->trackMediaPlaybackStart(
             $mediaId,
             $mediaLength,
@@ -80,6 +83,8 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         $mediaCategory = $this->faker->word;
 
         $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType($mediaType, $mediaCategory);
+
+        $this->expectsEvents([MediaPlaybackTracked::class]);
 
         $this->mediaPlaybackTracker->trackMediaPlaybackStart(
             $mediaId,
@@ -123,6 +128,8 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
 
         $secondsPlayed = rand();
         $currentSecond = rand();
+
+        $this->expectsEvents([MediaPlaybackTracked::class]);
 
         $updated = $this->mediaPlaybackTracker->trackMediaPlaybackProgress(
             $sessionId,

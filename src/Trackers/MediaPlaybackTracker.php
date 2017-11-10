@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Trackers;
 
 use Carbon\Carbon;
+use Railroad\Railtracker\Events\MediaPlaybackTracked;
 use Railroad\Railtracker\Services\ConfigService;
 use Ramsey\Uuid\Uuid;
 
@@ -43,7 +44,23 @@ class MediaPlaybackTracker extends TrackerBase
             'last_updated_on' => $startedOn,
         ];
 
-        return $this->query(ConfigService::$tableMediaPlaybackSessions)->insertGetId($data);
+        $id = $this->query(ConfigService::$tableMediaPlaybackSessions)->insertGetId($data);
+
+        event(
+            new MediaPlaybackTracked(
+                $id,
+                $data['media_id'],
+                $data['media_length_seconds'],
+                $data['user_id'],
+                $data['type_id'],
+                $data['seconds_played'],
+                $data['current_second'],
+                $data['started_on'],
+                $data['last_updated_on']
+            )
+        );
+
+        return $id;
     }
 
     /**
@@ -71,10 +88,35 @@ class MediaPlaybackTracker extends TrackerBase
             'last_updated_on' => $lastUpdatedOn,
         ];
 
-        return $this->query(ConfigService::$tableMediaPlaybackSessions)
+        $session = (array)$this->query(ConfigService::$tableMediaPlaybackSessions)
             ->where(['id' => $sessionId])
             ->take(1)
-            ->update($data);
+            ->first();
+
+        if (!empty($session)) {
+            $return = $this->query(ConfigService::$tableMediaPlaybackSessions)
+                ->where(['id' => $sessionId])
+                ->take(1)
+                ->update($data);
+
+            event(
+                new MediaPlaybackTracked(
+                    $session['id'],
+                    $session['media_id'],
+                    $session['media_length_seconds'],
+                    $session['user_id'],
+                    $session['type_id'],
+                    $data['seconds_played'],
+                    $data['current_second'],
+                    $session['started_on'],
+                    $data['last_updated_on']
+                )
+            );
+        } else {
+            $return = 0;
+        }
+
+        return $return;
     }
 
     /**
