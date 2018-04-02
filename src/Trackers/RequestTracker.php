@@ -23,11 +23,6 @@ class RequestTracker extends TrackerBase
     public static $cookieKey = 'railtracker_visitor';
 
     /**
-     * @var int
-     */
-    public static $maxAnonymousRowsUpdated = 450;
-
-    /**
      * @param Request $serverRequest
      * @return int|mixed
      */
@@ -290,12 +285,8 @@ class RequestTracker extends TrackerBase
             'user_id' => $userId,
         ];
 
-        // mysql only, this may not work with other database types
         return $this->query(ConfigService::$tableRequests)
             ->where(['cookie_id' => $cookieId])
-            ->whereRaw(
-                'id IS NOT NULL ORDER BY requested_on DESC LIMIT ' . self::$maxAnonymousRowsUpdated
-            )
             ->update($data);
     }
 

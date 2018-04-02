@@ -18,7 +18,7 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
 
         $cookies = [RequestTracker::$cookieKey => Uuid::uuid4()->toString()];
 
-        for ($i = 0; $i < (RequestTracker::$maxAnonymousRowsUpdated + 50); $i++) {
+        for ($i = 0; $i < 550; $i++) {
             $request = $this->createRequest(
                 $this->faker->userAgent,
                 $url,
@@ -77,19 +77,25 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
 
         $middleware = $this->app->make(RailtrackerMiddleware::class);
 
+        $tStart = microtime(true);
+        
         $middleware->handle(
             $request,
             function () {
             }
         );
 
+        $tEnd = microtime(true) - $tStart;
+
         $this->assertEquals(
-            RequestTracker::$maxAnonymousRowsUpdated + 1,
+            550 + 1,
             $this->databaseManager->connection()
                 ->table(ConfigService::$tableRequests)
                 ->where('user_id', $userId)
                 ->count()
         );
+
+        $this->assertLessThan(0.1, $tEnd);
     }
 
 }
