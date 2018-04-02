@@ -11,6 +11,6 @@ vendor
 !.idea/modules.xml
 !.idea/php.xml
 !.idea/php-test-framework.xml
-!.idea/recordeo.iml
+!.idea/railtracker.iml
 !.idea/vcs.xml
 !.idea/webServers.xml
