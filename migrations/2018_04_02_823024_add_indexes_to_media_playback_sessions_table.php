@@ -21,17 +21,17 @@ class AddIndexesToMediaPlaybackSessionsTable extends Migration
                 DB::statement(
                     'CREATE INDEX media_length_seconds_index ON ' .
                     ConfigService::$tableMediaPlaybackSessions .
-                    ' ("media_length_seconds(191)");'
+                    ' (media_length_seconds);'
                 );
                 DB::statement(
                     'CREATE INDEX seconds_played_index ON ' .
                     ConfigService::$tableMediaPlaybackSessions .
-                    ' ("seconds_played(191)");'
+                    ' (seconds_played);'
                 );
                 DB::statement(
                     'CREATE INDEX current_second_index ON ' .
                     ConfigService::$tableMediaPlaybackSessions .
-                    ' ("current_second(191)");'
+                    ' (current_second);'
                 );
             }
         );
@@ -44,10 +44,17 @@ class AddIndexesToMediaPlaybackSessionsTable extends Migration
      */
     public function down()
     {
-        Schema::table(ConfigService::$tableMediaPlaybackSessions, function ($table) {
-            $table->dropIndex([DB::raw('media_length_seconds(191)')]);
-            $table->dropIndex([DB::raw('seconds_played(191)')]);
-            $table->dropIndex([DB::raw('current_second(191)')]);
-        });
+        DB::statement(
+            'ALTER TABLE ' . ConfigService::$tableMediaPlaybackSessions .
+            ' DROP INDEX media_length_seconds_index'
+        );
+        DB::statement(
+            'ALTER TABLE ' . ConfigService::$tableMediaPlaybackSessions .
+            ' DROP INDEX seconds_played_index'
+        );
+        DB::statement(
+            'ALTER TABLE ' . ConfigService::$tableMediaPlaybackSessions .
+            ' DROP INDEX current_second_index'
+        );
     }
 }

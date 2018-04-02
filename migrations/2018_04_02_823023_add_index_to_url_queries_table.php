@@ -15,16 +15,32 @@ class AddIndexToUrlQueriesTable extends Migration
      */
     public function up()
     {
-        Schema::table(
-            ConfigService::$tableUrlQueries,
-            function (Blueprint $table) {
-                DB::statement(
-                    'CREATE INDEX url_query_string_index ON ' .
-                    ConfigService::$tableUrlQueries .
-                    ' ("string(191)");'
-                );
-            }
-        );
+        $connection = config('database.default');
+        $driver = config("database.connections.{$connection}.driver");
+
+        if ($driver == 'sqlite') {
+            Schema::table(
+                ConfigService::$tableUrlQueries,
+                function (Blueprint $table) {
+                    DB::statement(
+                        'CREATE INDEX url_query_string_index ON ' .
+                        ConfigService::$tableUrlQueries .
+                        ' (string);'
+                    );
+                }
+            );
+        } else {
+            Schema::table(
+                ConfigService::$tableUrlQueries,
+                function (Blueprint $table) {
+                    DB::statement(
+                        'CREATE INDEX url_query_string_index ON ' .
+                        ConfigService::$tableUrlQueries .
+                        ' (string(191));'
+                    );
+                }
+            );
+        }
     }
 
     /**
@@ -34,8 +50,9 @@ class AddIndexToUrlQueriesTable extends Migration
      */
     public function down()
     {
-        Schema::table(ConfigService::$tableUrlQueries, function ($table) {
-            $table->dropIndex([DB::raw('string(191)')]);
-        });
+        DB::statement(
+            'ALTER TABLE ' . ConfigService::$tableUrlQueries .
+            ' DROP INDEX url_query_string_index'
+        );
     }
 }
