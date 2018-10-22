@@ -130,7 +130,7 @@ class MediaPlaybackRepositoryTest extends RailtrackerTestCase
         $response = $this->mediaPlaybackRepository->sumTotalPlayed(
             $userId,
             $mediaId,
-            $mediaType
+            $mediaTypeId
         );
 
         $this->assertEquals($sumTimeWatched, $response);

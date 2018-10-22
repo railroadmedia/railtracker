@@ -66,10 +66,10 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
     /**
      * @param $userId
      * @param $mediaId
-     * @param $mediaType
+     * @param $mediaTypeId
      * @return mixed
      */
-    public function sumTotalPlayed($userId, $mediaId, $mediaType)
+    public function sumTotalPlayed($userId, $mediaId, $mediaTypeId)
     {
         return $this->databaseManager->connection()->table('railtracker_media_playback_sessions')
             ->leftJoin(
@@ -84,7 +84,7 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
             )
             ->where('user_id', $userId)
             ->where('railtracker_media_playback_sessions.media_id', $mediaId)
-            ->where('railtracker_media_playback_types.type', $mediaType)
+            ->where('railtracker_media_playback_types.id', $mediaTypeId)
             ->sum('seconds_played');
     }
 }
