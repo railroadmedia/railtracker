@@ -19,25 +19,30 @@ class ExceptionTracker extends TrackerBase
      */
     public function trackException(Exception $exception, $attachRequest = true)
     {
-        $exceptionId = $this->storeAndCache(
-            [
-                'code' => $exception->getCode(),
-                'line' => $exception->getLine(),
-                'exception_class' => get_class($exception),
-                'file' => $exception->getFile(),
-                'message' => $exception->getMessage(),
-                'trace' => $exception->getTraceAsString(),
-            ],
-            ConfigService::$tableExceptions
-        );
+        try {
+            $exceptionId = $this->storeAndCache(
+                [
+                    'code' => $exception->getCode(),
+                    'line' => $exception->getLine(),
+                    'exception_class' => get_class($exception),
+                    'file' => $exception->getFile(),
+                    'message' => $exception->getMessage(),
+                    'trace' => $exception->getTraceAsString(),
+                ],
+                ConfigService::$tableExceptions
+            );
 
-        if ($attachRequest && !empty(RequestTracker::$lastTrackedRequestId)) {
-            $this->trackRequestException($exceptionId, RequestTracker::$lastTrackedRequestId);
+            if ($attachRequest && !empty(RequestTracker::$lastTrackedRequestId)) {
+                $this->trackRequestException($exceptionId, RequestTracker::$lastTrackedRequestId);
+            }
+
+            self::$lastCreatedErrorId = $exceptionId;
+
+        } catch (Exception $exception) {
+            error_log($exception);
         }
 
-        self::$lastCreatedErrorId = $exceptionId;
-
-        return $exceptionId;
+        return null;
     }
 
     /**
@@ -47,12 +52,19 @@ class ExceptionTracker extends TrackerBase
      */
     public function trackRequestException($exceptionId, $requestId)
     {
-        $data = [
-            'exception_id' => $exceptionId,
-            'request_id' => $requestId,
-            'created_at_timestamp_ms' => round(microtime(true) * 1000),
-        ];
+        try {
+            $data = [
+                'exception_id' => $exceptionId,
+                'request_id' => $requestId,
+                'created_at_timestamp_ms' => round(microtime(true) * 1000),
+            ];
 
-        return $this->query(ConfigService::$tableRequestExceptions)->insertGetId($data);
+            return $this->query(ConfigService::$tableRequestExceptions)
+                ->insertGetId($data);
+        } catch (Exception $exception) {
+            error_log($exception);
+        }
+
+        return null;
     }
 }
