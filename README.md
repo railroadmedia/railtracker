@@ -26,6 +26,8 @@ It stores the following for all responses:
 - response duration (how long it took the server to respond)
 - date
 
+## Exceptions
+
 Railtracker also stores any error/exception information that happens while the server processes the request:
 
 - request id
@@ -37,6 +39,8 @@ Railtracker also stores any error/exception information that happens while the s
 - exception trace
 
 
+## Media Playback
+
 The last part of railtracker is media playback tracking. It tracks how many seconds of any given content that a user watches/consumes. The data it stores looks like this:
 
 - media id (usually a vimeo video id or youtube video id)
@@ -44,3 +48,7 @@ The last part of railtracker is media playback tracking. It tracks how many seco
 - seconds played
 - current second (where the user currently is in the video)
 - date
+
+## Final Note
+
+Railtracker is purely a tool for storing the above information, it does not process or analyze the information in any way.
