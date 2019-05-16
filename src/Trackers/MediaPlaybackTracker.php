@@ -3,22 +3,33 @@
 namespace Railroad\Railtracker\Trackers;
 
 use Carbon\Carbon;
+use Exception;
 use Railroad\Railtracker\Events\MediaPlaybackTracked;
 use Railroad\Railtracker\Services\ConfigService;
 use Ramsey\Uuid\Uuid;
+
+/*
+ * This does NOT implement TrackerInterface because it doesn't use Doctrine ORM, and the writing of media-playback data
+ * should happen right away—rather than on the other side of a caching queue-like system—because UX would suffer if
+ * progress data not available for use right away.
+ *
+ * Jonathan, April 2019
+ */
 
 class MediaPlaybackTracker extends TrackerBase
 {
     /**
      * $startedOn must be a datetime string.
      *
-     * @param string $mediaId
-     * @param int $mediaLengthSeconds
-     * @param int $userId
-     * @param int $typeId
-     * @param int $currentSecond
-     * @param string $startedOn
-     * @return int
+     * @param  string  $mediaId
+     * @param  int  $mediaLengthSeconds
+     * @param  int  $userId
+     * @param  int  $typeId
+     * @param  int  $currentSecond
+     * @param  int  $secondsPlayed
+     * @param  string  $startedOn
+     * @return array
+     * @throws Exception
      */
     public function trackMediaPlaybackStart(
         $mediaId,
@@ -26,6 +37,7 @@ class MediaPlaybackTracker extends TrackerBase
         $userId,
         $typeId,
         $currentSecond = 0,
+        $secondsPlayed = 0,
         $startedOn = null
     ) {
         if (empty($startedOn)) {
@@ -38,13 +50,15 @@ class MediaPlaybackTracker extends TrackerBase
             'media_length_seconds' => $mediaLengthSeconds,
             'user_id' => $userId,
             'type_id' => $typeId,
-            'seconds_played' => 0,
+            'seconds_played' => max($secondsPlayed, 0),
             'current_second' => max($currentSecond, 0),
             'started_on' => $startedOn,
             'last_updated_on' => $startedOn,
         ];
 
         $id = $this->query(ConfigService::$tableMediaPlaybackSessions)->insertGetId($data);
+
+        $data['id'] = $id;
 
         event(
             new MediaPlaybackTracked(
@@ -60,17 +74,17 @@ class MediaPlaybackTracker extends TrackerBase
             )
         );
 
-        return $id;
+        return $data;
     }
 
     /**
      * $startedOn must be a datetime string.
      *
-     * @param int $sessionId
-     * @param int $secondsPlayed
-     * @param int $currentSecond
-     * @param null $lastUpdatedOn
-     * @return int
+     * @param  int  $sessionId
+     * @param  int  $secondsPlayed
+     * @param  int  $currentSecond
+     * @param  null  $lastUpdatedOn
+     * @return array|boolean
      */
     public function trackMediaPlaybackProgress(
         $sessionId,
@@ -88,16 +102,19 @@ class MediaPlaybackTracker extends TrackerBase
             'last_updated_on' => $lastUpdatedOn,
         ];
 
-        $session = (array)$this->query(ConfigService::$tableMediaPlaybackSessions)
+        $session = (array) $this->query(ConfigService::$tableMediaPlaybackSessions)
             ->where(['id' => $sessionId])
             ->take(1)
             ->first();
 
         if (!empty($session)) {
-            $return = $this->query(ConfigService::$tableMediaPlaybackSessions)
+            $updated = $this->query(ConfigService::$tableMediaPlaybackSessions)
                 ->where(['id' => $sessionId])
-                ->take(1)
                 ->update($data);
+
+            if (!$updated) {
+                return false;
+            }
 
             event(
                 new MediaPlaybackTracked(
@@ -112,16 +129,16 @@ class MediaPlaybackTracker extends TrackerBase
                     $data['last_updated_on']
                 )
             );
-        } else {
-            $return = 0;
+
+            return array_merge($session, $data);
         }
 
-        return $return;
+        return false;
     }
 
     /**
-     * @param string $type
-     * @param string $category
+     * @param  string  $type
+     * @param  string  $category
      * @return int
      */
     public function trackMediaType($type, $category)

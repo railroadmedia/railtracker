@@ -5,6 +5,8 @@ namespace Railroad\Railtracker\Middleware;
 use Closure;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
@@ -21,17 +23,26 @@ class RailtrackerMiddleware
      * @var ResponseTracker
      */
     protected $responseTracker;
+    /**
+     * @var BatchService
+     */
+    private $batchService;
 
     /**
      * RailtrackerMiddleware constructor.
      *
      * @param RequestTracker $requestTracker
      * @param ResponseTracker $responseTracker
+     * @param BatchService $batchService
      */
-    public function __construct(RequestTracker $requestTracker, ResponseTracker $responseTracker)
-    {
+    public function __construct(
+        RequestTracker $requestTracker,
+        ResponseTracker $responseTracker,
+        BatchService $batchService
+    ) {
         $this->requestTracker = $requestTracker;
         $this->responseTracker = $responseTracker;
+        $this->batchService = $batchService;
     }
 
     /**
@@ -41,8 +52,9 @@ class RailtrackerMiddleware
      * @param  Closure $next
      * @return mixed
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
+        $response = null;
         $requestId = null;
         $userId = $request->user();
         $exclude = false;
@@ -55,8 +67,9 @@ class RailtrackerMiddleware
         }
 
         if (!$exclude) {
+            
+            RequestTracker::$uuid = Uuid::uuid4()->toString();
 
-            // if no cookie is set and the user is logged out, create and attach one to the current request
             if (is_null($userId) && !$request->cookies->has(RequestTracker::$cookieKey)) {
                 $cookieId = Uuid::uuid4()->toString();
                 $cookie = cookie()->forever(RequestTracker::$cookieKey, $cookieId);
@@ -64,18 +77,20 @@ class RailtrackerMiddleware
                 $request->cookies->set(RequestTracker::$cookieKey, $cookieId);
             }
 
-            // track the request
             try {
-                $requestId = $this->requestTracker->trackRequest($request);
+                $serializedRequestEntity = $this->requestTracker->serializedFromHttpRequest($request);
+                $this->batchService->addToBatch($serializedRequestEntity, 'request', $serializedRequestEntity['uuid']);
             } catch (Exception $exception) {
                 error_log($exception);
             }
 
+            /** @var Response $response */
             $response = $next($request);
 
-            // track the response after the application has handled it
             try {
-                $this->responseTracker->trackResponse($response, $requestId);
+                $responseData = $this->responseTracker->serializedFromHttpResponse($response);
+                $this->batchService->addToBatch($responseData, 'response', RequestTracker::$uuid);
+
             } catch (Exception $exception) {
                 error_log($exception);
             }

@@ -47,7 +47,7 @@ class MediaPlaybackRepositoryTest extends RailtrackerTestCase
                 $mediaLength,
                 $userId,
                 $mediaTypeId
-            );
+            )['id'];
 
             $currentSecond = rand();
             $totalTimeWatched = rand();
@@ -102,7 +102,7 @@ class MediaPlaybackRepositoryTest extends RailtrackerTestCase
                 $mediaLength,
                 $userId,
                 $mediaTypeId
-            );
+            )['id'];
 
             $currentSecond = rand();
             $totalTimeWatched = rand();

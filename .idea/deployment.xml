@@ -5,7 +5,7 @@
       <paths name="laravel">
         <serverdata>
           <mappings>
-            <mapping deploy="/app/railtracker" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

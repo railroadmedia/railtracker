@@ -36,7 +36,7 @@ class Handler extends ExceptionHandler
          */
         $exceptionTracker = app(ExceptionTracker::class);
 
-        $exceptionTracker->trackException($exception);
+        $exceptionTracker->trackException($exception, RequestTracker::$uuid);
 
         return parent::render($request, $exception);
     }

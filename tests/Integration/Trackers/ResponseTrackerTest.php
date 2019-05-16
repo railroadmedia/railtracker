@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
@@ -14,14 +15,7 @@ class ResponseTrackerTest extends RailtrackerTestCase
         $request = $this->randomRequest();
         $response = $this->createResponse(200);
 
-        $middleware = $this->app->make(RailtrackerMiddleware::class);
-
-        $middleware->handle(
-            $request,
-            function () use ($response) {
-                return $response;
-            }
-        );
+        $this->sendRequestAndCallProcessCommand($request, $response);
 
         $this->assertDatabaseHas(
             ConfigService::$tableResponseStatusCodes,
@@ -36,19 +30,12 @@ class ResponseTrackerTest extends RailtrackerTestCase
         $request = $this->randomRequest();
         $response = $this->createResponse(404);
 
-        $middleware = $this->app->make(RailtrackerMiddleware::class);
-
-        $middleware->handle(
-            $request,
-            function () use ($response) {
-                return $response;
-            }
-        );
+        $this->sendRequestAndCallProcessCommand($request, $response);
 
         $this->assertDatabaseHas(
             ConfigService::$tableResponseStatusCodes,
             [
-                'code' => 404,
+                'code' => 404
             ]
         );
     }
@@ -58,14 +45,7 @@ class ResponseTrackerTest extends RailtrackerTestCase
         $request = $this->randomRequest();
         $response = $this->createResponse(200);
 
-        $middleware = $this->app->make(RailtrackerMiddleware::class);
-
-        $middleware->handle(
-            $request,
-            function () use ($response) {
-                return $response;
-            }
-        );
+        $this->sendRequestAndCallProcessCommand($request, $response);
 
         $this->assertDatabaseHas(
             ConfigService::$tableResponses,

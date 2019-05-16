@@ -3,10 +3,33 @@
 return [
     'global_is_active' => true,
 
-    'cache_duration' => 60 * 60 * 24 * 30,
+    // database
     'database_connection_name' => 'mysql',
+    'database_name' => 'mydb',
+    'database_user' => 'root',
+    'database_password' => 'root',
+    'database_host' => 'mysql',
+    'database_driver' => 'pdo_mysql',
+    'database_in_memory' => false,
+
+    'data_mode' => 'host', // 'host' or 'client', hosts do the db migrations, clients do not
+
+    // cache
+    'redis_host' => 'redis',
+    'redis_port' => 6379,
+    'cache_duration' => 60 * 60 * 24 * 30,
+
+    // entities
+    'entities' => [
+        [
+            'path' => __DIR__ . '/../src/Entities',
+            'namespace' => 'Railroad\Railtracker\Entities',
+        ],
+    ],
 
     'exclusion_regex_paths'=> ['/media\-playback\-tracking\/media\-playback\-session*/'],
+
+    // 'connection_mask_prefix' => '' // ?
 
     'tables' => [
         'url_protocols' => 'railtracker_url_protocols',

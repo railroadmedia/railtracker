@@ -47,6 +47,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         $mediaType = $this->faker->word;
         $mediaCategory = $this->faker->word;
         $currentSecond = rand();
+        $secondsPlayed = rand();
 
         $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType($mediaType, $mediaCategory);
 
@@ -57,7 +58,8 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             $mediaLength,
             $userId,
             $mediaTypeId,
-            $currentSecond
+            $currentSecond,
+            $secondsPlayed
         );
 
         $this->assertDatabaseHas(
@@ -67,8 +69,8 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
                 'media_length_seconds' => $mediaLength,
                 'user_id' => $userId,
                 'type_id' => $mediaTypeId,
-                'seconds_played' => 0,
                 'current_second' => $currentSecond,
+                'seconds_played' => $secondsPlayed,
                 'started_on' => Carbon::now()->toDateTimeString(),
                 'last_updated_on' => Carbon::now()->toDateTimeString(),
             ]
@@ -124,7 +126,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             $mediaLength,
             $userId,
             $mediaTypeId
-        );
+        )['id'];
 
         $secondsPlayed = rand();
         $currentSecond = rand();
@@ -136,8 +138,6 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             $secondsPlayed,
             $currentSecond
         );
-
-        $this->assertEquals(1, $updated);
 
         $this->assertDatabaseHas(
             ConfigService::$tableMediaPlaybackSessions,
@@ -166,7 +166,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             $mediaLength,
             $userId,
             $mediaTypeId
-        );
+        )['id'];
 
         $secondsPlayed = rand();
         $currentSecond = rand();
@@ -184,8 +184,6 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             $secondsPlayed,
             $currentSecond
         );
-
-        $this->assertEquals(1, $updated);
 
         $this->assertDatabaseHas(
             ConfigService::$tableMediaPlaybackSessions,
@@ -215,7 +213,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
                 $mediaLength,
                 $userId,
                 $mediaTypeId
-            );
+            )['id'];
 
             $secondsPlayed = rand();
             $currentSecond = rand();
@@ -233,8 +231,6 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
                 $secondsPlayed,
                 $currentSecond
             );
-
-            $this->assertEquals(1, $updated);
 
             $this->assertDatabaseHas(
                 ConfigService::$tableMediaPlaybackSessions,

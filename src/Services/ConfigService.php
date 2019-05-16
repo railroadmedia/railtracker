@@ -2,6 +2,7 @@
 
 namespace Railroad\Railtracker\Services;
 
+// todo: stripe out config service, just use config() method instead -> LOW PRO
 class ConfigService
 {
     /**

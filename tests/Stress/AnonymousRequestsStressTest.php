@@ -2,7 +2,6 @@
 
 namespace Railroad\Railtracker\Tests\Stress;
 
-use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Tests\Resources\Models\User;
@@ -13,41 +12,19 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
 {
     public function test_limited_amount_of_anonymous_data_updated()
     {
+        $numberOfRequestsFromUser = 50;
+
         $url = 'https://www.drumeo.com/';
         $clientIp = '192.562.33.42';
 
         $cookies = [RequestTracker::$cookieKey => Uuid::uuid4()->toString()];
 
-        for ($i = 0; $i < 550; $i++) {
-            $request = $this->createRequest(
-                $this->faker->userAgent,
-                $url,
-                '',
-                $clientIp,
-                'GET',
-                $cookies
-            );
+        $response = $this->createResponse(200);
 
-            $middleware = $this->app->make(RailtrackerMiddleware::class);
+        for ($i = 0; $i < $numberOfRequestsFromUser; $i++) {
+            $request = $this->createRequest($this->faker->userAgent, $url, '', $clientIp, 'GET', $cookies);
 
-            $middleware->handle(
-                $request,
-                function () {
-                }
-            );
-        }
-
-        // other random requests
-        for ($i = 0; $i < 20; $i++) {
-            $request = $this->createRequest($this->faker->userAgent, $url, '', $clientIp, 'GET', []);
-
-            $middleware = $this->app->make(RailtrackerMiddleware::class);
-
-            $middleware->handle(
-                $request,
-                function () {
-                }
-            );
+            $this->sendRequestAndCallProcessCommand($request, $response);
         }
 
         $this->assertDatabaseHas(
@@ -60,42 +37,28 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
 
         $userId = $this->createAndLogInNewUser();
 
-        $request = $this->createRequest(
-            $this->faker->userAgent,
-            $url,
-            '',
-            $clientIp,
-            'GET',
-            $cookies
-        );
-
+        $request = $this->createRequest($this->faker->userAgent, $url, '', $clientIp, 'GET', $cookies);
         $request->setUserResolver(
             function () use ($userId) {
                 return User::query()->find($userId);
             }
         );
 
-        $middleware = $this->app->make(RailtrackerMiddleware::class);
-
         $tStart = microtime(true);
-        
-        $middleware->handle(
-            $request,
-            function () {
-            }
-        );
+
+        $this->sendRequestAndCallProcessCommand($request, $response);
 
         $tEnd = microtime(true) - $tStart;
 
         $this->assertEquals(
-            550 + 1,
+            $numberOfRequestsFromUser + 1,
             $this->databaseManager->connection()
                 ->table(ConfigService::$tableRequests)
                 ->where('user_id', $userId)
                 ->count()
         );
 
-        $this->assertLessThan(0.1, $tEnd);
+        $this->assertLessThan(1, $tEnd);
     }
 
 }
