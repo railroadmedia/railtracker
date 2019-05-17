@@ -5,6 +5,7 @@ namespace Railroad\Railtracker\Providers;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\CachedReader;
+use Doctrine\Common\Cache\PhpFileCache;
 use Doctrine\Common\Cache\RedisCache;
 use Doctrine\Common\EventManager;
 use Doctrine\Common\Persistence\Mapping\Driver\MappingDriverChain;
@@ -128,6 +129,8 @@ class RailtrackerServiceProvider extends ServiceProvider
         $redisCache = new RedisCache();
         $redisCache->setRedis($redis);
 
+        $phpFileCache = new PhpFileCache($proxyDir);
+
         // redis cache instance is referenced in laravel container to be reused when needed
         app()->instance(RedisCache::class, $redisCache);
 
@@ -136,7 +139,7 @@ class RailtrackerServiceProvider extends ServiceProvider
         $annotationReader = new AnnotationReader();
 
         $cachedAnnotationReader = new CachedReader(
-            $annotationReader, $redisCache
+            $annotationReader, $phpFileCache
         );
 
         $driverChain = new MappingDriverChain();
@@ -167,7 +170,7 @@ class RailtrackerServiceProvider extends ServiceProvider
         $eventManager->addEventSubscriber($timestampableListener);
 
         $ormConfiguration = new Configuration();
-        $ormConfiguration->setMetadataCacheImpl($redisCache);
+        $ormConfiguration->setMetadataCacheImpl($phpFileCache);
         $ormConfiguration->setQueryCacheImpl($redisCache);
         $ormConfiguration->setResultCacheImpl($redisCache);
         $ormConfiguration->setProxyDir($proxyDir);
