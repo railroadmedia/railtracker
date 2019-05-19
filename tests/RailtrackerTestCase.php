@@ -102,11 +102,7 @@ class RailtrackerTestCase extends BaseTestCase
 
     public function tearDown()
     {
-        $toDelete = $this->batchService->cache()->keys(self::$prefixForTestBatchKeyPrefix . '*');
-
-        if(env('DELETE_DATA_IN_CACHE_ONLY_FROM_CURRENT_TEST', false)){
-            $toDelete = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . '*');
-        }
+        $toDelete = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . '*');
 
         if(!empty($toDelete)){
             $this->batchService->cache()->del($toDelete);
@@ -185,7 +181,23 @@ class RailtrackerTestCase extends BaseTestCase
         Carbon::setTestNow(Carbon::now());
 
         $time = Carbon::now()->timestamp . '-' . Carbon::now()->micro;
-        $app['config']->set('railtracker.batch-key-prefix', self::$prefixForTestBatchKeyPrefix . $time . '-');
+
+
+        // ↓↓↓ do not commit ↓↓↓
+        // ↓↓↓ do not commit ↓↓↓
+        // ↓↓↓ do not commit ↓↓↓
+        // ↓↓↓ do not commit ↓↓↓
+        // ↓↓↓ do not commit ↓↓↓
+        $time = 1337;
+        // ↑↑↑ do not commit ↑↑↑
+        // ↑↑↑ do not commit ↑↑↑
+        // ↑↑↑ do not commit ↑↑↑
+        // ↑↑↑ do not commit ↑↑↑
+        // ↑↑↑ do not commit ↑↑↑
+
+        $batchPrefix = 'railtracker_testing_' . $time . '_';
+
+        $app['config']->set('railtracker.batch-prefix', $batchPrefix);
 
         $app->register(RailtrackerServiceProvider::class);
     }

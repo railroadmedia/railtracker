@@ -13,6 +13,7 @@ use Railroad\Railtracker\Entities\Request;
 use Railroad\Railtracker\Entities\Response;
 use Railroad\Railtracker\Entities\ResponseStatusCode;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
+use Railroad\Railtracker\Services\BatchService;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class ResponseTracker extends TrackerBase
@@ -33,12 +34,17 @@ class ResponseTracker extends TrackerBase
      * @var RequestTracker
      */
     private $requestTracker;
+    /**
+     * @var RequestTracker
+     */
+    protected $batchService;
 
     public function __construct(
         DatabaseManager $databaseManager,
         Router $router,
         CookieJar $cookieJar,
         Repository $cache = null,
+        BatchService $batchService,
         BasicEntitySerializer $basicEntitySerializer,
         RailtrackerEntityManager $entityManager,
         RequestTracker $requestTracker
@@ -48,6 +54,7 @@ class ResponseTracker extends TrackerBase
             $router,
             $cookieJar,
             $cache,
+            $batchService,
             $basicEntitySerializer,
             $entityManager
         );
@@ -56,6 +63,7 @@ class ResponseTracker extends TrackerBase
         $this->router = $router;
         $this->cookieJar = $cookieJar;
         $this->cache = $cache;
+        $this->batchService = $batchService;
         $this->basicEntitySerializer = $basicEntitySerializer;
         $this->entityManager = $entityManager;
         $this->requestTracker = $requestTracker;
