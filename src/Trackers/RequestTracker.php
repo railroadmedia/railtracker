@@ -226,7 +226,7 @@ class RequestTracker extends TrackerBase
 
         // route
 
-        $routeNotNull = !empty($requestSerialized['route']['name']) && !empty($requestSerialized['route']['route']);
+        $routeNotNull = !empty($requestSerialized['route']['name']) || !empty($requestSerialized['route']['route']);
 
         if($routeNotNull){
             $route = $route = $this->getByData(Route::class, $requestSerialized['route']);
