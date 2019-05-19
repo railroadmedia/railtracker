@@ -270,15 +270,19 @@ class RequestTracker extends TrackerBase
         }
 
         // 1.2 - url path
+        // This is optional for Url, thus do not create if no data specified
 
         if (!empty($requestSerialized['url']['path'])) {
-            $urlPath = $this->getByData(UrlPath::class, ['path' => $requestSerialized['url']['path']]);
-        }
 
-        if (empty($urlPath)) {
-            $urlPath = new UrlPath();
-            $urlPath->setPath($requestSerialized['url']['path'] ?? '');
-            $this->entityManager->persist($urlPath);
+            $urlPath = $this->getByData(UrlPath::class, ['path' => $requestSerialized['url']['path']]);
+
+            if (empty($urlPath)) {
+
+                $urlPath = new UrlPath();
+                $urlPath->setPath($requestSerialized['url']['path']);
+
+                $this->entityManager->persist($urlPath);
+            }
         }
 
         // 1.3 - url protocol
@@ -294,15 +298,19 @@ class RequestTracker extends TrackerBase
         }
 
         // 1.4 - url query
+        // This is optional for Url, thus do not create if no data specified
 
         if (!empty($requestSerialized['url']['query'])) {
-            $urlQuery = $this->getByData(UrlQuery::class, ['string' => $requestSerialized['url']['query']]);
-        }
 
-        if (empty($urlQuery)) {
-            $urlQuery = new UrlQuery();
-            $urlQuery->setString($requestSerialized['url']['query'] ?? '');
-            $this->entityManager->persist($urlQuery);
+            $urlQuery = $this->getByData(UrlQuery::class, ['string' => $requestSerialized['url']['query']]);
+
+            if (empty($urlQuery)) {
+
+                $urlQuery = new UrlQuery();
+                $urlQuery->setString($requestSerialized['url']['query']);
+
+                $this->entityManager->persist($urlQuery);
+            }
         }
 
         $this->entityManager->flush();
@@ -339,7 +347,7 @@ class RequestTracker extends TrackerBase
             $query->andWhere('IDENTITY(u.query) = ' . $urlQuery->getId());
         }
 
-        $url =$query->getQuery()
+        $url = $query->getQuery()
             ->setResultCacheDriver($this->arrayCache)
             ->getOneOrNullResult();
 
@@ -347,10 +355,18 @@ class RequestTracker extends TrackerBase
 
         if (empty($url)) {
             $url = new Url();
+
             $url->setDomain($urlDomain);
-            $url->setPath($urlPath);
+
+            if(!empty($urlPath)){
+                $url->setPath($urlPath);
+            }
+
             $url->setProtocol($urlProtocol);
-            $url->setQuery($urlQuery);
+
+            if(!empty($urlQuery)){
+                $url->setQuery($urlQuery);
+            }
             $this->persistAndFlushEntity($url);
         }
 
