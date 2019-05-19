@@ -226,25 +226,32 @@ class RequestTracker extends TrackerBase
 
         // route
 
-        $route = $route = $this->getByData(Route::class, $requestSerialized['route']);
+        $routeNotNull = !empty($requestSerialized['route']['name']) && !empty($requestSerialized['route']['route']);
 
-        if (empty($route)) {
-            $route = new Route();
-            /** @var Route $route */
-            $route = $this->arrayHydrator->hydrate($route, $requestSerialized['route']);
+        if($routeNotNull){
+            $route = $route = $this->getByData(Route::class, $requestSerialized['route']);
 
-            $this->persistAndFlushEntity($route);
+            if (empty($route)) {
+
+                $route = new Route();
+
+                $route = $this->arrayHydrator->hydrate($route, $requestSerialized['route']);
+
+                $this->persistAndFlushEntity($route);
+            }
+
+            if(!empty($route)){
+                $request->setRoute($route);
+            }
         }
-
-        $request->setRoute($route);
 
         // url and referer url
 
-        $url = $this->setUrl($requestSerialized['url']);
+        $url = $this->getOrCreateUrlForData($requestSerialized['url']);
 
         $request->setUrl($url);
 
-        $refererUrl = $this->setUrl($requestSerialized['refererUrl']);
+        $refererUrl = $this->getOrCreateUrlForData($requestSerialized['refererUrl']);
 
         $request->setRefererUrl($refererUrl);
 
@@ -259,7 +266,7 @@ class RequestTracker extends TrackerBase
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function setUrl($urlAsArray)
+    private function getOrCreateUrlForData($urlAsArray)
     {
         // ============ 1 associated entities ============
 
@@ -377,7 +384,7 @@ class RequestTracker extends TrackerBase
             if(!empty($urlQuery)){
                 $url->setQuery($urlQuery);
             }
-            $this->persistAndFlushEntity($url);
+            $this->entityManager->persist($url);
         }
 
         return $url;
@@ -430,6 +437,7 @@ class RequestTracker extends TrackerBase
         return $hydratedRequest ?? null;
     }
 
+    // todo: delete this?
     /**
      * @param $data
      * @return Url
