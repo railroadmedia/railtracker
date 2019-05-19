@@ -251,13 +251,19 @@ class RequestTracker extends TrackerBase
 
         // url and referer url
 
-        $url = $this->getOrCreateUrlForData($requestSerialized['url']);
+        if(!empty($requestSerialized['url'])){
 
-        $request->setUrl($url);
+            $url = $this->getOrCreateUrlForData($requestSerialized['url']);
 
-        $refererUrl = $this->getOrCreateUrlForData($requestSerialized['refererUrl']);
+            $request->setUrl($url);
+        }
 
-        $request->setRefererUrl($refererUrl);
+        if(!empty($requestSerialized['refererUrl'])){
+
+            $refererUrl = $this->getOrCreateUrlForData($requestSerialized['refererUrl']);
+
+            $request->setRefererUrl($refererUrl);
+        }
 
         // ---------- Step 4: End ----------
 
