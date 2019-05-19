@@ -118,7 +118,11 @@ class RequestTracker extends TrackerBase
         return $request;
     }
 
-
+    /**
+     * @param $entity
+     * @param $data
+     * @return mixed
+     */
     private function getByData($entity, $data)
     {
         $query = $this->entityManager->createQueryBuilder()->select('aliasFoo')->from($entity, 'aliasFoo');
@@ -137,7 +141,9 @@ class RequestTracker extends TrackerBase
             $query = $query->setParameter($key, $value);
         }
 
-        return $query->getQuery()->setResultCacheDriver($this->arrayCache)->getOneOrNullResult();
+        // todo: https://www.doctrine-project.org/projects/doctrine-orm/en/2.6/reference/caching.html#result-cache
+        //return $query->getQuery()->setResultCacheDriver($this->arrayCache)->getOneOrNullResult();
+        return $query->getQuery()->getOneOrNullResult();
     }
 
     /**
@@ -262,25 +268,8 @@ class RequestTracker extends TrackerBase
         $urlProtocolValue = $urlAsArray['protocol'] ?? '';
 
         if (!empty($urlProtocolValue)) {
-//            $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $urlProtocolValue]);
-
-            $key = 'protocol';
-            $value = $urlProtocolValue;
-            $query = $this->entityManager->createQueryBuilder()->select('up')->from(UrlProtocol::class, 'up');
-            $query = $query->where('up.' . 'protocol' .' = :' . $key);
-            $query = $query->setParameter($key, $value);
-            $urlProtocol = $query->getQuery()->setResultCacheDriver($this->arrayCache)->getOneOrNullResult();
+            $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $urlProtocolValue]);
         }
-
-        // -------------------------------------------------------------------------------------------------------------
-        // --------------------------------- do NOT commit -------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
-        $tables = \Illuminate\Support\Facades\DB::connection()->getDoctrineSchemaManager()->listTableNames();
-        foreach($tables as $table){$result = \Illuminate\Support\Facades\DB::connection()->table($table)->select('*')
-            ->get()->all();foreach($result as &$r){$r = json_decode(json_encode($r), true);}$results[$table] = $result;}
-        // -------------------------------------------------------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
 
         if (empty($urlProtocol)) {
 
