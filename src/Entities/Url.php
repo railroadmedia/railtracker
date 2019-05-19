@@ -29,11 +29,13 @@ class Url
 
     /**
      * @ORM\ManyToOne(targetEntity="UrlPath", cascade={"persist"})
+     * @ORM\JoinColumn(name="path_id", referencedColumnName="id", nullable=true)
      */
     protected $path;
 
     /**
      * @ORM\ManyToOne(targetEntity="UrlQuery", cascade={"persist"})
+     * @ORM\JoinColumn(name="query_id", referencedColumnName="id", nullable=true)
      */
     protected $query;
 

@@ -108,9 +108,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 error_log($exception);
             }
 
-//            $this->batchService->forget($requestKey);
-//            $this->batchService->forget($exceptionKey ?? null);
-//            $this->batchService->forget($responseKey ?? null);
+            $this->batchService->forget($requestKey);
+            $this->batchService->forget($exceptionKey ?? null);
+            $this->batchService->forget($responseKey ?? null);
         }
 
         return true;

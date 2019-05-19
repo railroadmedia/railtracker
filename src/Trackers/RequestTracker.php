@@ -234,7 +234,7 @@ class RequestTracker extends TrackerBase
 
         // url and referer url
 
-        $url = $this->setUrl($requestSerialized);
+        $url = $this->setUrl($requestSerialized['url']);
 
         $request->setUrl($url);
 
@@ -248,66 +248,89 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param $requestSerialized
-     * @return mixed|Url
+     * @param array $urlAsArray
+     * @return Url
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function setUrl($requestSerialized)
+    private function setUrl($urlAsArray)
     {
         // ============ 1 associated entities ============
 
-        // 1.1 -  url domain
+        // 1.1 - url protocol (note that url table's protocol_id is NOT nullable)
 
-        if (!empty($requestSerialized['url']['domain'])) {
-            $urlDomain = $this->getByData(UrlDomain::class, ['name' => $requestSerialized['url']['domain']]);
+        $urlProtocolValue = $urlAsArray['protocol'] ?? '';
+
+        if (!empty($urlProtocolValue)) {
+//            $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $urlProtocolValue]);
+
+            $key = 'protocol';
+            $value = $urlProtocolValue;
+            $query = $this->entityManager->createQueryBuilder()->select('up')->from(UrlProtocol::class, 'up');
+            $query = $query->where('up.' . 'protocol' .' = :' . $key);
+            $query = $query->setParameter($key, $value);
+            $urlProtocol = $query->getQuery()->setResultCacheDriver($this->arrayCache)->getOneOrNullResult();
+        }
+
+        // -------------------------------------------------------------------------------------------------------------
+        // --------------------------------- do NOT commit -------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+        $tables = \Illuminate\Support\Facades\DB::connection()->getDoctrineSchemaManager()->listTableNames();
+        foreach($tables as $table){$result = \Illuminate\Support\Facades\DB::connection()->table($table)->select('*')
+            ->get()->all();foreach($result as &$r){$r = json_decode(json_encode($r), true);}$results[$table] = $result;}
+        // -------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        if (empty($urlProtocol)) {
+
+            $urlProtocol = new UrlProtocol();
+            $urlProtocol->setProtocol($urlProtocolValue);
+
+            $this->entityManager->persist($urlProtocol);
+        }
+
+        // 1.2 -  url domain (note that url table's domain_id is NOT nullable)
+
+        $urlDomainValue = $urlAsArray['domain'] ?? '';
+
+        if (!empty($urlDomainValue)) {
+            $urlDomain = $this->getByData(UrlDomain::class, ['name' => $urlDomainValue]);
         }
 
         if (empty($urlDomain)) {
+
             $urlDomain = new UrlDomain();
-            $urlDomain->setName($requestSerialized['url']['domain'] ?? '');
+            $urlDomain->setName($urlDomainValue);
+
             $this->entityManager->persist($urlDomain);
         }
 
-        // 1.2 - url path
-        // This is optional for Url, thus do not create if no data specified
+        // 1.3 - url path (note that url table's path_id is nullable)
 
-        if (!empty($requestSerialized['url']['path'])) {
+        if(!empty($urlAsArray['path'])){
 
-            $urlPath = $this->getByData(UrlPath::class, ['path' => $requestSerialized['url']['path']]);
+            $urlPath = $this->getByData(UrlPath::class, ['path' => $urlAsArray['path']]);
 
             if (empty($urlPath)) {
 
                 $urlPath = new UrlPath();
-                $urlPath->setPath($requestSerialized['url']['path']);
+                $urlPath->setPath($urlAsArray['path']);
 
                 $this->entityManager->persist($urlPath);
             }
         }
 
-        // 1.3 - url protocol
+        // 1.4 - url query (note that url table's query_id is nullable)
 
-        if (!empty($requestSerialized['url']['protocol'])) {
-            $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $requestSerialized['url']['protocol']]);
-        }
+        if (!empty($urlAsArray['query'])) {
 
-        if (empty($urlProtocol)) {
-            $urlProtocol = new UrlProtocol();
-            $urlProtocol->setProtocol($requestSerialized['url']['protocol'] ?? '');
-            $this->entityManager->persist($urlProtocol);
-        }
-
-        // 1.4 - url query
-        // This is optional for Url, thus do not create if no data specified
-
-        if (!empty($requestSerialized['url']['query'])) {
-
-            $urlQuery = $this->getByData(UrlQuery::class, ['string' => $requestSerialized['url']['query']]);
+            $urlQuery = $this->getByData(UrlQuery::class, ['string' => $urlAsArray['query']]);
 
             if (empty($urlQuery)) {
 
                 $urlQuery = new UrlQuery();
-                $urlQuery->setString($requestSerialized['url']['query']);
+                $urlQuery->setString($urlAsArray['query']);
 
                 $this->entityManager->persist($urlQuery);
             }
@@ -356,13 +379,13 @@ class RequestTracker extends TrackerBase
         if (empty($url)) {
             $url = new Url();
 
+            $url->setProtocol($urlProtocol);
+
             $url->setDomain($urlDomain);
 
             if(!empty($urlPath)){
                 $url->setPath($urlPath);
             }
-
-            $url->setProtocol($urlProtocol);
 
             if(!empty($urlQuery)){
                 $url->setQuery($urlQuery);

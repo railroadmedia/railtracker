@@ -182,19 +182,6 @@ class RailtrackerTestCase extends BaseTestCase
 
         $time = Carbon::now()->timestamp . '-' . Carbon::now()->micro;
 
-
-        // ↓↓↓ do not commit ↓↓↓
-        // ↓↓↓ do not commit ↓↓↓
-        // ↓↓↓ do not commit ↓↓↓
-        // ↓↓↓ do not commit ↓↓↓
-        // ↓↓↓ do not commit ↓↓↓
-        $time = 1337;
-        // ↑↑↑ do not commit ↑↑↑
-        // ↑↑↑ do not commit ↑↑↑
-        // ↑↑↑ do not commit ↑↑↑
-        // ↑↑↑ do not commit ↑↑↑
-        // ↑↑↑ do not commit ↑↑↑
-
         $batchPrefix = 'railtracker_testing_' . $time . '_';
 
         $app['config']->set('railtracker.batch-prefix', $batchPrefix);
