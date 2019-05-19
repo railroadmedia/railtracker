@@ -282,11 +282,13 @@ class RequestTracker extends TrackerBase
 
         // 1.1 - url protocol (note that url table's protocol_id is NOT nullable)
 
-        $urlProtocolValue = $urlAsArray['protocol'] ?? '';
-
-        if (!empty($urlProtocolValue)) {
-            $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $urlProtocolValue]);
+        if(empty($urlAsArray['protocol'])){
+            error_log('"$urlAsArray[\'protocol\']" empty.' );
         }
+
+        $urlProtocolValue = $urlAsArray['protocol'];
+
+        $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $urlProtocolValue]);
 
         if (empty($urlProtocol)) {
 
@@ -298,11 +300,13 @@ class RequestTracker extends TrackerBase
 
         // 1.2 -  url domain (note that url table's domain_id is NOT nullable)
 
-        $urlDomainValue = $urlAsArray['domain'] ?? '';
-
-        if (!empty($urlDomainValue)) {
-            $urlDomain = $this->getByData(UrlDomain::class, ['name' => $urlDomainValue]);
+        if(empty($urlAsArray['domain'])){
+            error_log('"$urlAsArray[\'domain\']" empty.' );
         }
+
+        $urlDomainValue = $urlAsArray['domain'];
+
+        $urlDomain = $this->getByData(UrlDomain::class, ['name' => $urlDomainValue]);
 
         if (empty($urlDomain)) {
 
