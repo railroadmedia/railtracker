@@ -379,7 +379,7 @@ class RequestTracker extends TrackerBase
         }
 
         $url = $query->getQuery()
-            ->setResultCacheDriver($this->arrayCache)
+            // ->setResultCacheDriver($this->arrayCache) // todo: implement
             ->getOneOrNullResult();
 
         // 2.1 - set associated entities
