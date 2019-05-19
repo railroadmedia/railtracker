@@ -255,61 +255,61 @@ class RequestTracker extends TrackerBase
      */
     private function setUrl($requestSerialized)
     {
-        $urlDomain = $this->getByData(UrlDomain::class, ['name' => $requestSerialized['url']['domain']]);
+        // ============ 1 associated entities ============
+
+        // 1.1 -  url domain
+
+        if (!empty($requestSerialized['url']['domain'])) {
+            $urlDomain = $this->getByData(UrlDomain::class, ['name' => $requestSerialized['url']['domain']]);
+        }
 
         if (empty($urlDomain)) {
             $urlDomain = new UrlDomain();
-            $urlDomain->setName($requestSerialized['url']['domain']);
-
+            $urlDomain->setName($requestSerialized['url']['domain'] ?? '');
             $this->entityManager->persist($urlDomain);
         }
 
-        // url path
-
-        // todo: ensure ok for these to be empty...? Should other places be similarly empty too?
+        // 1.2 - url path
 
         if (!empty($requestSerialized['url']['path'])) {
-
             $urlPath = $this->getByData(UrlPath::class, ['path' => $requestSerialized['url']['path']]);
-
-            if (empty($urlPath)) {
-                $urlPath = new UrlPath();
-                $urlPath->setPath($requestSerialized['url']['path']);
-
-                $this->entityManager->persist($urlPath);
-            }
         }
 
-        // url protocol
+        if (empty($urlPath)) {
+            $urlPath = new UrlPath();
+            $urlPath->setPath($requestSerialized['url']['path'] ?? '');
+            $this->entityManager->persist($urlPath);
+        }
+
+        // 1.3 - url protocol
 
         if (!empty($requestSerialized['url']['protocol'])) {
-
             $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $requestSerialized['url']['protocol']]);
-
-            if (empty($urlProtocol)) {
-                $urlProtocol = new UrlProtocol();
-                $urlProtocol->setProtocol($requestSerialized['url']['protocol']);
-
-                $this->entityManager->persist($urlProtocol);
-            }
         }
 
-        // url query
+        if (empty($urlProtocol)) {
+            $urlProtocol = new UrlProtocol();
+            $urlProtocol->setProtocol($requestSerialized['url']['protocol'] ?? '');
+            $this->entityManager->persist($urlProtocol);
+        }
+
+        // 1.4 - url query
 
         if (!empty($requestSerialized['url']['query'])) {
-
             $urlQuery = $this->getByData(UrlQuery::class, ['string' => $requestSerialized['url']['query']]);
+        }
 
-            if (empty($urlQuery)) {
-                $urlQuery = new UrlQuery();
-                $urlQuery->setString($requestSerialized['url']['query']);
-                $this->entityManager->persist($urlQuery);
-            }
+        if (empty($urlQuery)) {
+            $urlQuery = new UrlQuery();
+            $urlQuery->setString($requestSerialized['url']['query'] ?? '');
+            $this->entityManager->persist($urlQuery);
         }
 
         $this->entityManager->flush();
 
-        $domainId = $urlDomain->getId();
+        // ============ 2 the Url entity itself ============
+
+        // 2.1 - query
 
         $query =
             $this->entityManager->createQueryBuilder()
@@ -326,8 +326,9 @@ class RequestTracker extends TrackerBase
                 ->join('u.protocol', 'uprotocol')
                 ->join('u.query', 'uquery');
 
-        $query->where('IDENTITY(u.domain) = ' . $domainId);
-
+        if(!empty($urlDomain)) {
+            $query->where('IDENTITY(u.domain) = ' . $urlDomain->getId());
+        }
         if(!empty($urlPath)){
             $query->andWhere('IDENTITY(u.path) = ' . $urlPath->getId());
         }
@@ -342,26 +343,14 @@ class RequestTracker extends TrackerBase
             ->setResultCacheDriver($this->arrayCache)
             ->getOneOrNullResult();
 
+        // 2.1 - set associated entities
+
         if (empty($url)) {
             $url = new Url();
-
-            if(!empty($urlDomain)){
-                $url->setDomain($urlDomain);
-            }
-
-            if(!empty($urlPath)){
-                $url->setPath($urlPath);
-            }
-
-            if(!empty($urlProtocol)){
-                $url->setProtocol($urlProtocol);
-            }
-
-            if(!empty($urlQuery)){
-                $url->setQuery($urlQuery);
-            }
-
-            /** @var Url $url */
+            $url->setDomain($urlDomain);
+            $url->setPath($urlPath);
+            $url->setProtocol($urlProtocol);
+            $url->setQuery($urlQuery);
             $this->persistAndFlushEntity($url);
         }
 
