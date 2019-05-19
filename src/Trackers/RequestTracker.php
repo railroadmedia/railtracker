@@ -341,20 +341,18 @@ class RequestTracker extends TrackerBase
                     'uprotocol',
                     'uquery',
                 ])
+                ->join('u.protocol', 'uprotocol')
                 ->join('u.domain', 'udomain')
                 ->join('u.path', 'upath')
-                ->join('u.protocol', 'uprotocol')
                 ->join('u.query', 'uquery');
 
-        if(!empty($urlDomain)) {
-            $query->where('IDENTITY(u.domain) = ' . $urlDomain->getId());
-        }
+        $query->where('IDENTITY(u.domain) = ' . $urlDomain->getId());
+        $query->where('IDENTITY(u.protocol) = ' . $urlProtocol->getId());
+
         if(!empty($urlPath)){
             $query->andWhere('IDENTITY(u.path) = ' . $urlPath->getId());
         }
-        if(!empty($urlProtocol)){
-            $query->andWhere('IDENTITY(u.protocol) = ' . $urlProtocol->getId());
-        }
+
         if(!empty($urlQuery)){
             $query->andWhere('IDENTITY(u.query) = ' . $urlQuery->getId());
         }
