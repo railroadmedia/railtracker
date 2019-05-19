@@ -127,6 +127,10 @@ class RequestTracker extends TrackerBase
     {
         $query = $this->entityManager->createQueryBuilder()->select('aliasFoo')->from($entity, 'aliasFoo');
 
+        if(array_key_exists('id', $data)){
+            unset($data['id']);
+        }
+
         $first = true;
         foreach($data as $key => $value){
             if($first){
