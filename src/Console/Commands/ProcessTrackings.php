@@ -73,7 +73,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     {
         $requestKeys =
             $this->batchService->cache()
-                ->keys(BatchService::$batchKeyPrefix . 'request*');
+                ->keys($this->batchService->batchKeyPrefix . 'request*');
 
         foreach ($requestKeys as $requestKey) {
             try {
@@ -84,8 +84,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 $uuid = $requestData['uuid'];
 
-                $exceptionKey = BatchService::$batchKeyPrefix . 'exception_' . $uuid;
-                $responseKey = BatchService::$batchKeyPrefix . 'response_' . $uuid;
+                $exceptionKey = $this->batchService->batchKeyPrefix . 'exception_' . $uuid;
+                $responseKey = $this->batchService->batchKeyPrefix . 'response_' . $uuid;
 
                 $exceptionData = unserialize(
                     $this->batchService->cache()

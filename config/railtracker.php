@@ -19,6 +19,8 @@ return [
     'redis_port' => 6379,
     'cache_duration' => 60 * 60 * 24 * 30,
 
+    'batch-prefix' => env('RAILTRACKER_BATCH_PREFIX', 'railtracker_batch_'),
+
     // entities
     'entities' => [
         [

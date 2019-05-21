@@ -40,7 +40,7 @@ class RequestDevice
     /**
      * @ORM\Column(type="boolean")
      */
-    private $is_mobile;
+    private $isMobile;
 
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -119,16 +119,16 @@ class RequestDevice
     /**
      * @return mixed
      */
-    public function getisMobile()
+    public function getIsMobile()
     {
-        return $this->is_mobile;
+        return $this->isMobile;
     }
 
     /**
-     * @param mixed $is_mobile
+     * @param mixed $isMobile
      */
-    public function setIsMobile($is_mobile)
+    public function setIsMobile($isMobile)
     {
-        $this->is_mobile = $is_mobile;
+        $this->isMobile = $isMobile;
     }
 }

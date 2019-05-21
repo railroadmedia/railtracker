@@ -119,6 +119,38 @@ class RequestTracker extends TrackerBase
     }
 
     /**
+     * @param $entity
+     * @param $data
+     * @return mixed
+     */
+    private function getByData($entity, $data)
+    {
+        $query = $this->entityManager->createQueryBuilder()->select('aliasFoo')->from($entity, 'aliasFoo');
+
+        if(array_key_exists('id', $data)){
+            unset($data['id']);
+        }
+
+        $first = true;
+        foreach($data as $key => $value){
+            if($first){
+                $query = $query->where('aliasFoo.' . $key .' = :' . $key);
+                $first = false;
+            }else{
+                $query = $query->andWhere('aliasFoo.' . $key .' = :' . $key);
+            }
+        }
+
+        foreach($data as $key => $value){
+            $query = $query->setParameter($key, $value);
+        }
+
+        // todo: https://www.doctrine-project.org/projects/doctrine-orm/en/2.6/reference/caching.html#result-cache
+        //return $query->getQuery()->setResultCacheDriver($this->arrayCache)->getOneOrNullResult();
+        return $query->getQuery()->getOneOrNullResult();
+    }
+
+    /**
      * @param array $requestSerialized
      * @return \Railroad\Railtracker\Entities\Request|Url
      * @throws Exception
@@ -140,20 +172,7 @@ class RequestTracker extends TrackerBase
         // ---------- Step 2: Associated Objects, Simple ----------
         // These objects have only scalar values - they do *not* themselves have associated objects
 
-        // request agent
-        $requestAgent =
-            $this->entityManager->createQueryBuilder()
-                ->select('ra')
-                ->from(RequestAgent::class, 'ra')
-                ->where('ra.name = :name')
-                ->andWhere('ra.browserVersion = :browserVersion')
-                ->andWhere('ra.browser = :browser')
-                ->setParameter('name', $requestSerialized['agent']['name'])
-                ->setParameter('browserVersion', $requestSerialized['agent']['browserVersion'])
-                ->setParameter('browser', $requestSerialized['agent']['browser'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
+        $requestAgent = $this->getByData(RequestAgent::class, $requestSerialized['agent']);
 
         if (empty($requestAgent)) {
             $requestAgent = new RequestAgent();
@@ -167,17 +186,7 @@ class RequestTracker extends TrackerBase
         $request->setAgent($requestAgent);
 
         // request device
-        $requestDevice =
-            $this->entityManager->createQueryBuilder()
-                ->select(RequestDevice::class, 'rd')
-                ->where('rd.isMobile = ' . $requestSerialized['device']['isMobile'])
-                ->andWhere('rd.kind = ' . $requestSerialized['device']['kind'])
-                ->andWhere('rd.platform = ' . $requestSerialized['device']['platform'])
-                ->andWhere('rd.model = ' . $requestSerialized['device']['model'])
-                ->andWhere('rd.platformVersion = ' . $requestSerialized['device']['platformVersion'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
+        $requestDevice = $requestAgent = $this->getByData(RequestDevice::class, $requestSerialized['device']);
 
         if (empty($requestDevice)) {
             $requestDevice = new RequestDevice();
@@ -193,14 +202,7 @@ class RequestTracker extends TrackerBase
         $request->setDevice($requestDevice);
 
         // request language
-        $requestLanguage =
-            $this->entityManager->createQueryBuilder()
-                ->select(RequestLanguage::class, 'rl')
-                ->where('rl.preference = ' . $requestSerialized['language']['preference'])
-                ->andWhere('rl.languageRange = ' . $requestSerialized['language']['languageRange'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
+        $requestLanguage = $this->getByData(RequestLanguage::class, $requestSerialized['language']);
 
         if (empty($requestLanguage)) {
             $requestLanguage = new RequestLanguage();
@@ -213,13 +215,8 @@ class RequestTracker extends TrackerBase
         $request->setLanguage($requestLanguage);
 
         // request method
-        $requestMethod =
-            $this->entityManager->createQueryBuilder()
-                ->select(RequestLanguage::class, 'rm')
-                ->where('rm.method = ' . $requestSerialized['method']['method'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
+
+        $requestMethod = $this->getByData(RequestMethod::class, $requestSerialized['method']);
 
         if (empty($requestMethod)) {
             $requestMethod = new RequestMethod();
@@ -231,260 +228,180 @@ class RequestTracker extends TrackerBase
 
         $request->setMethod($requestMethod);
 
-        // ---------- Step 3: Associated Objects that Themselves Have Associated Objects ----------
-
         // route
-        if (!empty($requestSerialized['route'])) {
-            $route =
-                $this->entityManager->createQueryBuilder()
-                    ->select(Route::class, 'r')
-                    ->where('r.name = ' . $requestSerialized['route']['name'])
-                    ->andWhere('r.action = ' . $requestSerialized['route']['action'])
-                    ->getQuery()
-                    ->setResultCacheDriver($this->arrayCache)
-                    ->getOneOrNullResult();
+
+        $routeNotNull = !empty($requestSerialized['route']['name']) || !empty($requestSerialized['route']['route']);
+
+        if($routeNotNull){
+            $route = $route = $this->getByData(Route::class, $requestSerialized['route']);
 
             if (empty($route)) {
-                $name = $requestSerialized['route']['name'];
-                $action = $requestSerialized['route']['action'];
 
-                if (!empty($name) && !empty($action)) {
-                    $route = new Route();
-                    /** @var Route $route */
-                    $route = $this->arrayHydrator->hydrate($route, $requestSerialized['route']);
-                    $this->persistAndFlushEntity($route);
-                }
+                $route = new Route();
+
+                $route = $this->arrayHydrator->hydrate($route, $requestSerialized['route']);
+
+                $this->persistAndFlushEntity($route);
             }
 
-            if (!empty($route)) {
+            if(!empty($route)){
                 $request->setRoute($route);
             }
         }
 
-        // url domain
-        $urlDomain =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlDomain::class, 'ud')
-                ->where('ud.name = ' . $requestSerialized['domain'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
+        // url and referer url
 
-        if (!empty($data['domain'])) {
-            if (empty($urlDomain)) {
-                $urlDomain = new UrlDomain();
-                $urlDomain->setName($data['domain']);
-                $this->entityManager->persist($urlDomain);
-            }
+        if(!empty($requestSerialized['url'])){
+
+            $url = $this->getOrCreateUrlForData($requestSerialized['url']);
+
+            $request->setUrl($url);
         }
 
-        // url path
-        $urlPath =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlPath::class, 'up')
-                ->where('up.path = ' . $requestSerialized['path'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
+        if(!empty($requestSerialized['refererUrl'])){
 
-        if (!empty($data['path'])) {
-            if (empty($urlPath)) {
-                $urlPath = new UrlPath();
-                $urlPath->setPath($data['path']);
-                $this->entityManager->persist($urlPath);
-            }
+            $refererUrl = $this->getOrCreateUrlForData($requestSerialized['refererUrl']);
+
+            $request->setRefererUrl($refererUrl);
         }
-
-        // url protocol
-        $urlProtocol =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlProtocol::class, 'up')
-                ->where('up.protocol = ' . $requestSerialized['protocol'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (!empty($data['protocol'])) {
-            if (empty($urlProtocol)) {
-                $urlProtocol = new UrlProtocol();
-                $urlProtocol->setProtocol($data['protocol']);
-                $this->entityManager->persist($urlProtocol);
-            }
-        }
-
-        // url query
-        $urlQuery =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlQuery::class, 'uq')
-                ->where('uq.string = ' . $requestSerialized['query'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (!empty($data['query'])) {
-            if (empty($urlQuery)) {
-                $urlQuery = new UrlQuery();
-                $urlQuery->setString($data['query']);
-                $this->entityManager->persist($urlQuery);
-            }
-        }
-
-        $this->entityManager->flush();
-
-        // url
-        $url =
-            $this->entityManager->createQueryBuilder()
-                ->select(Url::class, 'u')
-                ->where('IDENTITY(u.domain)', $urlDomain->getId())
-                ->andWhere('IDENTITY(u.path)', $urlPath->getId())
-                ->andWhere('IDENTITY(u.protocol)', $urlProtocol->getId())
-                ->andWhere('IDENTITY(u.query)', $urlQuery->getId())
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (empty($url)) {
-            $url = new Url();
-
-            $url->setDomain($urlDomain);
-            $url->setPath($urlPath);
-            $url->setProtocol($urlProtocol);
-            $url->setQuery($urlQuery);
-
-            /** @var Url $url */
-            $this->persistAndFlushEntity($url);
-        }
-
-        // reference url
-        // ref url domain
-        $refererUrlSerialized = $requestSerialized['refererUrl'];
-        $urlDomain = null;
-        $urlPath = null;
-        $urlProtocol = null;
-        $urlQuery = null;
-
-        $urlDomain =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlDomain::class, 'ud')
-                ->where('ud.name', $refererUrlSerialized['domain'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (!empty($data['domain'])) {
-            if (empty($urlDomain)) {
-                $urlDomain = new UrlDomain();
-                $urlDomain->setName($data['domain']);
-                $this->entityManager->persist($urlDomain);
-            }
-        }
-
-        // ref url path
-        $urlPath =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlPath::class, 'up')
-                ->where('up.path', $refererUrlSerialized['path'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (!empty($data['path'])) {
-            if (empty($urlPath)) {
-                $urlPath = new UrlPath();
-                $urlPath->setPath($data['path']);
-                $this->entityManager->persist($urlPath);
-            }
-        }
-
-        // ref url protocol
-        $urlProtocol =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlProtocol::class, 'up')
-                ->where('up.protocol', $refererUrlSerialized['protocol'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (!empty($data['protocol'])) {
-            if (empty($urlProtocol)) {
-                $urlProtocol = new UrlProtocol();
-                $urlProtocol->setProtocol($data['protocol']);
-                $this->entityManager->persist($urlProtocol);
-            }
-        }
-
-        // ref url query
-        $urlQuery =
-            $this->entityManager->createQueryBuilder()
-                ->select(UrlQuery::class, 'uq')
-                ->where('uq.string', $refererUrlSerialized['query'])
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (!empty($data['query'])) {
-            if (empty($urlQuery)) {
-                $urlQuery = new UrlQuery();
-                $urlQuery->setString($data['query']);
-                $this->entityManager->persist($urlQuery);
-            }
-        }
-
-        $this->entityManager->flush();
-
-        // ref url
-        $url =
-            $this->entityManager->createQueryBuilder()
-                ->select(Url::class, 'u')
-                ->where('IDENTITY(u.domain)', $urlDomain->getId())
-                ->andWhere('IDENTITY(u.path)', $urlPath->getId())
-                ->andWhere('IDENTITY(u.protocol)', $urlProtocol->getId())
-                ->andWhere('IDENTITY(u.query)', $urlQuery->getId())
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (empty($url)) {
-            $url = new Url();
-
-            $url->setDomain($urlDomain);
-            $url->setPath($urlPath);
-            $url->setProtocol($urlProtocol);
-            $url->setQuery($urlQuery);
-
-            /** @var Url $url */
-            $this->persistAndFlushEntity($url);
-        }
-
-        $refererUrl =
-            $this->entityManager->createQueryBuilder()
-                ->select(Url::class, 'u')
-                ->where('IDENTITY(u.domain)', $urlDomain->getId())
-                ->andWhere('IDENTITY(u.path)', $urlPath->getId())
-                ->andWhere('IDENTITY(u.protocol)', $urlProtocol->getId())
-                ->andWhere('IDENTITY(u.query)', $urlQuery->getId())
-                ->getQuery()
-                ->setResultCacheDriver($this->arrayCache)
-                ->getOneOrNullResult();
-
-        if (empty($refererUrl) && !empty($requestSerialized['refererUrl'])) { // note: referer_url_id is nullable
-            $refererUrl = new Url();
-
-            $refererUrl->setDomain($urlDomain);
-            $refererUrl->setPath($urlPath);
-            $refererUrl->setProtocol($urlProtocol);
-            $refererUrl->setQuery($urlQuery);
-
-            /** @var Url $url */
-            $this->persistAndFlushEntity($refererUrl);
-        }
-
-        $request->setUrl($url);
-        $request->setRefererUrl($refererUrl);
 
         // ---------- Step 4: End ----------
 
         return $request;
+    }
+
+    /**
+     * @param array $urlAsArray
+     * @return Url
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    private function getOrCreateUrlForData($urlAsArray)
+    {
+        // ============ 1 associated entities ============
+
+        // 1.1 - url protocol (note that url table's protocol_id is NOT nullable)
+
+        if(empty($urlAsArray['protocol'])){
+            error_log('"$urlAsArray[\'protocol\']" empty.' );
+        }
+
+        $urlProtocolValue = $urlAsArray['protocol'];
+
+        $urlProtocol = $this->getByData(UrlProtocol::class, ['protocol' => $urlProtocolValue]);
+
+        if (empty($urlProtocol)) {
+
+            $urlProtocol = new UrlProtocol();
+            $urlProtocol->setProtocol($urlProtocolValue);
+
+            $this->entityManager->persist($urlProtocol);
+        }
+
+        // 1.2 -  url domain (note that url table's domain_id is NOT nullable)
+
+        if(empty($urlAsArray['domain'])){
+            error_log('"$urlAsArray[\'domain\']" empty.' );
+        }
+
+        $urlDomainValue = $urlAsArray['domain'];
+
+        $urlDomain = $this->getByData(UrlDomain::class, ['name' => $urlDomainValue]);
+
+        if (empty($urlDomain)) {
+
+            $urlDomain = new UrlDomain();
+            $urlDomain->setName($urlDomainValue);
+
+            $this->entityManager->persist($urlDomain);
+        }
+
+        // 1.3 - url path (note that url table's path_id is nullable)
+
+        if(!empty($urlAsArray['path'])){
+
+            $urlPath = $this->getByData(UrlPath::class, ['path' => $urlAsArray['path']]);
+
+            if (empty($urlPath)) {
+
+                $urlPath = new UrlPath();
+                $urlPath->setPath($urlAsArray['path']);
+
+                $this->entityManager->persist($urlPath);
+            }
+        }
+
+        // 1.4 - url query (note that url table's query_id is nullable)
+
+        if (!empty($urlAsArray['query'])) {
+
+            $urlQuery = $this->getByData(UrlQuery::class, ['string' => $urlAsArray['query']]);
+
+            if (empty($urlQuery)) {
+
+                $urlQuery = new UrlQuery();
+                $urlQuery->setString($urlAsArray['query']);
+
+                $this->entityManager->persist($urlQuery);
+            }
+        }
+
+        $this->entityManager->flush();
+
+        // ============ 2 the Url entity itself ============
+
+        // 2.1 - query
+
+        $query =
+            $this->entityManager->createQueryBuilder()
+                ->from(Url::class, 'u')
+                ->select([
+                    'u',
+                    'udomain',
+                    'upath',
+                    'uprotocol',
+                    'uquery',
+                ])
+                ->join('u.protocol', 'uprotocol')
+                ->join('u.domain', 'udomain')
+                ->join('u.path', 'upath')
+                ->join('u.query', 'uquery');
+
+        $query->where('IDENTITY(u.domain) = ' . $urlDomain->getId());
+        $query->where('IDENTITY(u.protocol) = ' . $urlProtocol->getId());
+
+        if(!empty($urlPath)){
+            $query->andWhere('IDENTITY(u.path) = ' . $urlPath->getId());
+        }
+
+        if(!empty($urlQuery)){
+            $query->andWhere('IDENTITY(u.query) = ' . $urlQuery->getId());
+        }
+
+        $url = $query->getQuery()
+            // ->setResultCacheDriver($this->arrayCache) // todo: implement
+            ->getOneOrNullResult();
+
+        // 2.1 - set associated entities
+
+        if (empty($url)) {
+            $url = new Url();
+
+            $url->setProtocol($urlProtocol);
+
+            $url->setDomain($urlDomain);
+
+            if(!empty($urlPath)){
+                $url->setPath($urlPath);
+            }
+
+            if(!empty($urlQuery)){
+                $url->setQuery($urlQuery);
+            }
+            $this->entityManager->persist($url);
+        }
+
+        return $url;
     }
 
     /**
@@ -534,6 +451,7 @@ class RequestTracker extends TrackerBase
         return $hydratedRequest ?? null;
     }
 
+    // todo: delete this?
     /**
      * @param $data
      * @return Url

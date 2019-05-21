@@ -6,13 +6,11 @@ use Illuminate\Support\Facades\Cache;
 
 class BatchService
 {
-    public static $batchKeyPrefix = 'railtracker_batch_';
+    public $batchKeyPrefix;
 
     public function __construct()
     {
-//        'railtracker_batch_request_23742973482734' => ['uuid' => '23742973482734']
-//        'railtracker_batch_exceptions_23742973482734' => ['uuid' => rand()]
-//        'railtracker_batch_response_23742973482734' => ['uuid' => rand()]
+        $this->batchKeyPrefix = config('railtracker.batch-prefix');
     }
 
     /**
@@ -23,7 +21,7 @@ class BatchService
      */
     public function addToBatch($datum, $type, $uuid, $expireSeconds = 604800)
     {
-        $key = self::$batchKeyPrefix . $type . '_' . $uuid;
+        $key = $this->batchKeyPrefix . $type . '_' . $uuid;
 
         $this->cache()->setex($key, $expireSeconds, serialize($datum));
     }

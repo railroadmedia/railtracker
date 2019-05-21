@@ -34,6 +34,10 @@ class ResponseTracker extends TrackerBase
      * @var RequestTracker
      */
     private $requestTracker;
+    /**
+     * @var RequestTracker
+     */
+    protected $batchService;
 
     public function __construct(
         DatabaseManager $databaseManager,
