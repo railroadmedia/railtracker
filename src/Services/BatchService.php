@@ -45,18 +45,4 @@ class BatchService
     {
         $this->cache()->del($key);
     }
-
-    /**
-     * @param $key
-     * @return bool|string
-     */
-    public function getTypeFromKey($key)
-    {
-        $startPositionOfTypeLabel = strpos($key, $this->typeLabel) + strlen($this->typeLabel);
-        $startPositionOfUuidLabel = strpos($key, $this->uuidLabel) + strlen($this->uuidLabel);
-
-        $lengthOfTypeLabel = $startPositionOfUuidLabel - $startPositionOfTypeLabel - strlen($this->uuidLabel);
-
-        return substr($key, $startPositionOfTypeLabel, $lengthOfTypeLabel);
-    }
 }

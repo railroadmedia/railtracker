@@ -2,7 +2,10 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
+use DebugBar\DebugBar;
 use Exception;
+use Illuminate\Support\Facades\App;
+use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
@@ -45,17 +48,24 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $responseTracker;
 
     /**
+     * @var RailtrackerEntityManager
+     */
+    private $entityManager;
+
+    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
      * @param ExceptionTracker $exceptionTracker
      * @param ResponseTracker $responseTracker
+     * @param RailtrackerEntityManager $entityManager
      */
     public function __construct(
         BatchService $batchService,
         RequestTracker $requestTracker,
         ExceptionTracker $exceptionTracker,
-        ResponseTracker $responseTracker
+        ResponseTracker $responseTracker,
+        RailtrackerEntityManager $entityManager
     )
     {
         parent::__construct();
@@ -64,6 +74,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->requestTracker = $requestTracker;
         $this->exceptionTracker = $exceptionTracker;
         $this->responseTracker = $responseTracker;
+        $this->entityManager = $entityManager;
     }
 
     /**
@@ -71,47 +82,70 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     public function handle()
     {
+        $debugBar = app(DebugBar::class);
+        $debugBar->collect();
+
         $requestKeys =
             $this->batchService->cache()
                 ->keys($this->batchService->batchKeyPrefix . 'request*');
 
-        foreach ($requestKeys as $requestKey) {
-            try {
-                $requestData = unserialize(
-                    $this->batchService->cache()
-                        ->get($requestKey)
-                );
+        $this->info('processing ' . count($requestKeys) . ' requests total');
 
-                $uuid = $requestData['uuid'];
+        $chunkSize = 100;
 
-                $exceptionKey = $this->batchService->batchKeyPrefix . 'exception_' . $uuid;
-                $responseKey = $this->batchService->batchKeyPrefix . 'response_' . $uuid;
+        $processedCount = 0;
+        $errorsCount = 0;
 
-                $exceptionData = unserialize(
-                    $this->batchService->cache()
-                        ->get($exceptionKey)
-                );
-                $responseData = unserialize(
-                    $this->batchService->cache()
-                        ->get($responseKey)
-                );
+        foreach (array_chunk($requestKeys, $chunkSize) as $requestKeysChunk) {
 
-                $requestEntity = $this->requestTracker->process($requestData);
+            foreach ($requestKeysChunk as $requestKey) {
 
-                if (!empty($exceptionData)) {
-                    $this->exceptionTracker->process($exceptionData, $requestEntity);
+                try {
+                    $requestData = unserialize(
+                        $this->batchService->cache()
+                            ->get($requestKey)
+                    );
+
+                    $uuid = $requestData['uuid'];
+
+                    $exceptionKey = $this->batchService->batchKeyPrefix . 'exception_' . $uuid;
+                    $responseKey = $this->batchService->batchKeyPrefix . 'response_' . $uuid;
+
+                    $exceptionData = unserialize(
+                        $this->batchService->cache()
+                            ->get($exceptionKey)
+                    );
+                    $responseData = unserialize(
+                        $this->batchService->cache()
+                            ->get($responseKey)
+                    );
+
+                    $requestEntity = $this->requestTracker->process($requestData);
+
+                    if (!empty($exceptionData)) {
+                        $this->exceptionTracker->process($exceptionData, $requestEntity);
+                    }
+
+                    $this->responseTracker->process($responseData, $requestEntity);
+
+                    $this->entityManager->clear();
+
+                } catch (Exception $exception) {
+                    error_log($exception);
+                    $errorsCount++;
                 }
-                
-                $this->responseTracker->process($responseData, $requestEntity);
+                $this->batchService->forget($requestKey);
+                $this->batchService->forget($exceptionKey ?? null);
+                $this->batchService->forget($responseKey ?? null);
 
-            } catch (Exception $exception) {
-                error_log($exception);
+                $processedCount++;
             }
-
-            $this->batchService->forget($requestKey);
-            $this->batchService->forget($exceptionKey ?? null);
-            $this->batchService->forget($responseKey ?? null);
         }
+
+        $this->info(
+            'Processed ' . $processedCount . ' requests (and their responses and sometimes exceptions). ' .
+            $errorsCount . ' errors caught in ProcessTracking\'s try-catch.'
+        );
 
         return true;
     }

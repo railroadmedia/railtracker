@@ -119,38 +119,6 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param $entity
-     * @param $data
-     * @return mixed
-     */
-    private function getByData($entity, $data)
-    {
-        $query = $this->entityManager->createQueryBuilder()->select('aliasFoo')->from($entity, 'aliasFoo');
-
-        if(array_key_exists('id', $data)){
-            unset($data['id']);
-        }
-
-        $first = true;
-        foreach($data as $key => $value){
-            if($first){
-                $query = $query->where('aliasFoo.' . $key .' = :' . $key);
-                $first = false;
-            }else{
-                $query = $query->andWhere('aliasFoo.' . $key .' = :' . $key);
-            }
-        }
-
-        foreach($data as $key => $value){
-            $query = $query->setParameter($key, $value);
-        }
-
-        // todo: https://www.doctrine-project.org/projects/doctrine-orm/en/2.6/reference/caching.html#result-cache
-        //return $query->getQuery()->setResultCacheDriver($this->arrayCache)->getOneOrNullResult();
-        return $query->getQuery()->getOneOrNullResult();
-    }
-
-    /**
      * @param array $requestSerialized
      * @return \Railroad\Railtracker\Entities\Request|Url
      * @throws Exception
