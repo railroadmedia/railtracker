@@ -38,7 +38,7 @@ class RequestDevice
     private $platformVersion;
 
     /**
-     * @ORM\Column(type="boolean")
+     * @ORM\Column(type="boolean", name="is_mobile")
      */
     private $isMobile;
 
