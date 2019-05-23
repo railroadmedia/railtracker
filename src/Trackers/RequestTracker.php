@@ -348,7 +348,7 @@ class RequestTracker extends TrackerBase
 
         $url = $query->getQuery()
             // ->setResultCacheDriver($this->arrayCache) // todo: implement
-            ->getOneOrNullResult();
+            ->getFirstResult();
 
         // 2.1 - set associated entities
 
