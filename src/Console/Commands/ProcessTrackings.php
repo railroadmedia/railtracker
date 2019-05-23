@@ -82,9 +82,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        $debugBar = app(DebugBar::class);
-        $debugBar->collect();
-
         $requestKeys =
             $this->batchService->cache()
                 ->keys($this->batchService->batchKeyPrefix . 'request*');
