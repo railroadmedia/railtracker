@@ -335,28 +335,40 @@ class RequestTracker extends TrackerBase
                 ->join('u.path', 'upath')
                 ->join('u.query', 'uquery');
 
-        $query->where('IDENTITY(u.domain) = ' . $urlDomain->getId());
-        $query->where('IDENTITY(u.protocol) = ' . $urlProtocol->getId());
+        $query->andWhere('IDENTITY(u.domain) = :domainId');
+        $query->setParameter('domainId', $urlDomain->getId());
+
+        $query->andWhere('IDENTITY(u.protocol) = :protocolId');
+        $query->setParameter('protocolId', $urlProtocol->getId());
 
         if(!empty($urlPath)){
-            $query->andWhere('IDENTITY(u.path) = ' . $urlPath->getId());
+            $query->andWhere('IDENTITY(u.path) = :pathId');
+            $query->setParameter('pathId', $urlPath->getId());
+
+        }else{
+            $query->andWhere('IDENTITY(u.path) is NULL');
         }
 
         if(!empty($urlQuery)){
-            $query->andWhere('IDENTITY(u.query) = ' . $urlQuery->getId());
+            $query->andWhere('IDENTITY(u.query) = :queryId');
+            $query->setParameter('queryId', $urlQuery->getId());
+
+        }else{
+            $query->andWhere('IDENTITY(u.query) is NULL');
         }
 
+
         $url = $query->getQuery()
-            // ->setResultCacheDriver($this->arrayCache) // todo: implement
-            ->getFirstResult();
+            //->setResultCacheDriver($this->arrayCache) // todo: implement
+            ->getResult()[0] ?? null;
 
         // 2.1 - set associated entities
 
         if (empty($url)) {
+
             $url = new Url();
 
             $url->setProtocol($urlProtocol);
-
             $url->setDomain($urlDomain);
 
             if(!empty($urlPath)){
@@ -366,6 +378,7 @@ class RequestTracker extends TrackerBase
             if(!empty($urlQuery)){
                 $url->setQuery($urlQuery);
             }
+
             $this->entityManager->persist($url);
         }
 
