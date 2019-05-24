@@ -116,7 +116,7 @@ class ResponseTracker extends TrackerBase
         $response->setResponseDurationMs($responseData['responseDurationMs']);
         $response->setRespondedOn($responseData['respondedOn']);
 
-        $statusCode = $this->getEntityByTypeAndData(
+        $statusCode = $this->getByData(
             ResponseStatusCode::class,
             ['code' => $responseData['status_code']]
         );
