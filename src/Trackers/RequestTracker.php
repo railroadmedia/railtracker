@@ -432,59 +432,6 @@ class RequestTracker extends TrackerBase
         return $hydratedRequest ?? null;
     }
 
-    // todo: delete this?
-    /**
-     * @param $data
-     * @return Url
-     */
-    private function manualUrlHydration($data)
-    {
-        $url = new Url();
-
-        $urlDomain =
-            $this->getEntityByTypeAndData('Railroad\Railtracker\Entities\UrlDomain', ['name' => $data['domain']]);
-        if (!empty($data['domain'])) {
-            if (empty($urlDomain)) {
-                $urlDomain = new UrlDomain();
-                $urlDomain->setName($data['domain']);
-            }
-            $url->setDomain($urlDomain);
-        }
-
-        $urlPath = $this->getEntityByTypeAndData('Railroad\Railtracker\Entities\UrlPath', ['path' => $data['path']]);
-        if (!empty($data['path'])) {
-            if (empty($urlPath)) {
-                $urlPath = new UrlPath();
-                $urlPath->setPath($data['path']);
-            }
-            $url->setPath($urlPath);
-        }
-
-        $urlProtocol = $this->getEntityByTypeAndData(
-            'Railroad\Railtracker\Entities\UrlProtocol',
-            ['protocol' => $data['protocol']]
-        );
-        if (!empty($data['protocol'])) {
-            if (empty($urlProtocol)) {
-                $urlProtocol = new UrlProtocol();
-                $urlProtocol->setProtocol($data['protocol']);
-            }
-            $url->setProtocol($urlProtocol);
-        }
-
-        $urlQuery =
-            $this->getEntityByTypeAndData('Railroad\Railtracker\Entities\UrlQuery', ['string' => $data['query']]);
-        if (!empty($data['query'])) {
-            if (empty($urlQuery)) {
-                $urlQuery = new UrlQuery();
-                $urlQuery->setString($data['query']);
-            }
-            $url->setQuery($urlQuery);
-        }
-
-        return $url;
-    }
-
     /**
      * @param Agent $agent
      * @return string
