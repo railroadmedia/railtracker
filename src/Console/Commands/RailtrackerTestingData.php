@@ -8,21 +8,21 @@ use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
 
-class CreateCachedDataToTestProcessing extends \Illuminate\Console\Command
+class RailtrackerTestingData extends \Illuminate\Console\Command
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'CreateCachedDataToTestProcessing';
+    protected $name = 'RailtrackerTestingData';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create data locally for troubleshooting error excessive memory usage';
+    protected $description = 'Create data in cache for testing ProcessTrackings command';
 
     const USER_AGENT_CHROME_WINDOWS_10 = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like ' .
         'Gecko) Chrome/58.0.3029.110 Safari/537.36';
@@ -51,9 +51,6 @@ class CreateCachedDataToTestProcessing extends \Illuminate\Console\Command
      */
     private $faker;
 
-    /**
-     * CreateCachedDataToTestProcessing constructor.
-     */
     public function __construct(
         BatchService $batchService,
         RequestTracker $requestTracker,
@@ -80,30 +77,102 @@ class CreateCachedDataToTestProcessing extends \Illuminate\Console\Command
         $printGraphicRepresentationOrStatusCodes = false;
         $printProgressUpdates = false;
 
-        $this->batchService->batchKeyPrefix = 'CreateCachedDataToTestProcessing1905211340BatchKeyPrefix';
-
         $requestKeys = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . 'request*');
         $responseKeys = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . 'response*');
 
         $this->info('requestKeys count before: ' . count($requestKeys));
         $this->info('responseKeys count before: ' . count($responseKeys));
 
-        $amountToCreate = 100000;
+        $amountToCreate = 100;
 
         $startTime = time();
         $this->info('$startTime: ' . $startTime);
 
         $this->info('creating ' . $amountToCreate . ' request and response pairs');
 
-        for($i = 0; $i < $amountToCreate; $i++){
+        // -------------------------------------------------------------------------------------------------------------
 
+        $poolOfDomains = [];
+        $poolOfPathsCommon = [];
+        $poolOfPathsRare = [];
+        $poolOfUrlQueries = [];
+        $poolOfUserAgents = [];
+        $poolOfUrlQueryPermutations = [];
+        $poolOfUrls = [];
+        $poolOfIpAddresses = [];
+
+        $numberOfDomains = 3;
+        for($i = 0; $i < $numberOfDomains; $i++){
+            $poolOfDomains[] = $this->faker->domainName;
+        }
+
+        $numberOfPathsCommon = 3;
+        for($i = 0; $i < $numberOfPathsCommon; $i++){
+            $poolOfPathsCommon[] = $this->faker->word . '-' . $this->faker->word;
+        }
+
+        $numberOfPathsRare = 20;
+        for($i = 0; $i < $numberOfPathsRare; $i++){
+            $poolOfPathsRare[] = $this->faker->word . '-' . $this->faker->word . '-' . $this->faker->word;
+        }
+
+        $numberOfUrlQueries = 10;
+        for($i = 0; $i < $numberOfUrlQueries; $i++){
+            $poolOfUrlQueries[] = $this->faker->word;
+        }
+
+        $numberOfUrlQueryPermutationsPerQuery = 4;
+        foreach($poolOfUrlQueries as $urlQueryFromPool){
+            for($i = 0; $i < $numberOfUrlQueryPermutationsPerQuery; $i++){
+                $poolOfUrlQueryPermutations[] = '?' . $urlQueryFromPool . '=' . $i;
+            }
+        }
+
+        $numberOfUrlQueryPermutationsTotal = $numberOfUrlQueries * $numberOfUrlQueryPermutationsPerQuery;
+
+        $numberOrUrlToCreate = $numberOfDomains * $numberOfPathsCommon+$numberOfPathsRare * $numberOfUrlQueryPermutationsTotal;
+
+        for($i = 0; $i < $numberOrUrlToCreate; $i++){
+            $domainToUse = $poolOfDomains[rand(0,$numberOfDomains-1)];
+
+            $pathToUse = $this->faker->randomElement($poolOfPathsCommon);
+            if(rand(0, 1)){ // half the time use a rare one
+                $pathToUse = $this->faker->randomElement($poolOfPathsRare);
+            }
+
+            $url = 'http://www.' . $domainToUse . '/' . $pathToUse;
+
+            $percentageOrTime = 20;
+            $weight = $percentageOrTime * 0.01;
+
+            if($this->faker->optional($weight)->boolean){
+                $urlQuery = $poolOfUrlQueryPermutations[rand(0, $numberOfUrlQueryPermutationsTotal-1)];
+                $url = $url . '?' . $urlQuery.'';
+            }
+
+            $poolOfUrls[] = $url;
+        }
+
+        $numberOfUserAgents = 10;
+        for($i = 0; $i < $numberOfUserAgents; $i++){
+            $poolOfUserAgents[] = $this->faker->userAgent;
+        }
+
+        $numberOfIpAddresses = 10;
+        for($i = 0; $i < $numberOfIpAddresses; $i++){
+            $poolOfIpAddresses[] = $this->faker->ipv4;
+        }
+
+        // -------------------------------------------------------------------------------------------------------------
+
+        for($i = 0; $i < $amountToCreate; $i++){
             RequestTracker::$uuid = $this->faker->uuid;
 
-            $userAgent = $this->faker->userAgent;
-            $url = $this->faker->url;
-            $referer = $this->faker->url;
-            $clientIp = $this->faker->url;
-            $method = $this->faker->ipv4;
+            $userAgent = $poolOfUserAgents[rand(0, $numberOfUserAgents-1)];;
+            $url = $this->faker->randomElement($poolOfUrls);
+            $referer = $this->faker->randomElement($poolOfUrls);
+            $clientIp = $this->faker->randomElement($poolOfIpAddresses);
+            $method = $this->faker->optional(0.8, 'POST')->passthrough('GET');
             $cookies = [];
 
             $request = $this->createRequest(

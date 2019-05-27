@@ -29,9 +29,6 @@ class EmptyLocalCache extends \Illuminate\Console\Command
      */
     private $batchService;
 
-    /**
-     * CreateCachedDataToTestProcessing constructor.
-     */
     public function __construct(
         BatchService $batchService
     )
@@ -43,8 +40,6 @@ class EmptyLocalCache extends \Illuminate\Console\Command
 
     public function handle()
     {
-        $this->batchService->batchKeyPrefix = 'CreateCachedDataToTestProcessing1905211340BatchKeyPrefix';
-
         $allKeysForPrefix = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . '*');
 
         $this->info('Count before: ' . count($allKeysForPrefix));

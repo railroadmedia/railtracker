@@ -29,9 +29,6 @@ class PrintKeyCount extends \Illuminate\Console\Command
      */
     private $batchService;
 
-    /**
-     * CreateCachedDataToTestProcessing constructor.
-     */
     public function __construct(
         BatchService $batchService
     )
@@ -43,8 +40,6 @@ class PrintKeyCount extends \Illuminate\Console\Command
 
     public function handle()
     {
-        $this->batchService->batchKeyPrefix = 'CreateCachedDataToTestProcessing1905211340BatchKeyPrefix';
-
         $requestKeys = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . 'request*');
 
         $this->info(count($requestKeys) . ' request-response-pairs retrieved.');

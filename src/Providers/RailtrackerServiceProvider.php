@@ -24,12 +24,10 @@ use Railroad\Doctrine\Types\Domain\GenderType;
 use Railroad\Doctrine\Types\Domain\PhoneNumberType;
 use Railroad\Doctrine\Types\Domain\TimezoneType;
 use Railroad\Doctrine\Types\Domain\UrlType;
-use Railroad\Railtracker\Console\Commands\CreateCachedDataToTestProcessing;
+use Railroad\Railtracker\Console\Commands\RailtrackerTestingData;
 use Railroad\Railtracker\Console\Commands\EmptyLocalCache;
 use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
-use Railroad\Railtracker\Events\RequestTracked;
-//use Railroad\Railtracker\Listeners\RequestTrackedEventListener;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\ConfigService;
 use Redis;
@@ -216,7 +214,7 @@ class RailtrackerServiceProvider extends ServiceProvider
         $this->commands([
             ProcessTrackings::class,
             PrintKeyCount::class,
-            CreateCachedDataToTestProcessing::class,
+            RailtrackerTestingData::class,
             EmptyLocalCache::class
         ]);
 
