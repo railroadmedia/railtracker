@@ -2,7 +2,6 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
-use DebugBar\DebugBar;
 use Exception;
 use Illuminate\Support\Facades\App;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
