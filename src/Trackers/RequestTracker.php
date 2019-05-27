@@ -330,10 +330,10 @@ class RequestTracker extends TrackerBase
                     'uprotocol',
                     'uquery',
                 ])
-                ->join('u.protocol', 'uprotocol')
-                ->join('u.domain', 'udomain')
-                ->join('u.path', 'upath')
-                ->join('u.query', 'uquery');
+                ->leftJoin('u.protocol', 'uprotocol')
+                ->leftJoin('u.domain', 'udomain')
+                ->leftJoin('u.path', 'upath')
+                ->leftJoin('u.query', 'uquery');
 
         $query->andWhere('IDENTITY(u.domain) = :domainId');
         $query->setParameter('domainId', $urlDomain->getId());
