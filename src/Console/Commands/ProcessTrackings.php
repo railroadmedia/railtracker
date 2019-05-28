@@ -138,10 +138,15 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
         }
 
-        $this->info(
-            'Processed ' . $processedCount . ' requests (and their responses and sometimes exceptions). ' .
-            $errorsCount . ' errors caught in ProcessTracking\'s try-catch.'
-        );
+        $msg = 'Processed ' . $processedCount . ' requests (and their responses and sometimes exceptions). ' .
+            'No problems arose during processing';
+
+        if($errorsCount > 0) {
+            $msg = 'Processed ' . $processedCount . ' requests (and their responses and sometimes exceptions). ' .
+                $errorsCount . ' errors caught in ProcessTracking\'s try-catch.';
+        }
+
+        $this->info($msg);
 
         return true;
     }
