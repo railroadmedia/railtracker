@@ -154,8 +154,8 @@ class RequestTracker extends TrackerBase
         $request->setAgent($requestAgent);
 
         // request device
-        $requestDevice = $requestAgent = $this->getByData(RequestDevice::class, $requestSerialized['device']);
-
+        $requestDevice = $this->getByData(RequestDevice::class, $requestSerialized['device']);
+    
         if (empty($requestDevice)) {
             $requestDevice = new RequestDevice();
             $requestDevice->setIsMobile($requestSerialized['device']['isMobile']);
