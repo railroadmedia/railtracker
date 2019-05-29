@@ -111,6 +111,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                         $this->batchService->cache()
                             ->get($exceptionKey)
                     );
+
+                    if($this->batchService->cache()->get($responseKey) === false) error_log('Response is false in ProcessTrackings. Request: ' . var_export($requestData, true)); // DEBUGGING AID
+
                     $responseData = unserialize(
                         $this->batchService->cache()
                             ->get($responseKey)

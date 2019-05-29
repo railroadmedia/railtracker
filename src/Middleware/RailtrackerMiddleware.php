@@ -87,6 +87,27 @@ class RailtrackerMiddleware
             /** @var Response $response */
             $response = $next($request);
 
+            // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ temporary debugging aid, remove anytime ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+            // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ temporary debugging aid, remove anytime ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+            // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ temporary debugging aid, remove anytime ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+
+            $class1 = gettype($response) === \Symfony\Component\HttpFoundation\Response::class; // DEBUG AID
+            $class2 = gettype($response) === Response::class; // DEBUG AID
+            $isExpectedClass = $class1 || $class2; // DEBUG AID
+
+            if(!$isExpectedClass){
+                $requestDump = var_export($serializedRequestEntity ?? '$serializedRequestEntity not set!', true); // DEBUG AID
+                $responseDump = var_export($response, true); // DEBUG AID
+                $dump = '$requestDump: ```' . $requestDump . '```... "$responseDump: ```' . $responseDump . '```'; // DEBUG AID
+                error_log('Response is NOT expected class in RailtrackerMiddleware. Request: ' . $dump); // DEBUG AID
+            }else{
+                error_log('Response is expected class in RailtrackerMiddleware.');
+            }
+
+            // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ temporary debugging aid, remove anytime ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+            // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ temporary debugging aid, remove anytime ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+            // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ temporary debugging aid, remove anytime ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+
             try {
                 $responseData = $this->responseTracker->serializedFromHttpResponse($response);
                 $this->batchService->addToBatch($responseData, 'response', RequestTracker::$uuid);

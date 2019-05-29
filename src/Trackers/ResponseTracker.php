@@ -116,6 +116,8 @@ class ResponseTracker extends TrackerBase
         $response->setResponseDurationMs($responseData['responseDurationMs']);
         $response->setRespondedOn($responseData['respondedOn']);
 
+        if(is_null($responseData['status_code'])) error_log('status-code null for response: ' . var_export($responseData, true)); // DEBUGGING AID
+
         $statusCode = $this->getByData(
             ResponseStatusCode::class,
             ['code' => $responseData['status_code']]
