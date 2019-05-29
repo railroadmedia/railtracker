@@ -14,7 +14,7 @@ use Railroad\Railtracker\Entities\Response;
 use Railroad\Railtracker\Entities\ResponseStatusCode;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
-use Symfony\Component\HttpFoundation\Response as HttpResponse;
+use Illuminate\Http\Response as HttpResponse;
 
 class ResponseTracker extends TrackerBase
 {
@@ -73,7 +73,7 @@ class ResponseTracker extends TrackerBase
      * @param HttpResponse $httpResponse
      * @return array
      */
-    public function serializedFromHttpResponse($httpResponse)
+    public function serializedFromHttpResponse(HttpResponse $httpResponse)
     {
         $response = new Response();
 
@@ -105,7 +105,7 @@ class ResponseTracker extends TrackerBase
     }
 
     /**
-     * @param string $responseData
+     * @param array $responseData
      * @return Response
      * @throws Exception
      */
