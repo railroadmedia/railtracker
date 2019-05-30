@@ -89,17 +89,20 @@ class ResponseTracker extends TrackerBase
         return $response;
     }
 
+    /**
+     * @param $data
+     * @param Request $request
+     * @return bool
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
     public function process($data, Request $request)
     {
-        try {
-            $hydratedResponse = $this->hydrate($data);
-            $hydratedResponse->setRequest($request);
+        $hydratedResponse = $this->hydrate($data);
+        $hydratedResponse->setRequest($request);
 
-            $this->entityManager->persist($hydratedResponse);
-            $this->entityManager->flush();
-        } catch (Exception $exception) {
-            error_log($exception);
-        }
+        $this->entityManager->persist($hydratedResponse);
+        $this->entityManager->flush();
 
         return true;
     }
@@ -111,6 +114,13 @@ class ResponseTracker extends TrackerBase
      */
     public function hydrate($responseData)
     {
+        if (empty($responseData) ||
+            empty($responseData['status_code']) ||
+            empty($responseData['responseDurationMs']) ||
+            empty($responseData['respondedOn'])) {
+            throw new Exception('Response data is empty from the cache, request uuid: ' . RequestTracker::$uuid);
+        }
+
         $response = new Response();
 
         $response->setResponseDurationMs($responseData['responseDurationMs']);

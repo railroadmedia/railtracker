@@ -95,19 +95,17 @@ class ExceptionTracker extends TrackerBase
     /**
      * @param $data
      * @param Request $request
-     * @return |null
+     * @return null |null
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
      */
     public function process($data, Request $request)
     {
-        try{
-            $hydratedExceptionOrRequestException = $this->hydrate($data);
-            $hydratedExceptionOrRequestException->setRequest($request);
-            
-            $this->entityManager->persist($hydratedExceptionOrRequestException);
-            $this->entityManager->flush();
-        }catch(\Exception $exception){
-            error_log($exception);
-        }
+        $hydratedExceptionOrRequestException = $this->hydrate($data);
+        $hydratedExceptionOrRequestException->setRequest($request);
+
+        $this->entityManager->persist($hydratedExceptionOrRequestException);
+        $this->entityManager->flush();
 
         return $hydratedRequest ?? null;
     }
