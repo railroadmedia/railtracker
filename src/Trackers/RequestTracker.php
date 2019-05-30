@@ -140,8 +140,6 @@ class RequestTracker extends TrackerBase
         // ---------- Step 2: Associated Objects, Simple ----------
         // These objects have only scalar values - they do *not* themselves have associated objects
 
-        if(!is_array($requestSerialized['agent'])) error_log('NON-ARRAY FOR getByData. Request: ' . var_export($requestSerialized, true)); // DEBUGGING AID
-
         $requestAgent = $this->getByData(RequestAgent::class, $requestSerialized['agent']);
 
         if (empty($requestAgent)) {
@@ -154,8 +152,6 @@ class RequestTracker extends TrackerBase
         }
 
         $request->setAgent($requestAgent);
-
-        if(!is_array($requestSerialized['device'])) error_log('NON-ARRAY FOR getByData. Request: ' . var_export($requestSerialized, true)); // DEBUGGING AID
 
         // request device
         $requestDevice = $this->getByData(RequestDevice::class, $requestSerialized['device']);
@@ -173,8 +169,6 @@ class RequestTracker extends TrackerBase
 
         $request->setDevice($requestDevice);
 
-        if(!is_array($requestSerialized['language'])) error_log('NON-ARRAY FOR getByData. Request: ' . var_export($requestSerialized, true)); // DEBUGGING AID
-
         // request language
         $requestLanguage = $this->getByData(RequestLanguage::class, $requestSerialized['language']);
 
@@ -187,8 +181,6 @@ class RequestTracker extends TrackerBase
         }
 
         $request->setLanguage($requestLanguage);
-
-        if(!is_array($requestSerialized['method'])) error_log('NON-ARRAY FOR getByData. Request: ' . var_export($requestSerialized, true)); // DEBUGGING AID
 
         // request method
 
@@ -209,9 +201,6 @@ class RequestTracker extends TrackerBase
         $routeNotNull = !empty($requestSerialized['route']['name']) || !empty($requestSerialized['route']['route']);
 
         if($routeNotNull){
-
-            if(!is_array($requestSerialized['route'])) error_log('NON-ARRAY FOR getByData. Request: ' . var_export($requestSerialized, true)); // DEBUGGING AID
-
             $route = $route = $this->getByData(Route::class, $requestSerialized['route']);
 
             if (empty($route)) {
@@ -227,8 +216,6 @@ class RequestTracker extends TrackerBase
                 $request->setRoute($route);
             }
         }
-
-        $this->validateUrls($requestSerialized); // DEBUGGING AID
 
         // url and referer url
 
@@ -250,16 +237,6 @@ class RequestTracker extends TrackerBase
 
         return $request;
     }
-
-    private function validateUrls($requestSerialized) // DEBUGGING AID
-    {
-        $urls = [$requestSerialized['url'], $requestSerialized['refererUrl']];
-        foreach($urls as $url){
-            if($url){
-                if(!is_array($url)) error_log('NON-ARRAY FOR getByData (url). Request: ' . var_export($requestSerialized, true)); // DEBUGGING AID
-            }
-        }
-    } // DEBUGGING AID
 
     /**
      * @param array $urlAsArray
