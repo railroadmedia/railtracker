@@ -85,6 +85,8 @@ class ResponseTracker extends TrackerBase
         $response = $this->serialize($response);
 
         $response['status_code'] = $httpResponse->getStatusCode();
+        $response['type'] = 'response';
+        $response['uuid'] = RequestTracker::$uuid;
 
         return $response;
     }

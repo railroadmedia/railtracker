@@ -89,6 +89,9 @@ class ExceptionTracker extends TrackerBase
         $requestExceptionEntity->setCreatedAtTimestampMs(round(microtime(true) * 1000));
         $requestExceptionEntitySerialized = $this->serialize($requestExceptionEntity);
         $requestExceptionEntitySerialized['exception'] = $exceptionEntitySerialized;
+        $requestExceptionEntitySerialized['uuid'] = RequestTracker::$uuid;
+        $requestExceptionEntitySerialized['type'] = 'exception';
+
         return $requestExceptionEntitySerialized;
     }
 

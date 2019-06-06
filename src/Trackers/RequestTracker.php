@@ -114,6 +114,7 @@ class RequestTracker extends TrackerBase
         $request['language'] = $this->serialize($this->fillLanguage($userAgent));
         $request['method'] = $this->serialize($this->fillMethod($httpRequest->method()));
         $request['route'] = $this->serialize($this->fillRoute($httpRequest));
+        $request['type'] = 'request';
 
         return $request;
     }
@@ -489,6 +490,7 @@ class RequestTracker extends TrackerBase
         $requestAgent->setName(substr($agent->getUserAgent() ?: 'Other', 0, 180));
         $requestAgent->setBrowser(substr($agent->browser(), 0, 64));
         $requestAgent->setBrowserVersion(substr($agent->version($agent->browser()), 0, 32));
+        $requestAgent->setHash();
 
         return $requestAgent;
     }

@@ -31,6 +31,11 @@ class RequestAgent
      */
     protected $browserVersion;
 
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
@@ -87,5 +92,18 @@ class RequestAgent
     public function setBrowserVersion($browserVersion)
     {
         $this->browserVersion = $browserVersion;
+    }
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [$this->getName(), $this->getBrowser(), $this->getBrowserVersion()]));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
     }
 }

@@ -27,7 +27,7 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
         for ($i = 0; $i < $testSize; $i++) {
 
-            $request = $this->createRequest();
+            $request = $this->randomRequest();
 
             $response = $this->createResponse(200);
 

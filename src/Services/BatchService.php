@@ -2,15 +2,33 @@
 
 namespace Railroad\Railtracker\Services;
 
+use Illuminate\Cache\RedisStore;
 use Illuminate\Support\Facades\Cache;
+use Predis\ClientInterface;
 
 class BatchService
 {
+    /**
+     * @var $store RedisStore
+     */
+    public $store;
+
+    /**
+     * @var ClientInterface $connection
+     */
+    public $connection;
+
     public $batchKeyPrefix;
 
+    /**
+     * BatchService constructor.
+     */
     public function __construct()
     {
         $this->batchKeyPrefix = config('railtracker.batch-prefix');
+
+        $this->store = Cache::store('redis');
+        $this->connection = $this->store->connection();
     }
 
     /**
@@ -21,21 +39,18 @@ class BatchService
      */
     public function addToBatch($datum, $type, $uuid, $expireSeconds = 604800)
     {
-        $key = $this->batchKeyPrefix . $type . '_' . $uuid;
+        $setKey = $this->batchKeyPrefix . 'set' . '_' . $uuid;
 
-        $this->cache()->setex($key, $expireSeconds, serialize($datum));
+        $this->cache()
+            ->sadd($setKey, [serialize($datum)]);
     }
 
     /**
-     * @return \Predis\ClientInterface
+     * @return ClientInterface
      */
     public function cache()
     {
-        /** @var $store \Illuminate\Cache\RedisStore */
-        $store = Cache::store('redis');
-
-        /** @var \Predis\ClientInterface $connection */
-        return $store->connection();
+        return $this->connection;
     }
 
     /**
@@ -43,6 +58,7 @@ class BatchService
      */
     public function forget($key)
     {
-        $this->cache()->del($key);
+        $this->cache()
+            ->del($key);
     }
 }

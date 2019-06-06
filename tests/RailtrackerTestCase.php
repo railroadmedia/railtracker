@@ -188,7 +188,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         Carbon::setTestNow(Carbon::now());
 
-        $time = Carbon::now()->timestamp . '-' . Carbon::now()->micro;
+        $time = Carbon::now()->timestamp . '_' . Carbon::now()->micro;
 
         $batchPrefix = 'railtracker_testing_' . $time . '_';
 
@@ -513,6 +513,8 @@ class RailtrackerTestCase extends BaseTestCase
         try {
             Artisan::call('ProcessTrackings');
         }catch(\Exception $exception){
+            error_log($exception);
+            
             $this->fail(
                 'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
             );
