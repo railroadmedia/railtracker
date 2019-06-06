@@ -23,6 +23,7 @@ use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Tests\Resources\Models\User;
+use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 
 class RailtrackerTestCase extends BaseTestCase
 {
@@ -56,6 +57,10 @@ class RailtrackerTestCase extends BaseTestCase
 
     /** @var BatchService */
     protected $batchService;
+
+
+    /** @var RailtrackerQueryLogger */
+    protected $queryLogger;
 
     public static $prefixForTestBatchKeyPrefix = 'railtrackerTest-';
 
@@ -98,6 +103,8 @@ class RailtrackerTestCase extends BaseTestCase
         $this->batchService = $this->app->make(BatchService::class);
 
         $this->getEnvironmentSetUp($this->app);
+
+        $this->queryLogger = app(RailtrackerQueryLogger::class);
     }
 
     public function tearDown()
@@ -150,6 +157,7 @@ class RailtrackerTestCase extends BaseTestCase
         config()->set('railtracker.database_user', 'root');
         config()->set('railtracker.database_password', 'root');
         config()->set('railtracker.database_in_memory', true);
+        config()->set('railtracker.enable_query_log', true);
 
         // if new packages entities are required for testing, their entity directory/namespace config should be merged here
         config()->set('railtracker.entities', $defaultConfig['entities']);
