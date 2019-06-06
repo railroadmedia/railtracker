@@ -3,7 +3,17 @@
 namespace Railroad\Railtracker\Console\Commands;
 
 use Exception;
+use Illuminate\Support\Collection;
 use Railroad\Railtracker\Entities\RequestAgent;
+use Railroad\Railtracker\Entities\RequestDevice;
+use Railroad\Railtracker\Entities\RequestLanguage;
+use Railroad\Railtracker\Entities\RequestMethod;
+use Railroad\Railtracker\Entities\Route;
+use Railroad\Railtracker\Entities\Url;
+use Railroad\Railtracker\Entities\UrlDomain;
+use Railroad\Railtracker\Entities\UrlPath;
+use Railroad\Railtracker\Entities\UrlProtocol;
+use Railroad\Railtracker\Entities\UrlQuery;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
@@ -90,6 +100,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         while ($redisIterator !== 0) {
 
+            // --------------------------------------------------------------------------------
+
             $requestKeys =
                 $this->batchService
                     ->cache()
@@ -113,64 +125,56 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 );
             }
 
-            $agentsByHash = [];
+            // --------------------------------------------------------------------------------
 
-            // ------------- request agent -------------
+            $valuesThisChunk = collect($valuesThisChunk);
 
-            foreach ($valuesThisChunk as $valueThisChunk) {
-                $unserialized = unserialize($valueThisChunk);
+            $entityTypes = [
+                RequestAgent::class => $valuesThisChunk->pluck('xXx'),
+                RequestDevice::class => $valuesThisChunk->pluck('xXx'),
+                RequestLanguage::class => $valuesThisChunk->pluck('xXx'),
+                RequestMethod::class => $valuesThisChunk->pluck('xXx'),
+                Route::class => $valuesThisChunk->pluck('xXx'),
+            ];
 
-                if (isset($unserialized['type']) && $unserialized['type'] == 'request') {
-                    $agentsByHash[$unserialized['agent']['hash']] = $unserialized['agent'];
-                }
+            foreach($entityTypes as $class => $data){
+                $entitiesByHash = $this->keyByHash($data);
+                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
             }
 
-            $qb = $this->entityManager->createQueryBuilder();
+            // --------------------------------------------------------------------------------
 
-            /** @var $existingRequestAgents RequestAgent[] */
-            $existingRequestAgents =
-                $qb->select('ra')
-                    ->from(RequestAgent::class, 'ra')
-                    ->where('ra.hash IN (:hashes)')
-                    ->setParameter('hashes', array_keys($agentsByHash))
-                    ->getQuery()
-                    ->getResult();
+            $urlValuesThisChunk = $valuesThisChunk->pluck('url');
 
-            /** @var $existingRequestAgentsByHash RequestAgent[] */
-            $existingRequestAgentsByHash = [];
+            $urlEntityTypes =[
+                UrlProtocol::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+                UrlDomain::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+                UrlPath::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+                UrlQuery::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+            ];
 
-            foreach ($existingRequestAgents as $existingRequestAgent) {
-                $existingRequestAgentsByHash[$existingRequestAgent->getHash()] = $existingRequestAgent;
-            }
+            // todo: what to do for URLs?
+//            foreach($entityTypes as $class => $data){
+//                $entitiesByHash = $this->keyByHash($data);
+//                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+//            }
 
-            $requestAgentEntities = [];
+            // --------------------------------------------------------------------------------
 
-            foreach ($agentsByHash as $agentHash => $agentByHash) {
+            $refererUrlValuesThisChunk = $valuesThisChunk->pluck('referer-url');
 
-                if (!isset($existingRequestAgentsByHash[$agentHash])) {
+            $refererUrlEntityTypes =[
+                UrlProtocol::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+                UrlDomain::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+                UrlPath::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+                UrlQuery::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+            ];
 
-                    $agentData = $agentsByHash[$agentHash];
-
-                    $requestAgentEntity = new RequestAgent();
-
-                    $requestAgentEntity->setName($agentData['name']);
-                    $requestAgentEntity->setBrowserVersion($agentData['browserVersion']);
-                    $requestAgentEntity->setBrowser($agentData['browser']);
-                    $requestAgentEntity->setHash();
-
-                    $requestAgentEntities[$requestAgentEntity->getHash()] = $requestAgentEntity;
-
-                    try{
-                        $this->entityManager->persist($requestAgentEntity);
-                    }catch(\Exception $exception){
-                        error_log($exception);
-                    }
-
-                }
-
-            }
-
-            // ------------- request agent -------------
+            // todo: what to do for URLs?
+//            foreach($entityTypes as $class => $data){
+//                $entitiesByHash = $this->keyByHash($data);
+//                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+//            }
 
             try{
                 $this->entityManager->flush();
@@ -180,6 +184,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         }
 
+        // todo: clear this (some probably to re-incorporate into new structure, some probably to delete)
 //        foreach (array_chunk($requestKeys, $chunkSize) as $requestKeysChunk) {
 //
 //            foreach ($requestKeysChunk as $requestKey) {
@@ -244,5 +249,150 @@ class ProcessTrackings extends \Illuminate\Console\Command
 //        $this->info($msg);
 
         return true;
+    }
+
+    /**
+     * @param string $class
+     * @param array $entitiesByHash
+     * @return array
+     */
+    private function getExistingBulkInsertNew($class, $entitiesByHash)
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+
+        $existingEntities =
+            $qb->select('a')
+                ->from($class, 'a')
+                ->where('a.hash IN (:hashes)')
+                ->setParameter('hashes', array_keys($entitiesByHash))
+                ->getQuery()
+                ->getResult();
+
+        // todo:create interface for entities, and they add docblock here with this var  as that interface
+        $existingEntitiesByHash = [];
+
+        foreach ($existingEntities as $existingEntity) {
+            $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
+        }
+
+        $entities = [];
+
+        foreach ($entitiesByHash as $agentHash => $agentByHash) {
+
+            if (!isset($existingEntitiesByHash[$agentHash])) {
+
+                $data = $entitiesByHash[$agentHash];
+
+                try{
+                    $entity = $this->processForType($class, $data);
+
+                    $entities[$entity->getHash()] = $entity;
+
+                    $this->entityManager->persist($entity);
+
+                }catch(Exception $exception){
+                    error_log($exception);
+                }
+            }
+
+        }
+        return $entities;
+    }
+
+    /**
+     * @param $class
+     * @param $data
+     * @return RequestAgent
+     * @throws Exception
+     */
+    private function processForType($class, $data)
+    {
+        $entity = new $class;
+        $entity->setFromData($data);
+
+//        switch($class){
+//            case(RequestAgent::class):
+//                $entity = new RequestAgent();
+//                $entity->setName($data['name']);
+//                $entity->setBrowserVersion($data['browserVersion']);
+//                $entity->setBrowser($data['browser']);
+//                break;
+//            case(RequestDevice::class):
+//                $entity = new RequestDevice();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(RequestLanguage::class):
+//                $entity = new RequestLanguage();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(RequestMethod::class):
+//                $entity = new RequestMethod();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(Route::class):
+//                $entity = new Route();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(Url::class):
+//                $entity = new Url();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(UrlProtocol::class):
+//                $entity = new UrlProtocol();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(UrlDomain::class):
+//                $entity = new UrlDomain();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(UrlPath::class):
+//                $entity = new UrlPath();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//            case(UrlQuery::class):
+//                $entity = new UrlQuery();
+//                // todo
+//
+//                $entity->setHash();
+//                break;
+//        }
+
+        if(empty($entity)){
+            throw new Exception('entity empty for data: ' . var_export($data, true));
+        }
+
+        $entity->setHash();
+        return $entity;
+    }
+
+    /**
+     * @param $data
+     * @return array
+     */
+    private function keyByHash($data)
+    {
+        $entitiesByHash = [];
+
+        foreach($data as $datum){
+            $entitiesByHash[$data->getHash()] = $datum;
+        }
+
+        return $entitiesByHash;
     }
 }

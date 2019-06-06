@@ -106,4 +106,11 @@ class RequestAgent
     {
         return $this->hash;
     }
+
+    public function setFromData($data)
+    {
+        $this->setName($data['name']);
+        $this->setBrowserVersion($data['browserVersion']);
+        $this->setBrowser($data['browser']);
+    }
 }
