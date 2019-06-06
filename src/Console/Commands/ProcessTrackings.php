@@ -52,6 +52,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $entityManager;
 
     /**
+     * @var int
+     */
+    private $scanSize;
+
+    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
@@ -81,17 +86,20 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        $chunkSize = 100;
         $redisIterator = null;
-        $allKeys = [];
-
-        $processedCount = 0;
-        $errorsCount = 0;
 
         while ($redisIterator !== 0) {
+
             $requestKeys =
-                $this->batchService->cache()
-                    ->scan($redisIterator, ['MATCH' => $this->batchService->batchKeyPrefix . '*', 'COUNT' => 1000]);
+                $this->batchService
+                    ->cache()
+                    ->scan(
+                        $redisIterator,
+                        [
+                            'MATCH' => $this->batchService->batchKeyPrefix . '*',
+                            'COUNT' => config('railtracker.scan-size', 1000)
+                        ]
+                    );
 
             $redisIterator = (integer)$requestKeys[0];
 
@@ -101,12 +109,13 @@ class ProcessTrackings extends \Illuminate\Console\Command
             foreach ($keysThisChunk as $keyThisChunk) {
                 $valuesThisChunk = array_merge(
                     $valuesThisChunk,
-                    $this->batchService->cache()
-                        ->smembers($keyThisChunk)
+                    $this->batchService->cache()->smembers($keyThisChunk)
                 );
             }
 
             $agentsByHash = [];
+
+            // ------------- request agent -------------
 
             foreach ($valuesThisChunk as $valueThisChunk) {
                 $unserialized = unserialize($valueThisChunk);
@@ -118,22 +127,16 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $qb = $this->entityManager->createQueryBuilder();
 
-            /**
-             * @var $existingRequestAgents RequestAgent[]
-             */
+            /** @var $existingRequestAgents RequestAgent[] */
             $existingRequestAgents =
                 $qb->select('ra')
                     ->from(RequestAgent::class, 'ra')
-                    ->where(
-                        'ra.hash IN (:hashes)'
-                    )
+                    ->where('ra.hash IN (:hashes)')
                     ->setParameter('hashes', array_keys($agentsByHash))
                     ->getQuery()
                     ->getResult();
 
-            /**
-             * @var $existingRequestAgentsByHash RequestAgent[]
-             */
+            /** @var $existingRequestAgentsByHash RequestAgent[] */
             $existingRequestAgentsByHash = [];
 
             foreach ($existingRequestAgents as $existingRequestAgent) {
@@ -150,7 +153,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                     $requestAgentEntity = new RequestAgent();
 
-
                     $requestAgentEntity->setName($agentData['name']);
                     $requestAgentEntity->setBrowserVersion($agentData['browserVersion']);
                     $requestAgentEntity->setBrowser($agentData['browser']);
@@ -158,15 +160,24 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                     $requestAgentEntities[$requestAgentEntity->getHash()] = $requestAgentEntity;
 
-                    $this->entityManager->persist($requestAgentEntity);
+                    try{
+                        $this->entityManager->persist($requestAgentEntity);
+                    }catch(\Exception $exception){
+                        error_log($exception);
+                    }
 
                 }
 
             }
 
-            $this->entityManager->flush();
+            // ------------- request agent -------------
 
-            dd($requestAgentEntities);
+            try{
+                $this->entityManager->flush();
+            }catch(\Exception $exception){
+                error_log($exception);
+            }
+
         }
 
 //        foreach (array_chunk($requestKeys, $chunkSize) as $requestKeysChunk) {

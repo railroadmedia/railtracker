@@ -23,6 +23,8 @@ class ProcessTrackingsTest extends RailtrackerTestCase
     {
         $testSize = 100;
 
+        config()->set('railtracker.scan-size', 10);
+
         $tStart = microtime(true);
 
         for ($i = 0; $i < $testSize; $i++) {
