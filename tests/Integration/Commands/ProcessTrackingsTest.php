@@ -58,5 +58,7 @@ class ProcessTrackingsTest extends RailtrackerTestCase
             "\n";
 
         echo 'Queries ran to store ' . $testSize . ' requests in database: ' . $this->queryLogger->count() . "\n";
+
+        $this->expectNotToPerformAssertions();
     }
 }
