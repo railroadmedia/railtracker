@@ -2,8 +2,6 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
-use Doctrine\ORM\OptimisticLockException;
-use Doctrine\ORM\ORMException;
 use Exception;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Entities\RailtrackerEntityInterface;
@@ -12,11 +10,6 @@ use Railroad\Railtracker\Entities\RequestDevice;
 use Railroad\Railtracker\Entities\RequestLanguage;
 use Railroad\Railtracker\Entities\RequestMethod;
 use Railroad\Railtracker\Entities\Route;
-use Railroad\Railtracker\Entities\Url;
-use Railroad\Railtracker\Entities\UrlDomain;
-use Railroad\Railtracker\Entities\UrlPath;
-use Railroad\Railtracker\Entities\UrlProtocol;
-use Railroad\Railtracker\Entities\UrlQuery;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
@@ -122,32 +115,56 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $valuesThisChunk = new Collection();
 
             foreach ($keysThisChunk as $keyThisChunk) {
-                $valuesThisChunk->push($this->batchService->cache()->smembers($keyThisChunk));
+                $values = $this->batchService->cache()->smembers($keyThisChunk);
+                foreach($values as $value){
+                    $valuesThisChunk->push(unserialize($value));
+                }
             }
+
 
             // --------------------------------------------------------------------------------
+            // ------------------------------ request processing ------------------------------
+            // --------------------------------------------------------------------------------
 
-            $allDataOfTypeInChunkKeyedByType = [
-                RequestAgent::class => $valuesThisChunk->pluck(RequestAgent::$KEY),
-                RequestDevice::class => $valuesThisChunk->pluck(RequestDevice::$KEY),
-                RequestLanguage::class => $valuesThisChunk->pluck(RequestLanguage::$KEY),
-                RequestMethod::class => $valuesThisChunk->pluck(RequestMethod::$KEY),
-                Route::class => $valuesThisChunk->pluck(Route::$KEY),
-                // todo: url handling
-            ];
+            $requests = $valuesThisChunk->filter(function($candidate){
+                return $candidate['type'] === 'request';
+            });
 
-            // todo: do above (getting $entityTypes) for URLs?
+            if(!empty($requests)){
+                $mappedAgents = $requests->map(function($request){return $request[RequestAgent::$KEY];})->all();
+                $mappedDevices = $requests->map(function($request){return $request[RequestDevice::$KEY];})->all();
+                $mappedLanguages = $requests->map(function($request){return $request[RequestLanguage::$KEY];})->all();
+                $mappedMethods = $requests->map(function($request){return $request[RequestMethod::$KEY];})->all();
+                $mappedRoutes = $requests->map(function($request){return $request[Route::$KEY];})->all();
 
-            try {
-                foreach($allDataOfTypeInChunkKeyedByType as $class => $data){
-                    $entitiesByHash = $this->keyByHash($data);
-                    $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+                $requestComponents = [
+                    RequestAgent::class => $mappedAgents,
+                    RequestDevice::class => $mappedDevices,
+                    RequestLanguage::class => $mappedLanguages,
+                    RequestMethod::class => $mappedMethods,
+                    Route::class => $mappedRoutes,
+                    // todo: url handling
+                ];
+
+                // todo: do above (getting $entityTypes) for URLs?
+
+                try {
+                    foreach($requestComponents as $class => $component){
+
+                        // see stackoverflow.com/a/946300 for potential issues
+                        $component = array_map("unserialize", array_unique(array_map("serialize", $component)));
+
+                        $entitiesByHash = $this->keyByHash($component);
+                        $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+                    }
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
+                } catch (Exception $e) {
+                    error_log($e);
                 }
-                $this->entityManager->flush();
-                $this->entityManager->clear();
-            } catch (Exception $e) {
-                error_log($e);
             }
+
+            $stopHere = true;
 
             // --------------------------------------------------------------------------------
 
@@ -282,7 +299,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $existingEntitiesByHash = [];
 
         foreach ($existingEntities as $existingEntity) {
-
             $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
         }
 
@@ -292,11 +308,15 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             if (!isset($existingEntitiesByHash[$hash])) {
 
+//                /** @var RailtrackerEntity $classObj */
+//                $classObj = new $class;
+//                $key = $classObj::$KEY;
+
                 try{
                     // todo: does this work? Is the entity an array or a object? What entity is it exactly?
                     // todo: does this work? Is the entity an array or a object? What entity is it exactly?
                     // todo: does this work? Is the entity an array or a object? What entity is it exactly?
-                    $entity = $this->processForType($class, $entity[$entity->getKey()]);
+                    $entity = $this->processForType($class, $entity);
 
                     $entities[$entity->getHash()] = $entity;
 
