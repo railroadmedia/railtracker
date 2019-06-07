@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_url_domains")
  */
-class UrlDomain
+class UrlDomain extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'domain';
+
     /**
      * @ORM\Id @ORM\GeneratedValue @ORM\Column(type="integer")
      * @var int
@@ -20,6 +22,13 @@ class UrlDomain
      * @ORM\Column(length=180, unique=true)
      */
     protected $name;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return integer
@@ -56,5 +65,27 @@ class UrlDomain
         $domain->setName(substr(parse_url($url)['host'] ?? '', 0, 180));
 
         return $domain;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getName(),
+        ]));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setName($data['name']);
     }
 }

@@ -2,8 +2,11 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
+use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
 use Exception;
 use Illuminate\Support\Collection;
+use Railroad\Railtracker\Entities\RailtrackerEntityInterface;
 use Railroad\Railtracker\Entities\RequestAgent;
 use Railroad\Railtracker\Entities\RequestDevice;
 use Railroad\Railtracker\Entities\RequestLanguage;
@@ -116,71 +119,77 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $redisIterator = (integer)$requestKeys[0];
 
             $keysThisChunk = $requestKeys[1];
-            $valuesThisChunk = [];
+            $valuesThisChunk = new Collection();
 
             foreach ($keysThisChunk as $keyThisChunk) {
-                $valuesThisChunk = array_merge(
-                    $valuesThisChunk,
-                    $this->batchService->cache()->smembers($keyThisChunk)
-                );
+                $valuesThisChunk->push($this->batchService->cache()->smembers($keyThisChunk));
             }
 
             // --------------------------------------------------------------------------------
 
-            $valuesThisChunk = collect($valuesThisChunk);
-
-            $entityTypes = [
-                RequestAgent::class => $valuesThisChunk->pluck('xXx'),
-                RequestDevice::class => $valuesThisChunk->pluck('xXx'),
-                RequestLanguage::class => $valuesThisChunk->pluck('xXx'),
-                RequestMethod::class => $valuesThisChunk->pluck('xXx'),
-                Route::class => $valuesThisChunk->pluck('xXx'),
+            $allDataOfTypeInChunkKeyedByType = [
+                RequestAgent::class => $valuesThisChunk->pluck(RequestAgent::$KEY),
+                RequestDevice::class => $valuesThisChunk->pluck(RequestDevice::$KEY),
+                RequestLanguage::class => $valuesThisChunk->pluck(RequestLanguage::$KEY),
+                RequestMethod::class => $valuesThisChunk->pluck(RequestMethod::$KEY),
+                Route::class => $valuesThisChunk->pluck(Route::$KEY),
+                // todo: url handling
             ];
 
-            foreach($entityTypes as $class => $data){
-                $entitiesByHash = $this->keyByHash($data);
-                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
-            }
+            // todo: do above (getting $entityTypes) for URLs?
 
-            // --------------------------------------------------------------------------------
-
-            $urlValuesThisChunk = $valuesThisChunk->pluck('url');
-
-            $urlEntityTypes =[
-                UrlProtocol::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
-                UrlDomain::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
-                UrlPath::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
-                UrlQuery::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
-            ];
-
-            // todo: what to do for URLs?
-//            foreach($entityTypes as $class => $data){
-//                $entitiesByHash = $this->keyByHash($data);
-//                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
-//            }
-
-            // --------------------------------------------------------------------------------
-
-            $refererUrlValuesThisChunk = $valuesThisChunk->pluck('referer-url');
-
-            $refererUrlEntityTypes =[
-                UrlProtocol::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
-                UrlDomain::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
-                UrlPath::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
-                UrlQuery::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
-            ];
-
-            // todo: what to do for URLs?
-//            foreach($entityTypes as $class => $data){
-//                $entitiesByHash = $this->keyByHash($data);
-//                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
-//            }
-
-            try{
+            try {
+                foreach($allDataOfTypeInChunkKeyedByType as $class => $data){
+                    $entitiesByHash = $this->keyByHash($data);
+                    $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+                }
                 $this->entityManager->flush();
-            }catch(\Exception $exception){
-                error_log($exception);
+                $this->entityManager->clear();
+            } catch (Exception $e) {
+                error_log($e);
             }
+
+            // --------------------------------------------------------------------------------
+
+
+//            // todo: if above fails, still process below, or skip?
+//
+//            // --------------------------------------------------------------------------------
+//
+//            $urlValuesThisChunk = $valuesThisChunk->pluck('url');
+//
+//            $urlEntityTypes =[
+//                UrlProtocol::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+//                UrlDomain::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+//                UrlPath::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+//                UrlQuery::class => $urlValuesThisChunk->pluck('xXx'), // todo: specify key
+//            ];
+//
+//            // todo: what to do for URLs?
+////            foreach($entityTypes as $class => $data){
+////                $entitiesByHash = $this->keyByHash($data);
+////                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+////            }
+//
+//            // --------------------------------------------------------------------------------
+//
+//            $refererUrlValuesThisChunk = $valuesThisChunk->pluck('referer-url');
+//
+//            $refererUrlEntityTypes =[
+//                UrlProtocol::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+//                UrlDomain::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+//                UrlPath::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+//                UrlQuery::class => $refererUrlValuesThisChunk->pluck('xXx'), // todo: specify key
+//            ];
+//
+//            // todo: what to do for URLs?
+////            foreach($entityTypes as $class => $data){
+////                $entitiesByHash = $this->keyByHash($data);
+////                $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+////            }
+
+
+
 
         }
 
@@ -260,6 +269,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     {
         $qb = $this->entityManager->createQueryBuilder();
 
+        /** @var RailtrackerEntityInterface[] $existingEntities */
         $existingEntities =
             $qb->select('a')
                 ->from($class, 'a')
@@ -272,19 +282,21 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $existingEntitiesByHash = [];
 
         foreach ($existingEntities as $existingEntity) {
+
             $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
         }
 
         $entities = [];
 
-        foreach ($entitiesByHash as $agentHash => $agentByHash) {
+        foreach ($entitiesByHash as $hash => $entity) {
 
-            if (!isset($existingEntitiesByHash[$agentHash])) {
-
-                $data = $entitiesByHash[$agentHash];
+            if (!isset($existingEntitiesByHash[$hash])) {
 
                 try{
-                    $entity = $this->processForType($class, $data);
+                    // todo: does this work? Is the entity an array or a object? What entity is it exactly?
+                    // todo: does this work? Is the entity an array or a object? What entity is it exactly?
+                    // todo: does this work? Is the entity an array or a object? What entity is it exactly?
+                    $entity = $this->processForType($class, $entity[$entity->getKey()]);
 
                     $entities[$entity->getHash()] = $entity;
 
@@ -294,7 +306,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     error_log($exception);
                 }
             }
-
         }
         return $entities;
     }
@@ -302,82 +313,15 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * @param $class
      * @param $data
-     * @return RequestAgent
+     * @return RailtrackerEntityInterface
      * @throws Exception
      */
     private function processForType($class, $data)
     {
+        /** @var RailtrackerEntityInterface $entity */
         $entity = new $class;
         $entity->setFromData($data);
-
-//        switch($class){
-//            case(RequestAgent::class):
-//                $entity = new RequestAgent();
-//                $entity->setName($data['name']);
-//                $entity->setBrowserVersion($data['browserVersion']);
-//                $entity->setBrowser($data['browser']);
-//                break;
-//            case(RequestDevice::class):
-//                $entity = new RequestDevice();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(RequestLanguage::class):
-//                $entity = new RequestLanguage();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(RequestMethod::class):
-//                $entity = new RequestMethod();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(Route::class):
-//                $entity = new Route();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(Url::class):
-//                $entity = new Url();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(UrlProtocol::class):
-//                $entity = new UrlProtocol();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(UrlDomain::class):
-//                $entity = new UrlDomain();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(UrlPath::class):
-//                $entity = new UrlPath();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//            case(UrlQuery::class):
-//                $entity = new UrlQuery();
-//                // todo
-//
-//                $entity->setHash();
-//                break;
-//        }
-
-        if(empty($entity)){
-            throw new Exception('entity empty for data: ' . var_export($data, true));
-        }
-
-        $entity->setHash();
+        $entity->setHash(); // todo: can|should this be put into "setFromData" methods. Probably *can*, probably *should NOT*.
         return $entity;
     }
 
@@ -390,7 +334,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $entitiesByHash = [];
 
         foreach($data as $datum){
-            $entitiesByHash[$data->getHash()] = $datum;
+            $entitiesByHash[$datum['hash']] = $datum;
         }
 
         return $entitiesByHash;

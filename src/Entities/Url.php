@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_urls")
  */
-class Url
+class Url extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'url';
+
     /**
      * @ORM\Id
      * @ORM\Column(type="bigint")
@@ -40,14 +42,19 @@ class Url
     protected $query;
 
     /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
      * @return integer
      */
     public function getId()
     {
         return $this->id;
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return UrlProtocol
@@ -66,16 +73,6 @@ class Url
     }
 
     /**
-     * @return string
-     */
-    public function getProtocolValue()
-    {
-        return $this->getProtocol()->getProtocol();
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
      * @return UrlDomain
      */
     public function getDomain()
@@ -90,16 +87,6 @@ class Url
     {
         $this->domain = $domain;
     }
-
-    /**
-     * @return string
-     */
-    public function getDomainValue()
-    {
-        return $this->getDomain()->getName();
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return UrlPath
@@ -118,16 +105,6 @@ class Url
     }
 
     /**
-     * @return null|string
-     */
-    public function getPathValue()
-    {
-        return $this->getPath()->getPath();
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
      * @return UrlQuery
      */
     public function getQuery()
@@ -143,6 +120,34 @@ class Url
         $this->query = $query;
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @return string
+     */
+    public function getProtocolValue()
+    {
+        return $this->getProtocol()->getProtocol();
+    }
+
+
+    /**
+     * @return string
+     */
+    public function getDomainValue()
+    {
+        return $this->getDomain()->getName();
+    }
+
+
+    /**
+     * @return null|string
+     */
+    public function getPathValue()
+    {
+        return $this->getPath()->getPath();
+    }
+
     /**
      * @return string|null
      */
@@ -153,5 +158,36 @@ class Url
 
     // -----------------------------------------------------------------------------------------------------------------
 
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getProtocol(),
+            $this->getDomain(),
+            $this->getPath(),
+            $this->getQuery(),
+        ]));
+    }
 
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setProtocol($data['protocol']);
+        $this->setDomain($data['domain']);
+        $this->setPath($data['path']);
+        $this->setQuery($data['query']);
+    }
+
+    // todo: figure out what to do with this. Sometimes it's 'url' and sometimes it's 'refererUrl' - the solution is probably to have a different handling in the ProcessTracker
+//    public function getKey()
+//    {
+//        return 'url';
+//        return 'refererUrl';
+//    }
 }

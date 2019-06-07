@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_url_paths")
  */
-class UrlPath
+class UrlPath extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'path';
+
     /**
      * @ORM\Id @ORM\GeneratedValue @ORM\Column(type="integer")
      * @var int
@@ -20,6 +22,13 @@ class UrlPath
      * @ORM\Column(length=180, unique=true)
      */
     protected $path;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return integer
@@ -61,5 +70,27 @@ class UrlPath
         }
 
         return $pathEntitiy;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getPath()
+        ]));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setPath($data['path']);
     }
 }

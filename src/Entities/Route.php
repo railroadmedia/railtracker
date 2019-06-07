@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_routes")
  */
-class Route
+class Route extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'route';
+
     /**
      * @ORM\Id
      * @ORM\Column(type="bigint")
@@ -26,6 +28,13 @@ class Route
      * @ORM\Column(length=180, unique=true)
      */
     private $action;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return mixed
@@ -65,5 +74,30 @@ class Route
     public function setAction($action)
     {
         $this->action = $action;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getId(),
+            $this->getName(),
+            $this->getAction(),
+        ]));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setName($data['name']);
+        $this->setAction($data['action']);
     }
 }

@@ -141,13 +141,13 @@ class RequestTracker extends TrackerBase
         // ---------- Step 2: Associated Objects, Simple ----------
         // These objects have only scalar values - they do *not* themselves have associated objects
 
-        $requestAgent = $this->getByData(RequestAgent::class, $requestSerialized['agent']);
+        $requestAgent = $this->getByData(RequestAgent::class, $requestSerialized[RequestAgent::$KEY]);
 
         if (empty($requestAgent)) {
             $requestAgent = new RequestAgent();
-            $requestAgent->setName($requestSerialized['agent']['name']);
-            $requestAgent->setBrowserVersion($requestSerialized['agent']['browserVersion']);
-            $requestAgent->setBrowser($requestSerialized['agent']['browser']);
+            $requestAgent->setName($requestSerialized[RequestAgent::$KEY]['name']);
+            $requestAgent->setBrowserVersion($requestSerialized[RequestAgent::$KEY]['browserVersion']);
+            $requestAgent->setBrowser($requestSerialized[RequestAgent::$KEY]['browser']);
 
             $this->persistAndFlushEntity($requestAgent);
         }
@@ -155,15 +155,15 @@ class RequestTracker extends TrackerBase
         $request->setAgent($requestAgent);
 
         // request device
-        $requestDevice = $this->getByData(RequestDevice::class, $requestSerialized['device']);
+        $requestDevice = $this->getByData(RequestDevice::class, $requestSerialized[RequestDevice::$KEY]);
     
         if (empty($requestDevice)) {
             $requestDevice = new RequestDevice();
-            $requestDevice->setIsMobile($requestSerialized['device']['isMobile']);
-            $requestDevice->setKind($requestSerialized['device']['kind']);
-            $requestDevice->setPlatform($requestSerialized['device']['platform']);
-            $requestDevice->setModel($requestSerialized['device']['model']);
-            $requestDevice->setPlatformVersion($requestSerialized['device']['platformVersion']);
+            $requestDevice->setIsMobile($requestSerialized[RequestDevice::$KEY]['isMobile']);
+            $requestDevice->setKind($requestSerialized[RequestDevice::$KEY]['kind']);
+            $requestDevice->setPlatform($requestSerialized[RequestDevice::$KEY]['platform']);
+            $requestDevice->setModel($requestSerialized[RequestDevice::$KEY]['model']);
+            $requestDevice->setPlatformVersion($requestSerialized[RequestDevice::$KEY]['platformVersion']);
 
             $this->persistAndFlushEntity($requestDevice);
         }
@@ -171,12 +171,12 @@ class RequestTracker extends TrackerBase
         $request->setDevice($requestDevice);
 
         // request language
-        $requestLanguage = $this->getByData(RequestLanguage::class, $requestSerialized['language']);
+        $requestLanguage = $this->getByData(RequestLanguage::class, $requestSerialized[RequestLanguage::$KEY]);
 
         if (empty($requestLanguage)) {
             $requestLanguage = new RequestLanguage();
-            $requestLanguage->setPreference($requestSerialized['language']['preference']);
-            $requestLanguage->setLanguageRange($requestSerialized['language']['languageRange']);
+            $requestLanguage->setPreference($requestSerialized[RequestLanguage::$KEY]['preference']);
+            $requestLanguage->setLanguageRange($requestSerialized[RequestLanguage::$KEY]['languageRange']);
 
             $this->persistAndFlushEntity($requestLanguage);
         }
@@ -185,11 +185,11 @@ class RequestTracker extends TrackerBase
 
         // request method
 
-        $requestMethod = $this->getByData(RequestMethod::class, $requestSerialized['method']);
+        $requestMethod = $this->getByData(RequestMethod::class, $requestSerialized[RequestMethod::$KEY]);
 
         if (empty($requestMethod)) {
             $requestMethod = new RequestMethod();
-            $value = $requestSerialized['method']['method'];
+            $value = $requestSerialized[RequestMethod::$KEY]['method'];
             $requestMethod->setMethod($value);
 
             $this->persistAndFlushEntity($requestMethod);
@@ -199,16 +199,16 @@ class RequestTracker extends TrackerBase
 
         // route
 
-        $routeNotNull = !empty($requestSerialized['route']['name']) || !empty($requestSerialized['route']['route']);
+        $routeNotNull = !empty($requestSerialized[Route::$KEY]['name']) || !empty($requestSerialized[Route::$KEY]['route']);
 
         if($routeNotNull){
-            $route = $route = $this->getByData(Route::class, $requestSerialized['route']);
+            $route = $route = $this->getByData(Route::class, $requestSerialized[Route::$KEY]);
 
             if (empty($route)) {
 
                 $route = new Route();
 
-                $route = $this->arrayHydrator->hydrate($route, $requestSerialized['route']);
+                $route = $this->arrayHydrator->hydrate($route, $requestSerialized[Route::$KEY]);
 
                 $this->persistAndFlushEntity($route);
             }
@@ -220,9 +220,9 @@ class RequestTracker extends TrackerBase
 
         // url and referer url
 
-        if(!empty($requestSerialized['url'])){
+        if(!empty($requestSerialized[Url::$KEY])){
 
-            $url = $this->getOrCreateUrlForData($requestSerialized['url']);
+            $url = $this->getOrCreateUrlForData($requestSerialized[Url::$KEY]);
 
             $request->setUrl($url);
         }

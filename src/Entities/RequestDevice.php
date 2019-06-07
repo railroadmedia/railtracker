@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_request_devices")
  */
-class RequestDevice
+class RequestDevice extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'device';
+
     /**
      * @ORM\Id
      * @ORM\Column(type="bigint")
@@ -41,6 +43,11 @@ class RequestDevice
      * @ORM\Column(type="boolean", name="is_mobile")
      */
     private $isMobile;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
 
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -130,5 +137,35 @@ class RequestDevice
     public function setIsMobile($isMobile)
     {
         $this->isMobile = $isMobile;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getKind(),
+            $this->getModel(),
+            $this->getPlatform(),
+            $this->getPlatformVersion(),
+            $this->getIsMobile()
+        ]));
+    }
+
+    /**
+     * @return string
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setKind($data['kind']);
+        $this->setModel($data['model']);
+        $this->setPlatform($data['platform']);
+        $this->setPlatformVersion($data['platformVersion']);
+        $this->setIsMobile($data['isMobile']);
     }
 }

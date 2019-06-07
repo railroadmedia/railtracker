@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_request_methods")
  */
-class RequestMethod
+class RequestMethod extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'method';
+
     /**
      * @ORM\Id
      * @ORM\Column(type="bigint")
@@ -21,6 +23,13 @@ class RequestMethod
      * @ORM\Column(length=8, unique=true)
      */
     private $method;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return mixed
@@ -44,5 +53,32 @@ class RequestMethod
     public function setMethod($method)
     {
         $this->method = $method;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(
+            implode(
+                '-',
+                [
+                    $this->getMethod()
+                ]
+            )
+        );
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setMethod($data['method']);
     }
 }

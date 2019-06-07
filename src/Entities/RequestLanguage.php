@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_request_languages")
  */
-class RequestLanguage
+class RequestLanguage extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'language';
+
     /**
      * @ORM\Id
      * @ORM\Column(type="bigint")
@@ -26,6 +28,13 @@ class RequestLanguage
      * @ORM\Column(name="language_range", length=180, unique=true)
      */
     private $languageRange;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return integer
@@ -65,5 +74,29 @@ class RequestLanguage
     public function setLanguageRange($languageRange)
     {
         $this->languageRange = $languageRange;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getPreference(),
+            $this->getLanguageRange(),
+        ]));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setPreference($data['preference']);
+        $this->setLanguageRange($data['language-range']);
     }
 }
