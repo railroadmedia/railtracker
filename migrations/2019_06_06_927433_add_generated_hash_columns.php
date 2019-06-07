@@ -15,7 +15,70 @@ class AddGeneratedHashColumns extends Migration
     public function up()
     {
         Schema::table(
+            ConfigService::$tableRequestMethods,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
             ConfigService::$tableRequestAgents,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableRequestDevices,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableRequestLanguages,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableRoutes,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableUrls,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableUrlProtocols,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableUrlDomains,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableUrlPaths,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
+
+        Schema::table(
+            ConfigService::$tableUrlQueries,
             function (Blueprint $table) {
                 $table->string('hash')->nullable();
             }
