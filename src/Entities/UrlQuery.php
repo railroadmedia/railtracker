@@ -69,6 +69,8 @@ class UrlQuery extends RailtrackerEntity implements RailtrackerEntityInterface
             $queryEntity->setString('');
         }
 
+        $queryEntity->setHash();
+
         return $queryEntity;
     }
 

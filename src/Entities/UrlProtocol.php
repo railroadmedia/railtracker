@@ -63,6 +63,7 @@ class UrlProtocol extends RailtrackerEntity implements RailtrackerEntityInterfac
         $protocol = new static;
 
         $protocol->setProtocol(substr(parse_url($url)['scheme'] ?? '', 0, 6));
+        $protocol->setHash();
 
         return $protocol;
     }

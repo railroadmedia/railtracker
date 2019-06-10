@@ -63,6 +63,7 @@ class UrlDomain extends RailtrackerEntity implements RailtrackerEntityInterface
         $domain = new static;
 
         $domain->setName(substr(parse_url($url)['host'] ?? '', 0, 180));
+        $domain->setHash();
 
         return $domain;
     }

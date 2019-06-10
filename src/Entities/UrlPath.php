@@ -69,6 +69,8 @@ class UrlPath extends RailtrackerEntity implements RailtrackerEntityInterface
             $pathEntitiy->setPath('');
         }
 
+        $pathEntitiy->setHash();
+
         return $pathEntitiy;
     }
 

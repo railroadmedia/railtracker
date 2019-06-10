@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 class Url extends RailtrackerEntity implements RailtrackerEntityInterface
 {
     public static $KEY = 'url';
+    public static $REFERER_URL_KEY = 'url';
 
     /**
      * @ORM\Id
@@ -161,10 +162,10 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
     public function setHash()
     {
         $this->hash = md5(implode('-', [
-            $this->getProtocol(),
-            $this->getDomain(),
-            $this->getPath(),
-            $this->getQuery(),
+            $this->getProtocol()->getProtocol(),
+            $this->getDomain()->getName(),
+            $this->getPath()->getPath(),
+            $this->getQuery()->getString(),
         ]));
     }
 
