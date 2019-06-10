@@ -146,14 +146,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     // todo: url handling
                 ];
 
-                // todo: do above (getting $entityTypes) for URLs?
-
                 try {
-                    foreach($requestComponents as $class => $component){
-
-                        // see stackoverflow.com/a/946300 for potential issues
-                        $component = array_map("unserialize", array_unique(array_map("serialize", $component)));
-
+                    foreach($requestComponents as $class => $dataForType){
                         $entitiesByHash = $this->keyByHash($dataForType); // this will also remove duplicates
                         $entities[$class] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
                     }
@@ -162,9 +156,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 } catch (Exception $e) {
                     error_log($e);
                 }
-            }
 
-            $stopHere = true;
+                // todo: if above fails, still process below, or skip?
 
             // --------------------------------------------------------------------------------
 
