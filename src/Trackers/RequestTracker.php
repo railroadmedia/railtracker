@@ -218,10 +218,12 @@ class RequestTracker extends TrackerBase
             }
         }
 
-        // url and referer url
+        // ---------- Step 3: Associated Objects, Complex ----------
+        // These objects have associated objects
 
         if(!empty($requestSerialized[Url::$KEY])){
 
+            // todo: does "getOrCreateUrlForData" need to be totally rewritten?
             $url = $this->getOrCreateUrlForData($requestSerialized[Url::$KEY]);
 
             $request->setUrl($url);
@@ -229,6 +231,7 @@ class RequestTracker extends TrackerBase
 
         if(!empty($requestSerialized['refererUrl'])){
 
+            // todo: does "getOrCreateUrlForData" need to be totally rewritten?
             $refererUrl = $this->getOrCreateUrlForData($requestSerialized['refererUrl']);
 
             $request->setRefererUrl($refererUrl);
@@ -263,6 +266,7 @@ class RequestTracker extends TrackerBase
 
             $urlProtocol = new UrlProtocol();
             $urlProtocol->setProtocol($urlProtocolValue);
+            $urlProtocol->setHash();
 
             $this->entityManager->persist($urlProtocol);
         }
@@ -281,6 +285,7 @@ class RequestTracker extends TrackerBase
 
             $urlDomain = new UrlDomain();
             $urlDomain->setName($urlDomainValue);
+            $urlDomain->setHash();
 
             $this->entityManager->persist($urlDomain);
         }
@@ -295,6 +300,7 @@ class RequestTracker extends TrackerBase
 
                 $urlPath = new UrlPath();
                 $urlPath->setPath($urlAsArray['path']);
+                $urlPath->setHash();
 
                 $this->entityManager->persist($urlPath);
             }
@@ -310,6 +316,7 @@ class RequestTracker extends TrackerBase
 
                 $urlQuery = new UrlQuery();
                 $urlQuery->setString($urlAsArray['query']);
+                $urlQuery->setHash();
 
                 $this->entityManager->persist($urlQuery);
             }
@@ -514,17 +521,26 @@ class RequestTracker extends TrackerBase
             return null;
         }
 
+        $urlEntity->setHash();
+
+        $pathSerialized = $this->serialize($urlEntity->getPath());
+        $querySerialized = $this->serialize($urlEntity->getQuery());
+
+        $path = parse_url($url)['path'] ?? null;
+        $query = parse_url($url)['query'] ?? null;
+
+        $setPath = !empty($path) ? $pathSerialized : null;
+        $setQuery = !empty($query) ? $querySerialized : null;
+
         if ($returnSerialized) {
             return [
-                'id' => $urlEntity->getId(),
-                'protocol' => $urlEntity->getProtocolValue(),
-                'domain' => $urlEntity->getDomainValue(),
-                'path' => $urlEntity->getPathValue(),
-                'query' => $urlEntity->getQueryValue(),
+                'protocol' => $this->serialize($urlEntity->getProtocol()),
+                'domain' => $this->serialize($urlEntity->getDomain()),
+                'path' => $setPath,
+                'query' => $setQuery,
+                'hash' => $urlEntity->getHash(),
             ];
         }
-
-        $urlEntity->setHash();
 
         return $urlEntity;
     }

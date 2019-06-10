@@ -161,11 +161,16 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
 
     public function setHash()
     {
+        $path = $this->getPath();
+        $pathValue = !empty($path) ? $path->getPath() : '';
+        $query = $this->getQuery();
+        $queryValue = !empty($query) ? $query->getString() : '';
+
         $this->hash = md5(implode('-', [
             $this->getProtocol()->getProtocol(),
             $this->getDomain()->getName(),
-            $this->getPath()->getPath(),
-            $this->getQuery()->getString(),
+            $pathValue,
+            $queryValue,
         ]));
     }
 
@@ -177,12 +182,19 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
         return $this->hash;
     }
 
+    /**
+     * @param Url $data
+     */
     public function setFromData($data)
     {
         $this->setProtocol($data['protocol']);
         $this->setDomain($data['domain']);
-        $this->setPath($data['path']);
-        $this->setQuery($data['query']);
+        if(!empty($path)){
+            $this->setPath($path);
+        }
+        if(!empty($query)){
+            $this->setQuery($query);
+        }
     }
 
     // todo: figure out what to do with this. Sometimes it's 'url' and sometimes it's 'refererUrl' - the solution is probably to have a different handling in the ProcessTracker
