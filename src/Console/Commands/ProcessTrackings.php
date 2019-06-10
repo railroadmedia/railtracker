@@ -154,8 +154,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
                         // see stackoverflow.com/a/946300 for potential issues
                         $component = array_map("unserialize", array_unique(array_map("serialize", $component)));
 
-                        $entitiesByHash = $this->keyByHash($component);
-                        $entities[] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
+                        $entitiesByHash = $this->keyByHash($dataForType); // this will also remove duplicates
+                        $entities[$class] = $this->getExistingBulkInsertNew($class, $entitiesByHash);
                     }
                     $this->entityManager->flush();
                     $this->entityManager->clear();
@@ -313,9 +313,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 //                $key = $classObj::$KEY;
 
                 try{
-                    // todo: does this work? Is the entity an array or a object? What entity is it exactly?
-                    // todo: does this work? Is the entity an array or a object? What entity is it exactly?
-                    // todo: does this work? Is the entity an array or a object? What entity is it exactly?
                     $entity = $this->processForType($class, $entity);
 
                     $entities[$entity->getHash()] = $entity;
