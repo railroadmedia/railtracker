@@ -475,6 +475,7 @@ class RequestTracker extends TrackerBase
         $requestDevice->setKind(substr($this->getDeviceKind($agent), 0, 16));
         $requestDevice->setModel(substr($agent->device(), 0, 64));
         $requestDevice->setIsMobile($agent->isMobile());
+        $requestDevice->setHash();
 
         return $requestDevice;
     }
@@ -523,6 +524,8 @@ class RequestTracker extends TrackerBase
             ];
         }
 
+        $urlEntity->setHash();
+
         return $urlEntity;
     }
 
@@ -532,6 +535,8 @@ class RequestTracker extends TrackerBase
      */
     public function fillRoute(HttpRequest $httpRequest)
     {
+        $routeNull = false;
+
         try {
             if (!empty($this->router->current())) {
                 $route = $this->router->current();
@@ -548,19 +553,17 @@ class RequestTracker extends TrackerBase
             $routeNull = true;
         }
 
-        if ($routeNull ?? false) {
-            $obj = new Route();
-            $obj->setName('');
-            $obj->setAction('');
+        $obj = new Route();
 
-            return $obj;
+        $obj->setName('');
+        $obj->setAction('');
+
+        if (!$routeNull) {
+            $obj->setName(substr($route->getName(), 0, 170));
+            $obj->setAction(substr($route->getActionName(), 0, 170));
         }
 
-        $obj = new Route();
-        $routeName = substr($route->getName(), 0, 170);
-        $obj->setName($routeName);
-        $obj->setAction(substr($route->getActionName(), 0, 170));
-
+        $obj->setHash();
         return $obj;
     }
 
@@ -572,6 +575,7 @@ class RequestTracker extends TrackerBase
     {
         $obj = new RequestMethod();
         $obj->setMethod(substr($method, 0, 8));
+        $obj->setHash();
 
         return $obj;
     }
@@ -585,6 +589,7 @@ class RequestTracker extends TrackerBase
         $obj = new RequestLanguage();
         $obj->setPreference(substr($agent->languages()[0] ?? 'en', 0, 12));
         $obj->setLanguageRange(substr(implode(',', $agent->languages()), 0, 180));
+        $obj->setHash();
 
         return $obj;
     }
