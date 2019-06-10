@@ -92,19 +92,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->entityManager = $entityManager;
     }
 
-    private function findInEntitiesToAttach($entities, $hash, $typesToSearch)
-    {
-        foreach($entities as $type => $data){
-            if(!in_array($type, $typesToSearch)){
-                continue;
-            }
-            if(isset($data[$hash])){
-                return $data[$hash];
-            }
-        }
-        return null;
-    }
-
     /**
      * return true
      */
@@ -219,37 +206,27 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 // todo: attached entities
                 $mappedUrls = $mappedUrls->map(function($url) use ($entities){
-
                     $typesToSearch = [UrlProtocol::class, UrlDomain::class, UrlPath::class, UrlQuery::class];
 
-                    // protocol
-                    $url['protocol'] = $url['protocol'] ?? null;
-                    if($url['protocol']){
-                        $hash = $url['protocol']['hash'];
-                        $url['protocol'] = $this->findInEntitiesToAttach($entities, $hash, $typesToSearch);
-                    }
+                    $callback = function($entities, $hash, $typesToSearch) {
+                        foreach ($entities as $type => $data) {
+                            if (!in_array($type, $typesToSearch)) {
+                                continue;
+                            }
+                            if (isset($data[$hash])) {
+                                return $data[$hash];
+                            }
+                        }
+                        return null;
+                    };
 
-                    // domain
-                    $url['domain'] = $url['domain'] ?? null;
-                    if($url['domain']){
-                        $hash = $url['domain']['hash'];
-                        $url['domain'] = $this->findInEntitiesToAttach($entities, $hash, $typesToSearch);
+                    foreach(['protocol','domain','path','query'] as $key){
+                        $url[$key] = $url[$key] ?? null;
+                        if($url[$key]){
+                            $hash = $url[$key]['hash'];
+                            $url[$key] = $callback($entities, $hash, $typesToSearch);
+                        }
                     }
-
-                    // path
-                    $url['path'] = $url['path'] ?? null;
-                    if($url['path']){
-                        $hash = $url['path']['hash'];
-                        $url['path'] = $this->findInEntitiesToAttach($entities, $hash, $typesToSearch);
-                    }
-
-                    // query
-                    $url['query'] = $url['query'] ?? null;
-                    if($url['query']){
-                        $hash = $url['query']['hash'];
-                        $url['query'] = $this->findInEntitiesToAttach($entities, $hash, $typesToSearch);
-                    }
-
                     return $url;
                 })->all();
 
