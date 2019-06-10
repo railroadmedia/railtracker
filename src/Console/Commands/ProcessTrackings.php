@@ -345,12 +345,18 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * @param $data
      * @return array
+     * @throws Exception
      */
     private function keyByHash($data)
     {
         $entitiesByHash = [];
 
         foreach($data as $datum){
+
+            if(is_null($datum['hash'])){
+                throw new Exception('No hash set for ' . var_export($datum, true));
+            }
+
             $entitiesByHash[$datum['hash']] = $datum;
         }
 
