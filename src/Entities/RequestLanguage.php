@@ -97,6 +97,6 @@ class RequestLanguage extends RailtrackerEntity implements RailtrackerEntityInte
     public function setFromData($data)
     {
         $this->setPreference($data['preference']);
-        $this->setLanguageRange($data['language-range']);
+        $this->setLanguageRange($data['languageRange']);
     }
 }
