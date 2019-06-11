@@ -200,18 +200,28 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 // request processing part 1 of 3 ------------------------------------------------
 
-                $mappedAgents = $this->keyByHash($requests->map(function($request){return $request[RequestAgent::$KEY];})->all());
-                $mappedDevices = $this->keyByHash($requests->map(function($request){return $request[RequestDevice::$KEY];})->all());
-                $mappedLanguages = $this->keyByHash($requests->map(function($request){return $request[RequestLanguage::$KEY];})->all());
-                $mappedMethods = $this->keyByHash($requests->map(function($request){return $request[RequestMethod::$KEY];})->all());
-                $mappedRoutes = $this->keyByHash($requests->map(function($request){return $request[Route::$KEY];})->all());
+                $mappedAgents = $this->mapForKeyAndKeyByHash($requests, RequestAgent::$KEY);
+                $mappedDevices = $this->mapForKeyAndKeyByHash($requests, RequestDevice::$KEY);
+                $mappedLanguages = $this->mapForKeyAndKeyByHash($requests, RequestLanguage::$KEY);
+                $mappedMethods = $this->mapForKeyAndKeyByHash($requests, RequestMethod::$KEY);
+                $mappedRoutes = $this->mapForKeyAndKeyByHash($requests, Route::$KEY);
 
                 try {
-                    $entities[RequestAgent::class] = $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
-                    $entities[RequestDevice::class] = $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
-                    $entities[RequestLanguage::class] = $this->getExistingBulkInsertNew(RequestLanguage::class, $mappedLanguages);
-                    $entities[RequestMethod::class] = $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
-                    $entities[Route::class] = $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
+
+                    $entities[RequestAgent::class] =
+                        $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
+
+                    $entities[RequestDevice::class] =
+                        $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
+
+                    $entities[RequestLanguage::class] =
+                        $this->getExistingBulkInsertNew(RequestLanguage::class, $mappedLanguages);
+
+                    $entities[RequestMethod::class] =
+                        $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
+
+                    $entities[Route::class] =
+                        $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
 
                     $this->entityManager->flush();
                     $this->entityManager->clear();
@@ -223,42 +233,45 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 // request processing part 2 of 3 ------------------------------------------------
 
-                $mappedUrls = collect(array_merge(
-                    $requests->map(function($request){return $request[Url::$KEY];})->all(),
-                    $requests->map(function($request){return $request[Url::$REFERER_URL_KEY];})->all()
-                ));
+                $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
 
-                $mappedUrls = collect($this->keyByHash($mappedUrls));
+                // protocol and domain are *not* nullable
 
-                $mappedUrlProtocols = $this->keyByHash($mappedUrls->map(function($url){return $url[UrlProtocol::$KEY];})->all());
-                $mappedUrlDomains = $this->keyByHash($mappedUrls->map(function($url){return $url[UrlDomain::$KEY];})->all());
+                $mappedUrlProtocols = $this->mapForKeyAndKeyByHash($mappedUrls, UrlProtocol::$KEY);
 
-                $mappedUrlPaths = collect($mappedUrls->filter(function($url){
-                    return !empty($url[UrlPath::$KEY]);
-                })->all());
-                $mappedUrlPaths = $this->keyByHash($mappedUrlPaths->map(function($url){
-                        return $url[UrlPath::$KEY];
-                })->all());
+                $mappedUrlDomains = $this->mapForKeyAndKeyByHash($mappedUrls, UrlDomain::$KEY);
 
-                $mappedUrlQueries = collect($mappedUrls->filter(function($url){
-                    return !empty($url[UrlQuery::$KEY]);
-                })->all());
-                $mappedUrlQueries = $this->keyByHash($mappedUrlQueries->map(function($url){
-                        return $url[UrlQuery::$KEY];
-                })->all());
+                // path and query *are* nullable
+
+                $urlsWithPaths = $this->filterForSetEntitiesOfAType($mappedUrls, UrlPath::$KEY);
+                $mappedUrlPaths = $this->mapForKeyAndKeyByHash($urlsWithPaths, UrlPath::$KEY);
+
+                $urlsWithQueries = $this->filterForSetEntitiesOfAType($mappedUrls, UrlQuery::$KEY);
+                $mappedUrlQueries = $this->mapForKeyAndKeyByHash($urlsWithQueries, UrlQuery::$KEY);
 
                 try{
-                    $entities[UrlProtocol::class] = $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
-                    $entities[UrlDomain::class] = $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
-                    if(!empty($mappedUrlPaths)){
-                        $entities[UrlPath::class] = $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
-                    }
-                    if(!empty($mappedUrlQueries)){
-                        $entities[UrlQuery::class] = $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
-                    }
+                    $entities[UrlProtocol::class] =
+                        $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
+
+                    $entities[UrlDomain::class] =
+                        $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
+
+                    $entities[UrlPath::class] =
+                        $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
+
+                    $entities[UrlQuery::class] =
+                        $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
 
                     $this->entityManager->flush();
-//                    $this->entityManager->clear();
+
+                    /*
+                     * Need to *not* call "entityManager->clear()" because otherwise EM will no longer track entities
+                     * that later attach to URLs and it will then try to create those entities again as required
+                     * cascade:persist
+                     */
+
+                    // $this->entityManager->clear();
+
                 } catch (Exception $e) {
                     error_log($e);
                 }
@@ -269,24 +282,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 try{
                     $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls, false);
-
-                    // get DB? ---------------------------------------------------------------------
-                    // get DB? ---------------------------------------------------------------------
-
-                    // ----------------------------------------------------------
-                    // --------------------------------- do NOT commit ----------
-                    // ----------------------------------------------------------
-                    $tables = \Illuminate\Support\Facades\DB::connection()->getDoctrineSchemaManager()->listTableNames();
-                    foreach($tables as $table){$result = \Illuminate\Support\Facades\DB::connection()->table($table)->select('*')
-                        ->get()->all();foreach($result as &$r){$r = json_decode(json_encode($r), true);}$results[$table] = $result;}
-                    // ----------------------------------------------------------
-                    // ----------------------------------------------------------
-                    // ----------------------------------------------------------
-
-                    // get DB? ---------------------------------------------------------------------
-                    // get DB? ---------------------------------------------------------------------
-
-//                    $this->entityManager->clear();
 
                     $this->entityManager->flush();
                     $this->entityManager->clear();
@@ -407,5 +402,47 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         return $entitiesByHash ?? [];
+    }
+
+    /**
+     * @param Collection $urls
+     * @param $keyToMap
+     * @return array
+     */
+    private function mapForKeyAndKeyByHash(Collection $urls, $keyToMap){
+        $mappedEntities = $urls->map(
+            function($url) use ($keyToMap){
+                return $url[$keyToMap];
+            }
+        )->all();
+        return $this->keyByHash($mappedEntities);
+    }
+
+    /**
+     * @param Collection $urls
+     * @param $keyForRequired
+     * @return Collection
+     */
+    private function filterForSetEntitiesOfAType(Collection $urls, $keyForRequired)
+    {
+        $existant = $urls->filter(function($url) use ($keyForRequired){
+            return !empty($url[$keyForRequired]);
+        })->all();
+
+        return collect($existant);
+    }
+
+    /**
+     * @param Collection $requests
+     * @return Collection
+     */
+    private function getAndMapUrlsFromRequests(Collection $requests)
+    {
+        $urlsNotKeyed = collect(array_merge(
+            $requests->map(function($request){return $request[Url::$KEY];})->all(),
+            $requests->map(function($request){return $request[Url::$REFERER_URL_KEY];})->all()
+        ));
+
+        return collect($this->keyByHash($urlsNotKeyed));
     }
 }
