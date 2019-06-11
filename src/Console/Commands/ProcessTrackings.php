@@ -187,7 +187,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 }
             }
 
-
             // --------------------------------------------------------------------------------
             // ------------------------------ request processing ------------------------------
             // --------------------------------------------------------------------------------
@@ -198,7 +197,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             if(!empty($requests)){
 
-                // request processing part 1 of 3 ------------------------------------------------
+                // request processing part 1 of 3 - simple associations or requests
 
                 $mappedAgents = $this->mapForKeyAndKeyByHash($requests, RequestAgent::$KEY);
                 $mappedDevices = $this->mapForKeyAndKeyByHash($requests, RequestDevice::$KEY);
@@ -207,7 +206,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $mappedRoutes = $this->mapForKeyAndKeyByHash($requests, Route::$KEY);
 
                 try {
-
                     $entities[RequestAgent::class] =
                         $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
 
@@ -229,9 +227,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     error_log($e);
                 }
 
-                // todo: if above fails, still process below, or skip?
-
-                // request processing part 2 of 3 ------------------------------------------------
+                // request processing part 2 of 3 - associations of urls
 
                 $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
 
@@ -281,40 +277,29 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
 
                 try{
-                    $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls, false);
+                    $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
 
                     $this->entityManager->flush();
                     $this->entityManager->clear();
                 } catch (Exception $e) {
                     error_log($e);
                 }
-
-                $stopHere = true;
-                $stopHere = true;
-                $stopHere = true;
-
-                // todo: process urls themselves.
-//                foreach($mappedUrls as $url){
-//
-//                    //$processedUrls = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
-//                }
-
-                /*
-                 * What to do here? attach child-entities by way of hash?
-                 *
-                 * Might have to totally rewrite process methods?
-                 *
-                 * It'll be the same dynamic as with the Urls and their child-entities.
-                 */
-
-                // $requestEntity = $this->requestTracker->process($requestData);
-                // if (!empty($exceptionData)) {
-                //     $this->exceptionTracker->process($exceptionData, $requestEntity);
-                // }
-                // $this->responseTracker->process($responseData, $requestEntity);
-                // $this->entityManager->clear();
-
             }
+
+
+            // --------------------------------------------------------------------------------
+            // ----------------------------- exception processing -----------------------------
+            // --------------------------------------------------------------------------------
+
+
+
+
+            // --------------------------------------------------------------------------------
+            // ----------------------------- response processing ------------------------------
+            // --------------------------------------------------------------------------------
+
+
+
         }
 
         // todo: clear|delete keys?
@@ -329,44 +314,37 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param array $entitiesByHash
      * @return array
      */
-    private function getExistingBulkInsertNew($class, $entitiesByHash, $useProcessForTypeMethod = true)
+    private function getExistingBulkInsertNew($class, $entitiesByHash)
     {
         $qb = $this->entityManager->createQueryBuilder();
-
-//        if($useProcessForTypeMethod){
-            $hashes = array_keys($entitiesByHash);
-//        }else{
-//            /** @var RailtrackerEntityInterface $entitiesByHash */
-//            $hashes = [];
-//            foreach($entitiesByHash as $e){
-//                $hashes[] = $e->getHash();
-//            }
-//        }
 
         /** @var RailtrackerEntityInterface[] $existingEntities */
         $existingEntities =
             $qb->select('a')
                 ->from($class, 'a')
                 ->where('a.hash IN (:hashes)')
-                ->setParameter('hashes', $hashes)
+                ->setParameter('hashes', array_keys($entitiesByHash))
                 ->getQuery()
                 ->getResult();
+
         $existingEntitiesByHash = [];
+
         foreach ($existingEntities as $existingEntity) {
             $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
         }
+
         $entities = [];
+
         foreach ($entitiesByHash as $hash => $entity) {
+
             if (isset($existingEntitiesByHash[$hash])) {
                 $entities[$hash] = $existingEntitiesByHash[$hash];
             }else{
                 try{
-//                    if($useProcessForTypeMethod){
-                        $entity = $this->processForType($class, $entity);
-//                    }else{
-//
-//                    }
+                    $entity = $this->processForType($class, $entity);
+
                     $entities[$entity->getHash()] = $entity;
+
                     $this->entityManager->persist($entity);
                 }catch(Exception $exception){
                     error_log($exception);
