@@ -189,11 +189,11 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
     {
         $this->setProtocol($data['protocol']);
         $this->setDomain($data['domain']);
-        if(!empty($path)){
-            $this->setPath($path);
+        if(!empty($data['path'])){
+            $this->setPath($data['path']);
         }
-        if(!empty($query)){
-            $this->setQuery($query);
+        if(!empty($data['query'])){
+            $this->setQuery($data['query']);
         }
     }
 
