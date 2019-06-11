@@ -92,6 +92,67 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->entityManager = $entityManager;
     }
 
+    private function mapChildrenToUrls(Collection $mappedUrls, $entities)
+    {
+        return $mappedUrls->map(function($url) use ($entities)
+        {
+            $typesToSearch = [
+                UrlProtocol::class,
+                UrlDomain::class,
+                UrlPath::class,
+                UrlQuery::class
+            ];
+
+            $keys = [
+                'protocol',
+                'domain',
+                'path',
+                'query'
+            ];
+
+            /** @var $url Url */
+            foreach($keys as $key){
+
+                if(!empty($url[$key])){
+
+                    $hash = $url[$key]['hash'];
+
+                    foreach ($entities as $type => $data) {
+
+                        if (in_array($type, $typesToSearch)) {
+
+                            if (isset($data[$hash])) {
+
+                                $entityToAttach = $data[$hash];
+
+                                $url[$key] = $entityToAttach;
+
+//                                $entityToAttach = $data[$hash];
+//
+//                                switch($type){
+//                                    case UrlProtocol::class:
+//                                        $url->setProtocol($entityToAttach);
+//                                        break;
+//                                    case UrlDomain::class:
+//                                        $url->setDomain($entityToAttach);
+//                                        break;
+//                                    case UrlPath::class:
+//                                        $url->setPath($entityToAttach);
+//                                        break;
+//                                    case UrlQuery::class:
+//                                        $url->setQuery($entityToAttach);
+//                                        break;
+                            }
+                        }
+                    }
+//                }else{
+//                    $url[$key] = null;
+                }
+            }
+            return $url;
+        })->all();
+    }
+
     /**
      * return true
      */
@@ -197,41 +258,35 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     }
 
                     $this->entityManager->flush();
-                    $this->entityManager->clear();
+//                    $this->entityManager->clear();
                 } catch (Exception $e) {
                     error_log($e);
                 }
 
                 // request processing part 3 of 3 ------------------------------------------------
 
-                // todo: attached entities
-                $mappedUrls = $mappedUrls->map(function($url) use ($entities){
-                    $typesToSearch = [UrlProtocol::class, UrlDomain::class, UrlPath::class, UrlQuery::class];
-
-                    $callback = function($entities, $hash, $typesToSearch) {
-                        foreach ($entities as $type => $data) {
-                            if (!in_array($type, $typesToSearch)) {
-                                continue;
-                            }
-                            if (isset($data[$hash])) {
-                                return $data[$hash];
-                            }
-                        }
-                        return null;
-                    };
-
-                    foreach(['protocol','domain','path','query'] as $key){
-                        $url[$key] = $url[$key] ?? null;
-                        if($url[$key]){
-                            $hash = $url[$key]['hash'];
-                            $url[$key] = $callback($entities, $hash, $typesToSearch);
-                        }
-                    }
-                    return $url;
-                })->all();
+                $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
 
                 try{
-                    $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
+                    $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls, false);
+
+                    // get DB? ---------------------------------------------------------------------
+                    // get DB? ---------------------------------------------------------------------
+
+                    // ----------------------------------------------------------
+                    // --------------------------------- do NOT commit ----------
+                    // ----------------------------------------------------------
+                    $tables = \Illuminate\Support\Facades\DB::connection()->getDoctrineSchemaManager()->listTableNames();
+                    foreach($tables as $table){$result = \Illuminate\Support\Facades\DB::connection()->table($table)->select('*')
+                        ->get()->all();foreach($result as &$r){$r = json_decode(json_encode($r), true);}$results[$table] = $result;}
+                    // ----------------------------------------------------------
+                    // ----------------------------------------------------------
+                    // ----------------------------------------------------------
+
+                    // get DB? ---------------------------------------------------------------------
+                    // get DB? ---------------------------------------------------------------------
+
+//                    $this->entityManager->clear();
 
                     $this->entityManager->flush();
                     $this->entityManager->clear();
@@ -279,16 +334,26 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param array $entitiesByHash
      * @return array
      */
-    private function getExistingBulkInsertNew($class, $entitiesByHash)
+    private function getExistingBulkInsertNew($class, $entitiesByHash, $useProcessForTypeMethod = true)
     {
         $qb = $this->entityManager->createQueryBuilder();
+
+//        if($useProcessForTypeMethod){
+            $hashes = array_keys($entitiesByHash);
+//        }else{
+//            /** @var RailtrackerEntityInterface $entitiesByHash */
+//            $hashes = [];
+//            foreach($entitiesByHash as $e){
+//                $hashes[] = $e->getHash();
+//            }
+//        }
 
         /** @var RailtrackerEntityInterface[] $existingEntities */
         $existingEntities =
             $qb->select('a')
                 ->from($class, 'a')
                 ->where('a.hash IN (:hashes)')
-                ->setParameter('hashes', array_keys($entitiesByHash))
+                ->setParameter('hashes', $hashes)
                 ->getQuery()
                 ->getResult();
         $existingEntitiesByHash = [];
@@ -297,9 +362,15 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
         $entities = [];
         foreach ($entitiesByHash as $hash => $entity) {
-            if (!isset($existingEntitiesByHash[$hash])) {
+            if (isset($existingEntitiesByHash[$hash])) {
+                $entities[$hash] = $existingEntitiesByHash[$hash];
+            }else{
                 try{
-                    $entity = $this->processForType($class, $entity);
+//                    if($useProcessForTypeMethod){
+                        $entity = $this->processForType($class, $entity);
+//                    }else{
+//
+//                    }
                     $entities[$entity->getHash()] = $entity;
                     $this->entityManager->persist($entity);
                 }catch(Exception $exception){

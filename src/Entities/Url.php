@@ -162,9 +162,9 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
     public function setHash()
     {
         $path = $this->getPath();
-        $pathValue = !empty($path) ? $path->getPath() : '';
+        $pathValue = !empty($path) ? $path->getPath() : null;
         $query = $this->getQuery();
-        $queryValue = !empty($query) ? $query->getString() : '';
+        $queryValue = !empty($query) ? $query->getString() : null;
 
         $this->hash = md5(implode('-', [
             $this->getProtocol()->getProtocol(),
