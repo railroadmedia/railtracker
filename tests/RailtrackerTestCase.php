@@ -105,6 +105,12 @@ class RailtrackerTestCase extends BaseTestCase
         $this->getEnvironmentSetUp($this->app);
 
         $this->queryLogger = app(RailtrackerQueryLogger::class);
+
+        // clear everything *first*
+        $toDelete = $this->batchService->cache()->keys('*');
+        if(!empty($toDelete)){
+            $this->batchService->cache()->del($toDelete);
+        }
     }
 
     public function tearDown()
