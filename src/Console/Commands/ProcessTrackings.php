@@ -201,26 +201,28 @@ class ProcessTrackings extends \Illuminate\Console\Command
             // todo: ----------------------- response processing ------------------------------
             // --------------------------------------------------------------------------------
 
-//            $responses = $valuesThisChunk->filter(function($candidate){
-//                return $candidate['type'] === 'response';
-//            });
-//
-//            if(!empty($responses)){
-//
-//                $mappedStatusCodes = $responses->map(function($response){
-//                    $value = $response[ResponseStatusCode::$KEY];
-//                    return $value;
-//                })->all();
-//
-//                try {
-//                    $entities[ResponseStatusCode::class] =
-//                        $this->getExistingBulkInsertNew(RequestAgent::class, $mappedStatusCodes);
-//
-//                    $this->entityManager->flush();
-//                } catch (Exception $e) {
-//                    error_log($e);
-//                }
-//            }
+            $responses = $valuesThisChunk->filter(function($candidate){
+                return $candidate['type'] === 'response';
+            });
+
+            if(!empty($responses)){
+
+                $mappedStatusCodesRaw = $responses->map(function($response){
+                    $value = $response[ResponseStatusCode::$KEY];
+                    return [ResponseStatusCode::$KEY => $value];
+                })->all();
+
+                $mappedStatusCodes = array_unique($mappedStatusCodesRaw, SORT_REGULAR);
+
+                try {
+                    $entities[ResponseStatusCode::class] =
+                        $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
+
+                    $this->entityManager->flush();
+                } catch (Exception $e) {
+                    error_log($e);
+                }
+            }
 
         }
 

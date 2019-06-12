@@ -25,9 +25,9 @@ class ResponseStatusCode
     protected $code;
 
     /**
-     * @var string
+     * @ORM\Column(name="hash", length=128, unique=true)
      */
-    private $hash;
+    protected $hash;
 
     /**
      * @return mixed

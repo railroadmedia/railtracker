@@ -83,6 +83,13 @@ class AddGeneratedHashColumns extends Migration
                 $table->string('hash')->nullable();
             }
         );
+
+        Schema::table(
+            ConfigService::$tableResponseStatusCodes,
+            function (Blueprint $table) {
+                $table->string('hash')->nullable();
+            }
+        );
     }
 
     /**
