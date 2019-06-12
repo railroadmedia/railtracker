@@ -2,6 +2,7 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
+use Carbon\Carbon;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMException;
 use Exception;
@@ -168,179 +169,58 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $entities = [];
 
-            $requestKeys =
-                $this->batchService
-                    ->cache()
-                    ->scan(
-                        $redisIterator,
-                        [
-                            'MATCH' => $this->batchService->batchKeyPrefix . '*',
-                            'COUNT' => config('railtracker.scan-size', 1000)
-                        ]
-                    );
+            $matchString = $this->batchService->batchKeyPrefix . '*';
+            $batchSize = config('railtracker.scan-size', 1000);
+            $criteria = ['MATCH' => $matchString,'COUNT' => $batchSize];
 
-            $redisIterator = (integer)$requestKeys[0];
+            $requestKeys = $this->batchService->cache()->scan($redisIterator,$criteria);
 
-            $keysThisChunk = $requestKeys[1];
-            $valuesThisChunk = new Collection();
+            $redisIterator = (integer) $requestKeys[0];
 
-            foreach ($keysThisChunk as $keyThisChunk) {
-                $values = $this->batchService->cache()->smembers($keyThisChunk);
-                foreach($values as $value){
-                    $valuesThisChunk->push(unserialize($value));
-                }
-            }
+            $valuesThisChunk = $this->getValuesThisChunk($requestKeys[1]);
 
             // --------------------------------------------------------------------------------
             // ------------------------------ request processing ------------------------------
             // --------------------------------------------------------------------------------
 
-            $requests = $valuesThisChunk->filter(function($candidate){
-                return $candidate['type'] === 'request';
-            });
+            $requests = $this->processRequests($valuesThisChunk);
 
-            if(!empty($requests)){
+            // --------------------------------------------------------------------------------
+            // todo: ----------------------- exception processing -----------------------------
+            // --------------------------------------------------------------------------------
 
-                // -----------------------------------------------------------------------------------------------------
-                // request processing part 1 of 4 - simple associations or requests ------------------------------------
-
-                $mappedAgents = $this->mapForKeyAndKeyByHash($requests, RequestAgent::$KEY);
-                $mappedDevices = $this->mapForKeyAndKeyByHash($requests, RequestDevice::$KEY);
-                $mappedLanguages = $this->mapForKeyAndKeyByHash($requests, RequestLanguage::$KEY);
-                $mappedMethods = $this->mapForKeyAndKeyByHash($requests, RequestMethod::$KEY);
-                $mappedRoutes = $this->mapForKeyAndKeyByHash($requests, Route::$KEY);
-
-                try {
-                    $entities[RequestAgent::class] =
-                        $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
-
-                    $entities[RequestDevice::class] =
-                        $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
-
-                    $entities[RequestLanguage::class] =
-                        $this->getExistingBulkInsertNew(RequestLanguage::class, $mappedLanguages);
-
-                    $entities[RequestMethod::class] =
-                        $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
-
-                    $entities[Route::class] =
-                        $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
-
-                    $this->entityManager->flush();
-                    $this->entityManager->clear();
-                } catch (Exception $e) {
-                    error_log($e);
-                }
-
-                // -----------------------------------------------------------------------------------------------------
-                // request processing part 2 of 4 - associations of urls -----------------------------------------------
-
-                $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
-
-                // protocol and domain are *not* nullable
-
-                $mappedUrlProtocols = $this->mapForKeyAndKeyByHash($mappedUrls, UrlProtocol::$KEY);
-
-                $mappedUrlDomains = $this->mapForKeyAndKeyByHash($mappedUrls, UrlDomain::$KEY);
-
-                // path and query *are* nullable
-
-                $urlsWithPaths = $this->filterForSetEntitiesOfAType($mappedUrls, UrlPath::$KEY);
-                $mappedUrlPaths = $this->mapForKeyAndKeyByHash($urlsWithPaths, UrlPath::$KEY);
-
-                $urlsWithQueries = $this->filterForSetEntitiesOfAType($mappedUrls, UrlQuery::$KEY);
-                $mappedUrlQueries = $this->mapForKeyAndKeyByHash($urlsWithQueries, UrlQuery::$KEY);
-
-                try{
-                    $entities[UrlProtocol::class] =
-                        $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
-
-                    $entities[UrlDomain::class] =
-                        $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
-
-                    $entities[UrlPath::class] =
-                        $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
-
-                    $entities[UrlQuery::class] =
-                        $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
-
-                    $this->entityManager->flush();
-
-                } catch (Exception $e) {
-                    error_log($e);
-                }
-
-                // -----------------------------------------------------------------------------------------------------
-                // request processing part 3 of 4 - attaching children to urls and then processing those ---------------
-
-                $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
-
-                try{
-                    $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
-
-                    $this->entityManager->flush();
-
-                } catch (Exception $e) {
-                    error_log($e);
-                }
-
-                // -----------------------------------------------------------------------------------------------------
-                // request processing part 4 of 4 - insert requests
-
-//                $requestEntities = [];
+//            $exceptions = $valuesThisChunk->filter(function($candidate){
+//                return $candidate['type'] === 'exception';
+//            });
 //
-//                foreach($requestEntities as $requestEntity){
+//            if(!empty($exceptions)){
 //
-//                    $this->requestTracker->hydrate();
+//            }
+
+            // --------------------------------------------------------------------------------
+            // todo: ----------------------- response processing ------------------------------
+            // --------------------------------------------------------------------------------
+
+//            $responses = $valuesThisChunk->filter(function($candidate){
+//                return $candidate['type'] === 'response';
+//            });
 //
-//                    try{
-//                        $this->entityManager->persist($requestEntity);
-//                    }catch(Exception $exception){
-//                        error_log($exception);
-//                    }
+//            if(!empty($responses)){
+//
+//                $mappedStatusCodes = $responses->map(function($response){
+//                    $value = $response[ResponseStatusCode::$KEY];
+//                    return $value;
+//                })->all();
+//
+//                try {
+//                    $entities[ResponseStatusCode::class] =
+//                        $this->getExistingBulkInsertNew(RequestAgent::class, $mappedStatusCodes);
+//
+//                    $this->entityManager->flush();
+//                } catch (Exception $e) {
+//                    error_log($e);
 //                }
-
-            }
-
-
-
-            // --------------------------------------------------------------------------------
-            // ----------------------------- exception processing -----------------------------
-            // --------------------------------------------------------------------------------
-
-            $exceptions = $valuesThisChunk->filter(function($candidate){
-                return $candidate['type'] === 'exception';
-            });
-
-            if(!empty($exceptions)){
-
-            }
-
-
-            // --------------------------------------------------------------------------------
-            // ----------------------------- response processing ------------------------------
-            // --------------------------------------------------------------------------------
-
-            $responses = $valuesThisChunk->filter(function($candidate){
-                return $candidate['type'] === 'response';
-            });
-
-            if(!empty($responses)){
-
-                $mappedStatusCodes = $responses->map(function($response){
-                    $value = $response[ResponseStatusCode::$KEY];
-                    return $value;
-                })->all();
-
-                try {
-                    $entities[ResponseStatusCode::class] =
-                        $this->getExistingBulkInsertNew(RequestAgent::class, $mappedStatusCodes);
-
-                    $this->entityManager->flush();
-                } catch (Exception $e) {
-                    error_log($e);
-                }
-            }
+//            }
 
         }
 
@@ -359,31 +239,29 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
     /**
      * @param string $class
-     * @param array $entitiesByHash
+     * @param array $arraysByHash
      * @return array
      */
-    private function getExistingBulkInsertNew($class, $entitiesByHash)
+    private function getExistingBulkInsertNew($class, $arraysByHash)
     {
-        $qb = $this->entityManager->createQueryBuilder();
+        $existingEntitiesByHash = $this->getPreExistingFromSet($class, $arraysByHash);
 
-        /** @var RailtrackerEntityInterface[] $existingEntities */
-        $existingEntities =
-            $qb->select('a')
-                ->from($class, 'a')
-                ->where('a.hash IN (:whereValues)')
-                ->setParameter('whereValues', array_keys($entitiesByHash))
-                ->getQuery()
-                ->getResult();
+        $entities = $this->createIfNeeded($class, $arraysByHash, $existingEntitiesByHash);
 
-        $existingEntitiesByHash = [];
+        return $entities;
+    }
 
-        foreach ($existingEntities as $existingEntity) {
-            $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
-        }
-
+    /**
+     * @param $class
+     * @param $arraysByHash
+     * @param array $existingEntitiesByHash
+     * @return array
+     */
+    private function createIfNeeded($class, $arraysByHash, $existingEntitiesByHash = [])
+    {
         $entities = [];
 
-        foreach ($entitiesByHash as $hash => $entity) {
+        foreach ($arraysByHash as $hash => $entity) {
 
             if (isset($existingEntitiesByHash[$hash])) {
                 $entities[$hash] = $existingEntitiesByHash[$hash];
@@ -424,10 +302,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private function keyByHash($data)
     {
         foreach($data as $datum){
-            $entitiesByHash[$datum['hash']] = $datum;
+            if(isset($datum['hash'])){
+                $arraysByHash[$datum['hash']] = $datum;
+            }
         }
 
-        return $entitiesByHash ?? [];
+        return $arraysByHash ?? [];
     }
 
     /**
@@ -471,4 +351,217 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         return collect($this->keyByHash($urlsNotKeyed));
     }
+
+    /**
+     * @param Collection $requests
+     * @param $entities
+     * @return Collection
+     */
+    private function createRequestEntitiesAndAttachAssociatedData(Collection $requests, $entities)
+    {
+        $associationsClassesAndKeys = [
+            RequestAgent::$KEY => RequestAgent::class,
+            RequestDevice::$KEY => RequestDevice::class,
+            RequestLanguage::$KEY => RequestLanguage::class,
+            RequestMethod::$KEY => RequestMethod::class,
+            Route::$KEY => Route::class,
+            Url::$KEY => Url::class,
+            Url::$REFERER_URL_KEY => Url::class,
+        ];
+
+        foreach($requests as &$requestData){
+            foreach($associationsClassesAndKeys as $key => $class)
+            {
+                $hashRequired = $requestData[$key]['hash'];
+                $candidates = $entities[$class];
+
+                if(isset($candidates[$hashRequired])) {
+                    $requestData[$key] = $candidates[$hashRequired];
+                }
+            }
+
+            try {
+                $r = new Request();
+                $r->setUuid($requestData['uuid']);
+                $r->setUserId($requestData['userId']);
+                $r->setCookieId($requestData['cookieId']);
+                $r->setGeoip($requestData['geoip']);
+                $r->setClientIp($requestData['clientIp']);
+                $r->setIsRobot($requestData['isRobot']);
+                $r->setRequestedOn(Carbon::parse($requestData['requestedOn']));
+                $r->setUrl($requestData['url']);
+                $r->setRefererUrl($requestData['refererUrl']);
+                $r->setAgent($requestData['agent']);
+                $r->setDevice($requestData['device']);
+                $r->setLanguage($requestData['language']);
+                $r->setMethod($requestData['method']);
+                $r->setRoute($requestData['route']);
+
+                $this->entityManager->persist($r);
+            } catch (Exception $e) {
+                error_log($e);
+            }
+        }
+
+        try{
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        return $requests;
+    }
+
+    /**
+     * @param string $class
+     * @param array $arraysByHash
+     * @return array
+     */
+    private function getPreExistingFromSet($class, $arraysByHash)
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+
+        /** @var RailtrackerEntityInterface[] $existingEntities */
+        $existingEntities =
+            $qb->select('a')
+                ->from($class, 'a')
+                ->where('a.hash IN (:whereValues)')
+                ->setParameter('whereValues', array_keys($arraysByHash))
+                ->getQuery()
+                ->getResult();
+
+        $existingEntitiesByHash = [];
+
+        foreach ($existingEntities as $existingEntity) {
+            $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
+        }
+
+        return $existingEntitiesByHash;
+    }
+
+    /**
+     * @param $valuesThisChunk
+     * @return array|Collection
+     */
+    private function processRequests($valuesThisChunk)
+    {
+        $requests = $valuesThisChunk->filter(function($candidate){
+            return $candidate['type'] === 'request';
+        });
+
+        if(!empty($requests)){
+
+            // -----------------------------------------------------------------------------------------------------
+            // request processing part 1 of 4 - simple associations or requests ------------------------------------
+
+            $mappedAgents = $this->mapForKeyAndKeyByHash($requests, RequestAgent::$KEY);
+            $mappedDevices = $this->mapForKeyAndKeyByHash($requests, RequestDevice::$KEY);
+            $mappedLanguages = $this->mapForKeyAndKeyByHash($requests, RequestLanguage::$KEY);
+            $mappedMethods = $this->mapForKeyAndKeyByHash($requests, RequestMethod::$KEY);
+            $mappedRoutes = $this->mapForKeyAndKeyByHash($requests, Route::$KEY);
+
+            try {
+                $entities[RequestAgent::class] =
+                    $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
+
+                $entities[RequestDevice::class] =
+                    $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
+
+                $entities[RequestLanguage::class] =
+                    $this->getExistingBulkInsertNew(RequestLanguage::class, $mappedLanguages);
+
+                $entities[RequestMethod::class] =
+                    $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
+
+                $entities[Route::class] =
+                    $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
+
+                $this->entityManager->flush();
+            } catch (Exception $e) {
+                error_log($e);
+            }
+
+            // -----------------------------------------------------------------------------------------------------
+            // request processing part 2 of 4 - associations of urls -----------------------------------------------
+
+            $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
+
+            // protocol and domain are *not* nullable
+
+            $mappedUrlProtocols = $this->mapForKeyAndKeyByHash($mappedUrls, UrlProtocol::$KEY);
+
+            $mappedUrlDomains = $this->mapForKeyAndKeyByHash($mappedUrls, UrlDomain::$KEY);
+
+            // path and query *are* nullable
+
+            $urlsWithPaths = $this->filterForSetEntitiesOfAType($mappedUrls, UrlPath::$KEY);
+            $mappedUrlPaths = $this->mapForKeyAndKeyByHash($urlsWithPaths, UrlPath::$KEY);
+
+            $urlsWithQueries = $this->filterForSetEntitiesOfAType($mappedUrls, UrlQuery::$KEY);
+            $mappedUrlQueries = $this->mapForKeyAndKeyByHash($urlsWithQueries, UrlQuery::$KEY);
+
+            try{
+                $entities[UrlProtocol::class] =
+                    $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
+
+                $entities[UrlDomain::class] =
+                    $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
+
+                $entities[UrlPath::class] =
+                    $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
+
+                $entities[UrlQuery::class] =
+                    $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
+
+                $this->entityManager->flush();
+
+            } catch (Exception $e) {
+                error_log($e);
+            }
+
+            // -----------------------------------------------------------------------------------------------------
+            // request processing part 3 of 4 - attaching children to urls and then processing those ---------------
+
+            $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
+
+            try{
+                $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
+
+                $this->entityManager->flush();
+
+            } catch (Exception $e) {
+                error_log($e);
+            }
+
+            // -----------------------------------------------------------------------------------------------------
+            // request processing part 4 of 4 - insert requests
+
+            /*
+             * every association of the request (everything that itself is an entity should already have
+             * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
+             */
+            $requestsEntities = $this->createRequestEntitiesAndAttachAssociatedData($requests, $entities);
+        }
+
+        return $requestsEntities ?? [];
+    }
+
+    /**
+     * @param $keysThisChunk
+     * @return Collection
+     */
+    private function getValuesThisChunk($keysThisChunk)
+    {
+        $valuesThisChunk = new Collection();
+
+        foreach ($keysThisChunk as $keyThisChunk) {
+            $values = $this->batchService->cache()->smembers($keyThisChunk);
+            foreach($values as $value){
+                $valuesThisChunk->push(unserialize($value));
+            }
+        }
+
+        return $valuesThisChunk;
+    }
+
 }

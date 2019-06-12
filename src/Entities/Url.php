@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 class Url extends RailtrackerEntity implements RailtrackerEntityInterface
 {
     public static $KEY = 'url';
-    public static $REFERER_URL_KEY = 'url';
+    public static $REFERER_URL_KEY = 'refererUrl';
 
     /**
      * @ORM\Id
