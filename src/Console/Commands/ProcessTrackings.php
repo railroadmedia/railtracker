@@ -2,13 +2,17 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
+use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
 use Exception;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Entities\RailtrackerEntityInterface;
+use Railroad\Railtracker\Entities\Request;
 use Railroad\Railtracker\Entities\RequestAgent;
 use Railroad\Railtracker\Entities\RequestDevice;
 use Railroad\Railtracker\Entities\RequestLanguage;
 use Railroad\Railtracker\Entities\RequestMethod;
+use Railroad\Railtracker\Entities\ResponseStatusCode;
 use Railroad\Railtracker\Entities\Route;
 use Railroad\Railtracker\Entities\Url;
 use Railroad\Railtracker\Entities\UrlDomain;
@@ -197,7 +201,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             if(!empty($requests)){
 
-                // request processing part 1 of 3 - simple associations or requests
+                // -----------------------------------------------------------------------------------------------------
+                // request processing part 1 of 4 - simple associations or requests ------------------------------------
 
                 $mappedAgents = $this->mapForKeyAndKeyByHash($requests, RequestAgent::$KEY);
                 $mappedDevices = $this->mapForKeyAndKeyByHash($requests, RequestDevice::$KEY);
@@ -227,7 +232,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     error_log($e);
                 }
 
-                // request processing part 2 of 3 - associations of urls
+                // -----------------------------------------------------------------------------------------------------
+                // request processing part 2 of 4 - associations of urls -----------------------------------------------
 
                 $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
 
@@ -260,19 +266,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                     $this->entityManager->flush();
 
-                    /*
-                     * Need to *not* call "entityManager->clear()" because otherwise EM will no longer track entities
-                     * that later attach to URLs and it will then try to create those entities again as required
-                     * cascade:persist
-                     */
-
-                    // $this->entityManager->clear();
-
                 } catch (Exception $e) {
                     error_log($e);
                 }
 
-                // request processing part 3 of 3 ------------------------------------------------
+                // -----------------------------------------------------------------------------------------------------
+                // request processing part 3 of 4 - attaching children to urls and then processing those ---------------
 
                 $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
 
@@ -280,31 +279,80 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
 
                     $this->entityManager->flush();
-                    $this->entityManager->clear();
+
                 } catch (Exception $e) {
                     error_log($e);
                 }
+
+                // -----------------------------------------------------------------------------------------------------
+                // request processing part 4 of 4 - insert requests
+
+//                $requestEntities = [];
+//
+//                foreach($requestEntities as $requestEntity){
+//
+//                    $this->requestTracker->hydrate();
+//
+//                    try{
+//                        $this->entityManager->persist($requestEntity);
+//                    }catch(Exception $exception){
+//                        error_log($exception);
+//                    }
+//                }
+
             }
+
 
 
             // --------------------------------------------------------------------------------
             // ----------------------------- exception processing -----------------------------
             // --------------------------------------------------------------------------------
 
+            $exceptions = $valuesThisChunk->filter(function($candidate){
+                return $candidate['type'] === 'exception';
+            });
 
+            if(!empty($exceptions)){
+
+            }
 
 
             // --------------------------------------------------------------------------------
             // ----------------------------- response processing ------------------------------
             // --------------------------------------------------------------------------------
 
+            $responses = $valuesThisChunk->filter(function($candidate){
+                return $candidate['type'] === 'response';
+            });
 
+            if(!empty($responses)){
+
+                $mappedStatusCodes = $responses->map(function($response){
+                    $value = $response[ResponseStatusCode::$KEY];
+                    return $value;
+                })->all();
+
+                try {
+                    $entities[ResponseStatusCode::class] =
+                        $this->getExistingBulkInsertNew(RequestAgent::class, $mappedStatusCodes);
+
+                    $this->entityManager->flush();
+                } catch (Exception $e) {
+                    error_log($e);
+                }
+            }
 
         }
 
         // todo: clear|delete keys?
 
         // todo: print info about success|failure
+
+        try {
+            $this->entityManager->clear();
+        } catch (Exception $e) {
+            error_log($e);
+        }
 
         return true;
     }
@@ -322,8 +370,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $existingEntities =
             $qb->select('a')
                 ->from($class, 'a')
-                ->where('a.hash IN (:hashes)')
-                ->setParameter('hashes', array_keys($entitiesByHash))
+                ->where('a.hash IN (:whereValues)')
+                ->setParameter('whereValues', array_keys($entitiesByHash))
                 ->getQuery()
                 ->getResult();
 

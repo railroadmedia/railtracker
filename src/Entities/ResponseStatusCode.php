@@ -10,6 +10,8 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class ResponseStatusCode
 {
+    public static $KEY = 'status_code';
+
     /**
      * @ORM\Id
      * @ORM\Column(type="bigint")
@@ -23,12 +25,19 @@ class ResponseStatusCode
     protected $code;
 
     /**
+     * @var string
+     */
+    private $hash;
+
+    /**
      * @return mixed
      */
     public function getId()
     {
         return $this->id;
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return mixed
@@ -44,5 +53,26 @@ class ResponseStatusCode
     public function setCode($code)
     {
         $this->code = $code;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode([$this->getCode()]));
+    }
+
+    /**
+     * @return string
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setCode($data[$this::$KEY]);
+        $this->setHash(); // this here?
     }
 }
