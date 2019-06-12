@@ -21,9 +21,54 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
     public function test_track_response_status_code()
     {
-        $testSize = 100;
+//        $this->go(100,10, false);
+//        $this->go(100,20, false);
+//        $this->go(100,30, false);
+//        $this->go(100,40, false);
+//        $this->go(100,50, false);
+//        $this->go(100,60, false);
+//        $this->go(100,70, false);
+//        $this->go(100,80, false);
+//        $this->go(100,90, false);
+        $this->go(10,10, false);
+    }
 
-        config()->set('railtracker.scan-size', 10);
+
+
+    public function test_track_response_status_code_to_get_data()
+    {
+        $tStart = microtime(true);
+
+        echo "test-size,scan-size,creation time,processing time,queries*\n";
+
+        $this->go(100,20, false);
+        $this->go(100,40, false);
+        $this->go(100,60, false);
+        $this->go(100,80, false);
+        $this->go(100,100, false);
+
+        $this->go(100,100, false);
+        $this->go(100,80, false);
+        $this->go(100,60, false);
+        $this->go(100,40, false);
+        $this->go(100,20, false);
+
+        $time = round(microtime(true) - $tStart, 2);
+        $mRaw = floor($time);
+        $sRaw = $time - ($mRaw * 60);
+        $timePretty = $mRaw . ':' . $sRaw;
+        echo "\n";
+        echo 'test_track_response_status_code_to_get_data ran in: ' . $timePretty . "\n";
+    }
+
+    private function go($testSize, $scanSize, $verbose = true)
+    {
+        $toDelete = $this->batchService->cache()->keys('*');
+        if(!empty($toDelete)){
+            $this->batchService->cache()->del($toDelete);
+        }
+
+        config()->set('railtracker.scan-size', $scanSize);
 
         $tStart = microtime(true);
 
@@ -42,9 +87,17 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
         $tEnd = microtime(true);
 
-        echo 'Time to store ' . $testSize . ' requests in redis: ' . ($tEnd - $tStart) . ' seconds.' . "\n";
+        $creationTime = round(($tEnd - $tStart), 2);
 
-        echo 'Queries ran to store ' . $testSize . ' requests in redis: ' . $this->queryLogger->count() . "\n";
+        if($verbose){
+            echo 'Time to generate and handle ' .
+                $testSize .
+                ' requests, and store them in redis: ' .
+                $creationTime .
+                ' seconds.' .
+                "\n";
+            echo 'Queries ran to generate and handle ' . $testSize . ' requests, and store them in redis: ' . $this->queryLogger->count() . "\n";
+        }
 
         $tStart = microtime(true);
 
@@ -52,15 +105,26 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
         $tEnd = microtime(true);
 
-        echo 'Time to process ' .
-            $testSize .
-            ' requests and responses and store them in a fresh database: ' .
-            ($tEnd - $tStart) .
-            ' seconds.' .
-            "\n";
+        $processingTime = round(($tEnd - $tStart),2);
 
-        echo 'Queries ran to store ' . $testSize . ' requests in database: ' . $this->queryLogger->count() . "\n";
+        if($verbose){
+            echo 'Time to process ' .
+                $testSize .
+                ' requests and responses and store them in a fresh database: ' .
+                $processingTime .
+                ' seconds.' .
+                "\n";
+            echo 'Queries ran to store ' . $testSize . ' requests in database: ' . $this->queryLogger->count() . "\n";
+        }
+
+        echo $testSize . ',' .
+            config('railtracker.scan-size') . ',' .
+            $creationTime . ',' .
+            $processingTime . ',' .
+            $this->queryLogger->count() . "\n";
 
         $this->expectNotToPerformAssertions();
+
+
     }
 }
