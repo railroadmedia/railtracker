@@ -109,7 +109,7 @@ class RailtrackerTestCase extends BaseTestCase
 
     public function tearDown()
     {
-        $toDelete = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . '*');
+        $toDelete = $this->batchService->cache()->keys('*');
 
         if(!empty($toDelete)){
             $this->batchService->cache()->del($toDelete);
