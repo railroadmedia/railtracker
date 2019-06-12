@@ -21,19 +21,15 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
     public function test_track_response_status_code()
     {
-//        $this->go(100,10, false);
-//        $this->go(100,20, false);
-//        $this->go(100,30, false);
-//        $this->go(100,40, false);
-//        $this->go(100,50, false);
-//        $this->go(100,60, false);
-//        $this->go(100,70, false);
-//        $this->go(100,80, false);
-//        $this->go(100,90, false);
         $this->go(10,10, false);
+//        $this->go(100,10, false);
+//        $this->go(100,100, false);
+//        $this->go(1000,100, false);
+//        $this->go(1000,1000, false);
+//        $this->go(10000,1000, false);
+//        $this->go(10000,10000, false);
+//        $this->go(100000,10000, false);
     }
-
-
 
     public function test_track_response_status_code_to_get_data()
     {
