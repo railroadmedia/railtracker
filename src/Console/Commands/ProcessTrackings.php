@@ -611,7 +611,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     $response->setRespondedOn($responseData['respondedOn']);
                     $response->setResponseDurationMs($responseData['responseDurationMs']);
 
-                    // todo: set statusCodes
+                    foreach($responseStatusCodes ?? [] as $code){
+                        /** @var $code ResponseStatusCode */
+                        if($code->getCode() === $responseData['status_code']){
+                            $response->setStatusCode($code);
+                        }
+                    }
 
                     $this->entityManager->persist($response);
 
