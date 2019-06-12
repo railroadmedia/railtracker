@@ -13,6 +13,7 @@ use Railroad\Railtracker\Entities\RequestAgent;
 use Railroad\Railtracker\Entities\RequestDevice;
 use Railroad\Railtracker\Entities\RequestLanguage;
 use Railroad\Railtracker\Entities\RequestMethod;
+use Railroad\Railtracker\Entities\Response;
 use Railroad\Railtracker\Entities\ResponseStatusCode;
 use Railroad\Railtracker\Entities\Route;
 use Railroad\Railtracker\Entities\Url;
@@ -201,29 +202,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             // todo: ----------------------- response processing ------------------------------
             // --------------------------------------------------------------------------------
 
-            $responses = $valuesThisChunk->filter(function($candidate){
-                return $candidate['type'] === 'response';
-            });
-
-            if(!empty($responses)){
-
-                $mappedStatusCodesRaw = $responses->map(function($response){
-                    $value = $response[ResponseStatusCode::$KEY];
-                    return [ResponseStatusCode::$KEY => $value];
-                })->all();
-
-                $mappedStatusCodes = array_unique($mappedStatusCodesRaw, SORT_REGULAR);
-
-                try {
-                    $entities[ResponseStatusCode::class] =
-                        $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
-
-                    $this->entityManager->flush();
-                } catch (Exception $e) {
-                    error_log($e);
-                }
-            }
-
+            $responses = $this->processResponses($valuesThisChunk, $requests);
         }
 
         // todo: clear|delete keys?
@@ -400,6 +379,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $r->setRoute($requestData['route']);
 
                 $this->entityManager->persist($r);
+
+                $requestEntitiesByUuid[$r->getUuid()] = $r ?? null;
+
             } catch (Exception $e) {
                 error_log($e);
             }
@@ -411,7 +393,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
-        return $requests;
+        return $requestEntitiesByUuid ?? [];
     }
 
     /**
@@ -542,10 +524,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
              * every association of the request (everything that itself is an entity should already have
              * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
              */
-            $requestsEntities = $this->createRequestEntitiesAndAttachAssociatedData($requests, $entities);
+            $requestsEntities = collect($this->createRequestEntitiesAndAttachAssociatedData($requests, $entities));
         }
 
-        return $requestsEntities ?? [];
+        return $requestsEntities ?? collect([]);
     }
 
     /**
@@ -566,4 +548,88 @@ class ProcessTrackings extends \Illuminate\Console\Command
         return $valuesThisChunk;
     }
 
+    /**
+     * @param Collection $valuesThisChunk
+     * @param Collection $requests
+     * @return Collection
+     */
+    private function processResponses(Collection $valuesThisChunk, Collection $requests)
+    {
+        $responses = $valuesThisChunk->filter(function($candidate){
+            return $candidate['type'] === 'response';
+        });
+
+        if(!empty($responses)){
+
+            // part 1 of 2 - associated entities
+
+            $mappedStatusCodesRaw = $responses->map(function($response){
+                $value = $response[ResponseStatusCode::$KEY];
+                return [ResponseStatusCode::$KEY => $value];
+            })->all();
+
+            $mappedStatusCodes = array_unique($mappedStatusCodesRaw, SORT_REGULAR);
+
+            try {
+                $responseStatusCodes =
+                    $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
+
+                $this->entityManager->flush();
+            } catch (Exception $e) {
+                error_log($e);
+            }
+
+            // part 2 of 2 - responses
+
+            foreach($responses as &$responseData){
+
+                $hashRequired = $responseData[ResponseStatusCode::$KEY]['hash'];
+                $candidates = $responseStatusCodes ?? [];
+
+                if(isset($candidates[$hashRequired])) {
+                    $requestData[ResponseStatusCode::$KEY] = $candidates[$hashRequired];
+                }
+
+                try{
+                    $response = new Response();
+
+                    $collectionWithSingleRequest = $requests->filter(function($request) use ($responseData){
+                        /** @var Request $request */
+                        return $responseData['uuid'] === $request->getUuid();
+                    });
+
+                    if($collectionWithSingleRequest->count() !== 1){
+                        error_log(
+                            '"$collectionWithSingleRequest->count() !== 1" for responseData ' .
+                            var_export($responseData, true)
+                        );
+                    }
+
+                    $request = $collectionWithSingleRequest->first();
+
+                    $response->setRequest($request);
+                    $response->setRespondedOn($responseData['respondedOn']);
+                    $response->setResponseDurationMs($responseData['responseDurationMs']);
+
+                    // todo: set statusCodes
+
+                    $this->entityManager->persist($response);
+
+                    $responseEntities[] = $response;
+
+                }catch(Exception $e){
+                    error_log($e);
+                }
+            }
+
+            try{
+                $this->entityManager->flush();
+            }catch(Exception $e){
+                error_log($e);
+            }
+
+        }
+
+        return collect($responseEntities ?? []);
+    }
 }
