@@ -71,7 +71,7 @@ class ExceptionTracker extends TrackerBase
                     $exceptionEntitySerialized
                 );
 
-                $this->batchService->addToBatch($requestExceptionEntitySerialized, 'exception', $uuid);
+                $this->batchService->addToBatch($requestExceptionEntitySerialized, $uuid);
 
             } catch (Exception $exception) {
                 error_log($exception);
@@ -90,7 +90,7 @@ class ExceptionTracker extends TrackerBase
         $requestExceptionEntitySerialized = $this->serialize($requestExceptionEntity);
         $requestExceptionEntitySerialized['exception'] = $exceptionEntitySerialized;
         $requestExceptionEntitySerialized['uuid'] = RequestTracker::$uuid;
-        $requestExceptionEntitySerialized['type'] = 'exception';
+        $requestExceptionEntitySerialized['type'] = 'request-exception';
 
         return $requestExceptionEntitySerialized;
     }

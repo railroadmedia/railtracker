@@ -7,10 +7,12 @@ use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMException;
 use Exception;
 use Illuminate\Support\Collection;
+use Railroad\Railtracker\Entities\Exception as ExceptionEntity;
 use Railroad\Railtracker\Entities\RailtrackerEntityInterface;
 use Railroad\Railtracker\Entities\Request;
 use Railroad\Railtracker\Entities\RequestAgent;
 use Railroad\Railtracker\Entities\RequestDevice;
+use Railroad\Railtracker\Entities\RequestException;
 use Railroad\Railtracker\Entities\RequestLanguage;
 use Railroad\Railtracker\Entities\RequestMethod;
 use Railroad\Railtracker\Entities\Response;
@@ -628,12 +630,94 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequestExceptions(Collection $valuesThisChunk, Collection $requests)
     {
-        $exceptions = $valuesThisChunk->filter(function($candidate){
-            return $candidate['type'] === 'exception';
+        // todo: do we need to track these? currently ExceptionTracker will not store any by themselves (they're nested in request-exceptions)
+//        $exceptions = $valuesThisChunk->filter(function($candidate){
+//            return $candidate['type'] === 'exception';
+//        });
+
+        $requestExceptionsData = $valuesThisChunk->filter(function($candidate){
+            return $candidate['type'] === 'request-exception';
         });
 
-        if(!empty($exceptions)){
+        if(!empty($requestExceptionsData)){
+            $requestExceptions = $this->hydrateRequestExceptions($requestExceptionsData, $requests);
 
+            foreach($requestExceptions as $requestException){
+                try{
+                    $this->entityManager->persist($requestException);
+                }catch(Exception $exception){
+                    error_log($exception);
+                }
+            }
+
+            try{
+                $this->entityManager->flush();
+            }catch(Exception $exception){
+                error_log($exception);
+            }
         }
+
+        return $requestExceptions ?? collect([]);
+    }
+
+    /**
+     * @param $requestExceptionsData
+     * @param $requests
+     * @return Collection
+     */
+    private function hydrateRequestExceptions($requestExceptionsData, $requests)
+    {
+        $requestExceptionsMatchedWithRequestsKeyedByUuid = $this->matchWithRequest($requestExceptionsData, $requests);
+
+        foreach($requestExceptionsMatchedWithRequestsKeyedByUuid as $set){
+
+            $requestExceptionData = $set['request-exception'];
+            $request = $set['request'];
+
+            $exceptionData = $requestExceptionData['exception'];
+
+            $exception = new ExceptionEntity();
+            $exception->setCode($exceptionData['code']);
+            $exception->setLine($exceptionData['line']);
+            $exception->setExceptionClass($exceptionData['exceptionClass']);
+            $exception->setFile($exceptionData['file']);
+            $exception->setMessage($exceptionData['message']);
+            $exception->setTrace($exceptionData['trace']);
+
+            $requestException = new RequestException();
+            $requestException->setRequest($request);
+            $requestException->setException($exception);
+            $requestException->setCreatedAtTimestampMs($requestExceptionData['createdAtTimestampMs']);
+
+            $requestExceptions[] = $requestException;
+        }
+
+        return collect($requestExceptions ?? []);
+    }
+
+    /**
+     * @param Collection|array[] $requestExceptions
+     * @param Collection|Request[] $requests
+     * @return array
+     */
+    private function matchWithRequest(Collection $requestExceptions, Collection $requests)
+    {
+        foreach($requestExceptions as $requestException){
+
+            $requestExceptionUuid = $requestException['uuid'];
+
+            $matchingRequest = $requests->filter(function($request) use ($requestExceptionUuid){
+                /** @var Request $request */
+                $requestUuid = $request->getUuid();
+                return $requestUuid === $requestExceptionUuid;
+            })->first();
+
+            $matched[$requestExceptionUuid] = [
+                'request' => $matchingRequest,
+                'request-exception' => $requestException,
+            ];
+        }
+
+        return $matched ?? [];
     }
 }
