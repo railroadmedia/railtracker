@@ -63,8 +63,8 @@ class ExceptionTrackerTest extends RailtrackerTestCase
         $this->expectsEvents(RequestTracked::class);
 
         $userId = $this->createAndLogInNewUser();
-
-        $request = $this->createRequestThatThrowsException();
+        
+        $request = $this->createRequest(); // todo: replace with a "createRequestThatThrowsException" method
         $request->setUserResolver(function () use ($userId) {return User::query()->find($userId);});
 
         $kernel->pushMiddleware(RailtrackerMiddleware::class);
@@ -78,7 +78,7 @@ class ExceptionTrackerTest extends RailtrackerTestCase
         $hourLater = Carbon::now()->copy()->addHour();
         Carbon::setTestNow($hourLater);
 
-        $request = $this->createRequestThatThrowsException();
+        $request = $this->createRequest(); // todo: replace with a "createRequestThatThrowsException" method
         $request->setUserResolver(function () use ($userId) {return User::query()->find($userId);});
 
         $kernel->pushMiddleware(RailtrackerMiddleware::class);

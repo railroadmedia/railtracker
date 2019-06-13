@@ -89,4 +89,8 @@ class RequestException
     {
         $this->createdAtTimestampMs = $createdAtTimestampMs;
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+
 }
