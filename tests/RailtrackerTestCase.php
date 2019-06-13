@@ -22,6 +22,7 @@ use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Services\BatchService;
+use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
 use Railroad\Railtracker\Tests\Resources\Models\User;
 use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 
@@ -58,9 +59,11 @@ class RailtrackerTestCase extends BaseTestCase
     /** @var BatchService */
     protected $batchService;
 
-
     /** @var RailtrackerQueryLogger */
     protected $queryLogger;
+
+    /** @var RailtrackerMiddleware $railtrackerMiddleware */
+    protected $railtrackerMiddleware;
 
     public static $prefixForTestBatchKeyPrefix = 'railtrackerTest-';
 
@@ -101,6 +104,7 @@ class RailtrackerTestCase extends BaseTestCase
         $this->authManager = $this->app->make(AuthManager::class);
         $this->router = $this->app->make(Router::class);
         $this->batchService = $this->app->make(BatchService::class);
+        $this->railtrackerMiddleware = $this->app->make(RailtrackerMiddleware::class);
 
         $this->getEnvironmentSetUp($this->app);
 
@@ -286,66 +290,6 @@ class RailtrackerTestCase extends BaseTestCase
      * @return Request
      */
     public function createRequest(
-        $userAgent = self::USER_AGENT_CHROME_WINDOWS_10,
-        $url = 'https://www.testing.com/?test=1',
-        $referer = 'http://www.referer-testing.com/?test=2',
-        $clientIp = '183.22.98.51',
-        $method = 'GET',
-        $cookies = []
-    ) {
-        return Request::create(
-            $url,
-            $method,
-            [],
-            $cookies,
-            [],
-            [
-                'SCRIPT_NAME' => parse_url($url)['path'] ?? '',
-                'REQUEST_URI' => parse_url($url)['path'] ?? '',
-                'QUERY_STRING' => parse_url($url)['query'] ?? '',
-                'REQUEST_METHOD' => 'GET',
-                'SERVER_PROTOCOL' => 'HTTP/1.1',
-                'GATEWAY_INTERFACE' => 'CGI/1.1',
-                'REMOTE_PORT' => '62517',
-                'SCRIPT_FILENAME' => '/var/www/index.php',
-                'SERVER_ADMIN' => '[no address given]',
-                'CONTEXT_DOCUMENT_ROOT' => '/var/www/',
-                'CONTEXT_PREFIX' => '',
-                'REQUEST_SCHEME' => 'http',
-                'DOCUMENT_ROOT' => '/var/www/',
-                'REMOTE_ADDR' => $clientIp,
-                'HTTP_X_FORWARDED_FOR' => $clientIp,
-                'SERVER_PORT' => '80',
-                'SERVER_ADDR' => '172.21.0.7',
-                'SERVER_NAME' => parse_url($url)['host'],
-                'SERVER_SOFTWARE' => 'Apache/2.4.18 (Ubuntu)',
-                'HTTP_ACCEPT_LANGUAGE' => 'en-GB,en-US;q=0.8,en;q=0.6',
-                'HTTP_ACCEPT_ENCODING' => 'gzip, deflate, sdch',
-                'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'HTTP_USER_AGENT' => $userAgent,
-                'HTTP_REFERER' => $referer,
-                'HTTP_UPGRADE_INSECURE_REQUESTS' => '1',
-                'HTTP_CONNECTION' => 'keep-alive',
-                'HTTP_HOST' => parse_url($url)['host'],
-                'FCGI_ROLE' => 'RESPONDER',
-                'PHP_SELF' => '/index.php',
-                'REQUEST_TIME_FLOAT' => 1496790020.5194,
-                'REQUEST_TIME' => 1496790020,
-                'argv' => ['test=1'],
-            ]
-        );
-    }
-
-    /**
-     * @param string $userAgent
-     * @param string $url
-     * @param string $referer
-     * @param string $clientIp
-     * @param string $method
-     * @param array $cookies
-     * @return Request
-     */
-    public function createRequestThatThrowsException(
         $userAgent = self::USER_AGENT_CHROME_WINDOWS_10,
         $url = 'https://www.testing.com/?test=1',
         $referer = 'http://www.referer-testing.com/?test=2',
@@ -596,5 +540,35 @@ class RailtrackerTestCase extends BaseTestCase
         }
 
         return $results ?? [];
+    }
+
+    protected function handleRequest(Request $request)
+    {
+        $response = $this->createResponse(200);
+        $next = function () use ($response) {
+            return $response;
+        };
+        $this->railtrackerMiddleware->handle($request, $next);
+    }
+
+    protected function throwExceptionDuringRequest(
+        Request $request,
+        $responseStatus = 500,
+        Exception $exception = null,
+        $exceptionMessage = 'Exception from throwExceptionDuringRequest method of RailtrackerTestCase'
+    )
+    {
+        $response = $this->createResponse($responseStatus);
+
+        if(!$exception){
+            $exception = new \Exception($exceptionMessage);
+        }
+
+        $next = function ($request) use ($response, $exception) {
+            app(Handler::class)->render($request, $exception);
+            return $response;
+        };
+
+        $this->railtrackerMiddleware->handle($request, $next);
     }
 }

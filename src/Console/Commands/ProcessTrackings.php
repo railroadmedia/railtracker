@@ -168,8 +168,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         while ($redisIterator !== 0) {
 
-            $entities = [];
-
             $matchString = $this->batchService->batchKeyPrefix . '*';
             $batchSize = config('railtracker.scan-size', 1000);
             $criteria = ['MATCH' => $matchString,'COUNT' => $batchSize];
@@ -186,21 +184,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $requests = $this->processRequests($valuesThisChunk);
 
-            // --------------------------------------------------------------------------------
-            // todo: ----------------------- exception processing -----------------------------
-            // --------------------------------------------------------------------------------
-
-//            $exceptions = $valuesThisChunk->filter(function($candidate){
-//                return $candidate['type'] === 'exception';
-//            });
-//
-//            if(!empty($exceptions)){
-//
-//            }
-
-            // --------------------------------------------------------------------------------
-            // todo: ----------------------- response processing ------------------------------
-            // --------------------------------------------------------------------------------
+            $requestExceptions = $this->processRequestExceptions($valuesThisChunk, $requests);
 
             $responses = $this->processResponses($valuesThisChunk, $requests);
         }
@@ -636,5 +620,20 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         return collect($responseEntities ?? []);
+    }
+
+    /**
+     * @param Collection $valuesThisChunk
+     * @param Collection $requests
+     */
+    private function processRequestExceptions(Collection $valuesThisChunk, Collection $requests)
+    {
+        $exceptions = $valuesThisChunk->filter(function($candidate){
+            return $candidate['type'] === 'exception';
+        });
+
+        if(!empty($exceptions)){
+
+        }
     }
 }

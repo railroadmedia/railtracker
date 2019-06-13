@@ -4,6 +4,8 @@ namespace Railroad\Railtracker\Tests\Integration\Commands;
 
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
+use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
+use Railroad\Railtracker\Trackers\RequestTracker;
 
 class ProcessTrackingsTest extends RailtrackerTestCase
 {
@@ -21,7 +23,19 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
     public function test_track_response_status_code()
     {
-        $this->go(10,10, false);
+        $this->go(10,10, false, [true, false, true]);
+//        $this->go(100,10, false);
+//        $this->go(100,100, false);
+//        $this->go(1000,100, false);
+//        $this->go(1000,1000, false);
+//        $this->go(10000,1000, false);
+//        $this->go(10000,10000, false);
+//        $this->go(100000,10000, false);
+    }
+
+    public function test_track_response_status_code_exceptions()
+    {
+        $this->go(10,10, false, [false, false, true]);
 //        $this->go(100,10, false);
 //        $this->go(100,100, false);
 //        $this->go(1000,100, false);
@@ -57,7 +71,7 @@ class ProcessTrackingsTest extends RailtrackerTestCase
         echo 'test_track_response_status_code_to_get_data ran in: ' . $timePretty . "\n";
     }
 
-    private function go($testSize, $scanSize, $verbose = true)
+    private function go($testSize, $scanSize, $verbose = true, $throwExceptionsOn = [])
     {
         $toDelete = $this->batchService->cache()->keys('*');
         if(!empty($toDelete)){
@@ -70,15 +84,15 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
         for ($i = 0; $i < $testSize; $i++) {
 
-            $request = $this->randomRequest();
+            $request = $this->createRequest();
 
-            $response = $this->createResponse(200);
+            $throwException = $throwExceptionsOn[$i] ?? false;
 
-            $next = function () use ($response) {
-                return $response;
-            };
-
-            $this->railtrackerMiddleware->handle($request, $next);
+            if($throwException){
+                $this->throwExceptionDuringRequest($request);
+            }else{
+                $this->handleRequest($request);
+            }
         }
 
         $tEnd = microtime(true);
