@@ -186,7 +186,7 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
 
             $requestSerialized = $this->requestTracker->serializedFromHttpRequest($request);
 
-            $this->batchService->addToBatch($requestSerialized, 'request', $requestSerialized['uuid']);
+            $this->batchService->addToBatch($requestSerialized, $requestSerialized['uuid']);
 
             $randomNumber = rand(1, 10);
 
@@ -211,7 +211,7 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
             $response = $this->createResponse($statusCode);
 
             $responseData = $this->responseTracker->serializedFromHttpResponse($response);
-            $this->batchService->addToBatch($responseData, 'response', RequestTracker::$uuid);
+            $this->batchService->addToBatch($responseData, RequestTracker::$uuid);
 
             // $this->info(RequestTracker::$uuid);
 

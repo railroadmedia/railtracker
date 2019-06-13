@@ -79,7 +79,7 @@ class RailtrackerMiddleware
 
             try {
                 $serializedRequestEntity = $this->requestTracker->serializedFromHttpRequest($request);
-                $this->batchService->addToBatch($serializedRequestEntity, 'request', $serializedRequestEntity['uuid']);
+                $this->batchService->addToBatch($serializedRequestEntity, $serializedRequestEntity['uuid']);
             } catch (Exception $exception) {
                 error_log($exception);
             }
@@ -89,7 +89,7 @@ class RailtrackerMiddleware
 
             try {
                 $responseData = $this->responseTracker->serializedFromHttpResponse($response);
-                $this->batchService->addToBatch($responseData, 'response', RequestTracker::$uuid);
+                $this->batchService->addToBatch($responseData, RequestTracker::$uuid);
 
             } catch (Exception $exception) {
                 error_log($exception);

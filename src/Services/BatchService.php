@@ -33,16 +33,13 @@ class BatchService
 
     /**
      * @param array $datum
-     * @param string $type ('request', 'exception', 'response')
      * @param $uuid (of the request)
-     * @param int $expireSeconds
      */
-    public function addToBatch($datum, $type, $uuid, $expireSeconds = 604800)
+    public function addToBatch($datum, $uuid)
     {
         $setKey = $this->batchKeyPrefix . 'set' . '_' . $uuid;
 
-        $this->cache()
-            ->sadd($setKey, [serialize($datum)]);
+        $this->cache()->sadd($setKey, [serialize($datum)]);
     }
 
     /**
