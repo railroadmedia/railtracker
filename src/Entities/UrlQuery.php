@@ -93,6 +93,6 @@ class UrlQuery extends RailtrackerEntity implements RailtrackerEntityInterface
 
     public function setFromData($data)
     {
-        $this->setString($data['query']);
+        $this->setString($data['string']);
     }
 }
