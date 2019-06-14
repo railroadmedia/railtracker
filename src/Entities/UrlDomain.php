@@ -89,4 +89,9 @@ class UrlDomain extends RailtrackerEntity implements RailtrackerEntityInterface
     {
         $this->setName($data['name']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return empty($this->getName());
+    }
 }

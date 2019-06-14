@@ -213,6 +213,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 try{
                     $entity = $this->processForType($class, $entity);
 
+                    if($entity->allValuesAreEmpty()){
+                        continue;
+                    }
+
                     $entities[$entity->getHash()] = $entity;
 
                     $this->entityManager->persist($entity);

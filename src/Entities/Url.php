@@ -196,4 +196,13 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
             $this->setQuery($data['query']);
         }
     }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getProtocol()) &&
+            empty($this->getDomain());
+    }
+
+
 }

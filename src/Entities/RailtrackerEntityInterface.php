@@ -11,4 +11,6 @@ interface RailtrackerEntityInterface
     public function setFromData($data);
 
     public function setHash();
+
+    public function allValuesAreEmpty();
 }

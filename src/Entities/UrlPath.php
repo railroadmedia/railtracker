@@ -95,4 +95,9 @@ class UrlPath extends RailtrackerEntity implements RailtrackerEntityInterface
     {
         $this->setPath($data['path']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return empty($this->getPath());
+    }
 }

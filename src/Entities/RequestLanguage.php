@@ -99,4 +99,11 @@ class RequestLanguage extends RailtrackerEntity implements RailtrackerEntityInte
         $this->setPreference($data['preference']);
         $this->setLanguageRange($data['languageRange']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getPreference()) &&
+            empty($this->getLanguageRange());
+    }
 }

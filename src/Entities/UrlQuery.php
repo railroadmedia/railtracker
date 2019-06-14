@@ -95,4 +95,9 @@ class UrlQuery extends RailtrackerEntity implements RailtrackerEntityInterface
     {
         $this->setString($data['string']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return empty($this->getString());
+    }
 }

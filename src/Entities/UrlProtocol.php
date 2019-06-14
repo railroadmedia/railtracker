@@ -89,4 +89,9 @@ class UrlProtocol extends RailtrackerEntity implements RailtrackerEntityInterfac
     {
         $this->setProtocol($data['protocol']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return empty($this->getProtocol());
+    }
 }

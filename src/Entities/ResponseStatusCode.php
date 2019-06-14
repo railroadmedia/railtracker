@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_response_status_codes")
  */
-class ResponseStatusCode
+class ResponseStatusCode extends RailtrackerEntity implements RailtrackerEntityInterface
 {
     public static $KEY = 'status_code';
 
@@ -74,5 +74,12 @@ class ResponseStatusCode
     {
         $this->setCode($data[$this::$KEY]);
         $this->setHash(); // this here?
+    }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getCode()) &&
+            empty($this->getHash());
     }
 }

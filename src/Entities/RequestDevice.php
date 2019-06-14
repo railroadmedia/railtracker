@@ -168,4 +168,14 @@ class RequestDevice extends RailtrackerEntity implements RailtrackerEntityInterf
         $this->setPlatformVersion($data['platformVersion']);
         $this->setIsMobile($data['isMobile']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getKind()) &&
+            empty($this->getModel()) &&
+            empty($this->getPlatform()) &&
+            empty($this->getPlatformVersion()) &&
+            empty($this->getIsMobile());
+    }
 }

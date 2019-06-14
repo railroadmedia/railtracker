@@ -100,4 +100,11 @@ class Route extends RailtrackerEntity implements RailtrackerEntityInterface
         $this->setName($data['name']);
         $this->setAction($data['action']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getName()) &&
+            empty($this->getAction());
+    }
 }

@@ -117,4 +117,12 @@ class RequestAgent extends RailtrackerEntity implements RailtrackerEntityInterfa
         $this->setBrowserVersion($data['browserVersion']);
         $this->setBrowser($data['browser']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getName()) &&
+            empty($this->getBrowserVersion()) &&
+            empty($this->getBrowser());
+    }
 }

@@ -81,4 +81,9 @@ class RequestMethod extends RailtrackerEntity implements RailtrackerEntityInterf
     {
         $this->setMethod($data['method']);
     }
+
+    public function allValuesAreEmpty()
+    {
+        return empty($this->getMethod());
+    }
 }
