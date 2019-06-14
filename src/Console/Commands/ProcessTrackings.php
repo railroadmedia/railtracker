@@ -88,67 +88,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->entityManager = $entityManager;
     }
 
-    private function mapChildrenToUrls(Collection $mappedUrls, $entities)
-    {
-        return $mappedUrls->map(function($url) use ($entities)
-        {
-            $typesToSearch = [
-                UrlProtocol::class,
-                UrlDomain::class,
-                UrlPath::class,
-                UrlQuery::class
-            ];
-
-            $keys = [
-                'protocol',
-                'domain',
-                'path',
-                'query'
-            ];
-
-            /** @var $url Url */
-            foreach($keys as $key){
-
-                if(!empty($url[$key])){
-
-                    $hash = $url[$key]['hash'];
-
-                    foreach ($entities as $type => $data) {
-
-                        if (in_array($type, $typesToSearch)) {
-
-                            if (isset($data[$hash])) {
-
-                                $entityToAttach = $data[$hash];
-
-                                $url[$key] = $entityToAttach;
-
-//                                $entityToAttach = $data[$hash];
-//
-//                                switch($type){
-//                                    case UrlProtocol::class:
-//                                        $url->setProtocol($entityToAttach);
-//                                        break;
-//                                    case UrlDomain::class:
-//                                        $url->setDomain($entityToAttach);
-//                                        break;
-//                                    case UrlPath::class:
-//                                        $url->setPath($entityToAttach);
-//                                        break;
-//                                    case UrlQuery::class:
-//                                        $url->setQuery($entityToAttach);
-//                                        break;
-                            }
-                        }
-                    }
-//                }else{
-//                    $url[$key] = null;
-                }
-            }
-            return $url;
-        })->all();
-    }
-
     /**
      * return true
      */
@@ -197,6 +136,50 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         return true;
     }
+
+
+    /**
+     * @param Collection $mappedUrls
+     * @param $entities
+     * @return array
+     */
+    private function mapChildrenToUrls(Collection $mappedUrls, $entities)
+    {
+        return $mappedUrls->map(function($url) use ($entities)
+        {
+            $typesToSearch = [
+                UrlProtocol::class,
+                UrlDomain::class,
+                UrlPath::class,
+                UrlQuery::class
+            ];
+
+            $keys = [
+                'protocol',
+                'domain',
+                'path',
+                'query'
+            ];
+
+            /** @var $url Url */
+            foreach($keys as $key){
+
+                if(empty($url[$key])) {
+                    continue;
+                }
+                $hash = $url[$key]['hash'];
+
+                foreach ($entities as $type => $data) {
+                    if (in_array($type, $typesToSearch) && isset($data[$hash])) {
+                        $entityToAttach = $data[$hash];
+                        $url[$key] = $entityToAttach;
+                    }
+                }
+            }
+            return $url;
+        })->all();
+    }
+
 
     /**
      * @param string $class
