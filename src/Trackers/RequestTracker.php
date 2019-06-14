@@ -222,18 +222,12 @@ class RequestTracker extends TrackerBase
         // These objects have associated objects
 
         if(!empty($requestSerialized[Url::$KEY])){
-
-            // todo: does "getOrCreateUrlForData" need to be totally rewritten?
             $url = $this->getOrCreateUrlForData($requestSerialized[Url::$KEY]);
-
             $request->setUrl($url);
         }
 
         if(!empty($requestSerialized['refererUrl'])){
-
-            // todo: does "getOrCreateUrlForData" need to be totally rewritten?
             $refererUrl = $this->getOrCreateUrlForData($requestSerialized['refererUrl']);
-
             $request->setRefererUrl($refererUrl);
         }
 
@@ -367,7 +361,7 @@ class RequestTracker extends TrackerBase
 
 
         $url = $query->getQuery()
-            //->setResultCacheDriver($this->arrayCache) // todo: implement
+            //->setResultCacheDriver($this->arrayCache) // todo: implement?
             ->getResult()[0] ?? null;
 
         // 2.1 - set associated entities

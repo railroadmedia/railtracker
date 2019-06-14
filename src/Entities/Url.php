@@ -196,11 +196,4 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
             $this->setQuery($data['query']);
         }
     }
-
-    // todo: figure out what to do with this. Sometimes it's 'url' and sometimes it's 'refererUrl' - the solution is probably to have a different handling in the ProcessTracker
-//    public function getKey()
-//    {
-//        return 'url';
-//        return 'refererUrl';
-//    }
 }

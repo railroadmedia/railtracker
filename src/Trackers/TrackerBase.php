@@ -185,10 +185,10 @@ class TrackerBase
             $query = $query->setParameter($key, $value);
         }
 
-        $result = $query->getQuery()->getResult()[0] ?? null;
+        $result = $query->getQuery()
+            // ->setResultCacheDriver($this->arrayCache) // todo: implement?
+            ->getResult()[0] ?? null;
 
-        // todo: https://www.doctrine-project.org/projects/doctrine-orm/en/2.6/reference/caching.html#result-cache
-//        return $query->getQuery()->setResultCacheDriver($this->arrayCache)->getOneOrNullResult();
         return $result;
     }
 
