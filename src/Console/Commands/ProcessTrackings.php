@@ -167,6 +167,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     public function handle()
     {
         $redisIterator = null;
+        $counts = [];
 
         while ($redisIterator !== 0) {
 
@@ -174,26 +175,31 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $batchSize = config('railtracker.scan-size', 1000);
             $criteria = ['MATCH' => $matchString,'COUNT' => $batchSize];
 
-            $requestKeys = $this->batchService->cache()->scan($redisIterator,$criteria);
+            $scanResult = $this->batchService->cache()->scan($redisIterator, $criteria);
+            $redisIterator = (integer) $scanResult[0];
+            $keys = $scanResult[1];
 
-            $redisIterator = (integer) $requestKeys[0];
+            if(!empty($keys)){
+                $valuesThisChunk = $this->getValuesThisChunk($keys);
 
-            $valuesThisChunk = $this->getValuesThisChunk($requestKeys[1]);
+                $requests = $this->processRequests($valuesThisChunk);
+                $requestExceptions = $this->processRequestExceptions($valuesThisChunk, $requests);
+                $responses = $this->processResponses($valuesThisChunk, $requests);
 
-            // --------------------------------------------------------------------------------
-            // ------------------------------ request processing ------------------------------
-            // --------------------------------------------------------------------------------
+                $this->batchService->forget($keys);
 
-            $requests = $this->processRequests($valuesThisChunk);
-
-            $requestExceptions = $this->processRequestExceptions($valuesThisChunk, $requests);
-
-            $responses = $this->processResponses($valuesThisChunk, $requests);
+                $counts['requests'] = ($counts['requests'] ?? 0) + $requests->count();
+                $counts['reqExc'] = ($counts['reqExc'] ?? 0) + $requestExceptions->count();
+                $counts['responses'] = ($counts['responses'] ?? 0) + $responses->count();
+            }
         }
 
-        // todo: clear|delete keys?
+        $output = 'Processed ' .
+            $counts['requests'] . ' ' . ($counts['requests'] === 1 ? 'request' : 'requests') . ', ' .
+            $counts['reqExc'] . ' ' . ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') . ', and ' .
+            $counts['responses'] . ' ' . ($counts['responses'] === 1 ? 'response' : 'responses') . '.';
 
-        // todo: print info about success|failure
+        $this->info($output);
 
         try {
             $this->entityManager->clear();
