@@ -51,11 +51,16 @@ class BatchService
     }
 
     /**
-     * @param $key
+     * @param string|array $forget
      */
-    public function forget($key)
+    public function forget($forget)
     {
-        $this->cache()
-            ->del($key);
+        if(!is_array($forget)){
+            $forget = [$forget];
+        }
+
+        foreach($forget as $key){
+            $this->cache()->del($key);
+        }
     }
 }
