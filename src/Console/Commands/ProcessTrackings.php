@@ -3,8 +3,6 @@
 namespace Railroad\Railtracker\Console\Commands;
 
 use Carbon\Carbon;
-use Doctrine\ORM\OptimisticLockException;
-use Doctrine\ORM\ORMException;
 use Exception;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Entities\Exception as ExceptionEntity;
@@ -32,15 +30,11 @@ use Railroad\Railtracker\Trackers\ResponseTracker;
 class ProcessTrackings extends \Illuminate\Console\Command
 {
     /**
-     * The console command name.
-     *
      * @var string
      */
     protected $name = 'ProcessTrackings';
 
     /**
-     * The console command description.
-     *
      * @var string
      */
     protected $description = 'Process items to track.';
@@ -71,11 +65,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $entityManager;
 
     /**
-     * @var int
-     */
-    private $scanSize;
-
-    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
@@ -89,8 +78,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         ExceptionTracker $exceptionTracker,
         ResponseTracker $responseTracker,
         RailtrackerEntityManager $entityManager
-    )
-    {
+    ){
         parent::__construct();
 
         $this->batchService = $batchService;
@@ -264,7 +252,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         /** @var RailtrackerEntityInterface $entity */
         $entity = new $class;
         $entity->setFromData($data);
-        $entity->setHash(); // todo: can|should this be put into "setFromData" methods. Probably *can*, probably *should NOT*.
+        $entity->setHash();
         return $entity;
     }
 
@@ -328,7 +316,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * @param Collection $requests
      * @param $entities
-     * @return Collection
+     * @return array
      */
     private function createRequestEntitiesAndAttachAssociatedData(Collection $requests, $entities)
     {
@@ -636,11 +624,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequestExceptions(Collection $valuesThisChunk, Collection $requests)
     {
-        // todo: do we need to track these? currently ExceptionTracker will not store any by themselves (they're nested in request-exceptions)
-//        $exceptions = $valuesThisChunk->filter(function($candidate){
-//            return $candidate['type'] === 'exception';
-//        });
-
         $requestExceptionsData = $valuesThisChunk->filter(function($candidate){
             return $candidate['type'] === 'request-exception';
         });
