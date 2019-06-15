@@ -337,17 +337,29 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $r->setClientIp($requestData['clientIp']);
                 $r->setIsRobot($requestData['isRobot']);
                 $r->setRequestedOn(Carbon::parse($requestData['requestedOn']));
-                $r->setUrl($requestData['url']);
-                $r->setRefererUrl($requestData['refererUrl']);
                 $r->setAgent($requestData['agent']);
                 $r->setDevice($requestData['device']);
                 $r->setLanguage($requestData['language']);
                 $r->setMethod($requestData['method']);
-                $r->setRoute($requestData['route']);
+
+                /*
+                 * url_id, referer_url_id, and route_id columns of table are nullable, thus only set if entity available
+                 * here. We have to check for object of type because if object is not set an array will be, but trying
+                 * to set this will cause an error.
+                 */
+                if(is_a($requestData['url'], Url::class)){
+                    $r->setUrl($requestData['url']);
+                }
+                if(is_a($requestData['refererUrl'], Url::class)){
+                    $r->setRefererUrl($requestData['refererUrl']);
+                }
+                if(is_a($requestData['route'], Route::class)){
+                    $r->setRoute($requestData['route']);
+                }
 
                 $this->entityManager->persist($r);
 
-                $requestEntitiesByUuid[$r->getUuid()] = $r ?? null;
+                $requestEntitiesByUuid[$r->getUuid()] = $r ?? null; // todo: why this ?? operator? Delete if shouldn't be here
 
             } catch (Exception $e) {
                 error_log($e);
