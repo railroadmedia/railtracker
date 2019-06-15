@@ -94,7 +94,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     public function handle()
     {
         $redisIterator = null;
-        $counts = [];
+        $counts = ['requests' => 0, 'reqExc' => 0, 'responses' => 0];
 
         while ($redisIterator !== 0) {
 
@@ -404,7 +404,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param $valuesThisChunk
      * @return array|Collection
      */
-    private function processRequests($valuesThisChunk)
+    private function processRequests(Collection $valuesThisChunk)
     {
         $entities = [];
 
