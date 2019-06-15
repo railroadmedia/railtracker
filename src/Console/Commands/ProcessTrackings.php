@@ -305,7 +305,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param $entities
      * @return array
      */
-    private function createRequestEntitiesAndAttachAssociatedData(Collection $requests, $entities)
+    private function createRequestEntitiesAndAttachAssociatedEntities(Collection $requests, $entities)
     {
         $associationsClassesAndKeys = [
             RequestAgent::$KEY => RequestAgent::class,
@@ -491,7 +491,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
              * every association of the request (everything that itself is an entity should already have
              * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
              */
-            $requestsEntities = collect($this->createRequestEntitiesAndAttachAssociatedData($requests, $entities));
+            $requestsEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
         }
 
         return $requestsEntities ?? collect([]);
