@@ -10,6 +10,7 @@ use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Collection;
 use Jenssegers\Agent\Agent;
 use Railroad\Doctrine\Serializers\BasicEntitySerializer;
 use Railroad\DoctrineArrayHydrator\ArrayHydrator;
@@ -388,53 +389,6 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param $data
-     * @return null|RequestEntity|Url
-     * @throws Exception
-     */
-    public function process($data)
-    {
-        $previousRequestsDatabaseRows = [];
-        $usersPreviousRequests = null;
-
-        $userId = $data['userId'];
-
-        if ($userId !== null) {
-            $previousRequestsDatabaseRows =
-                $this->databaseManager->table(ConfigService::$tableRequests)
-                    ->where(['user_id' => $userId])
-                    ->get()
-                    ->all();
-        }
-
-        $hydratedRequest = $this->hydrate($data);
-        $this->entityManager->persist($hydratedRequest);
-        $this->entityManager->flush();
-
-        if (!empty($previousRequestsDatabaseRows)) {
-            $timeOfUsersPreviousRequest =
-                Carbon::parse(end($previousRequestsDatabaseRows)->requested_on)
-                    ->toDateTimeString();
-        }
-
-        event(
-            new RequestTracked(
-                $hydratedRequest->getId(),
-                $hydratedRequest->getUserId(),
-                $hydratedRequest->getClientIp(),
-                $hydratedRequest->getAgent()
-                    ->getName(),
-                $hydratedRequest->getRequestedOn(),
-                $timeOfUsersPreviousRequest ?? null
-            )
-        );
-
-        $this->updateUsersAnonymousRequests($hydratedRequest);
-
-        return $hydratedRequest ?? null;
-    }
-
-    /**
      * @param Agent $agent
      * @return string
      */
@@ -621,5 +575,44 @@ class RequestTracker extends TrackerBase
 
             $this->deleteCookieForAuthenticatedUser();
         }
+    }
+
+    /**
+     * @param Collection $requestEntities
+     * @param array $previousRequestsDatabaseRows
+     */
+    public function updateAnonymousRecords(Collection $requestEntities, $previousRequestsDatabaseRows = [])
+    {
+        // todo: optimize this - so processes in bulk
+
+        /** @var Request $requestsEntity */
+        foreach($requestEntities as $requestsEntity){
+
+            if (!empty($previousRequestsDatabaseRows)) {
+                $lastRequestedOn = end($previousRequestsDatabaseRows)->requested_on;
+                $timeOfUsersPreviousRequest = Carbon::parse($lastRequestedOn)->toDateTimeString();
+            }
+            event(
+                new RequestTracked(
+                    $requestsEntity->getId(),
+                    $requestsEntity->getUserId(),
+                    $requestsEntity->getClientIp(),
+                    $requestsEntity->getAgent()->getName(),
+                    $requestsEntity->getRequestedOn(),
+                    $timeOfUsersPreviousRequest ?? null
+                )
+            );
+            $this->updateUsersAnonymousRequests($requestsEntity);
+        }
+    }
+
+    public function getPreviousRequestsDatabaseRows($requestEntity)
+    {
+        $results = $this->databaseManager->table(ConfigService::$tableRequests)
+            ->where(['user_id' => $requestEntity['userId']])
+            ->get()
+            ->all();
+
+        return $results;
     }
 }

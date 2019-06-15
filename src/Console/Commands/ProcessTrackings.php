@@ -137,7 +137,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         return true;
     }
 
-
     /**
      * @param Collection $mappedUrls
      * @param $entities
@@ -179,7 +178,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return $url;
         })->all();
     }
-
 
     /**
      * @param string $class
@@ -416,8 +414,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         if(!empty($requests)){
 
-            // -----------------------------------------------------------------------------------------------------
-            // request processing part 1 of 4 - simple associations or requests ------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+            // part 1 of 4 - simple associations or requests -----------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             $mappedAgents = $this->mapForKeyAndKeyByHash($requests, RequestAgent::$KEY);
             $mappedDevices = $this->mapForKeyAndKeyByHash($requests, RequestDevice::$KEY);
@@ -446,8 +445,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 error_log($e);
             }
 
-            // -----------------------------------------------------------------------------------------------------
-            // request processing part 2 of 4 - associations of urls -----------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+            // part 2 of 4 - associations of urls ----------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
 
@@ -484,8 +484,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 error_log($e);
             }
 
-            // -----------------------------------------------------------------------------------------------------
-            // request processing part 3 of 4 - attaching children to urls and then processing those ---------------
+            // ---------------------------------------------------------------------------------------------------------
+            // part 3 of 4 - attaching children to urls and then processing those --------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
 
@@ -498,14 +499,32 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 error_log($e);
             }
 
-            // -----------------------------------------------------------------------------------------------------
-            // request processing part 4 of 4 - insert requests
+            // ---------------------------------------------------------------------------------------------------------
+            // part 4 of 6 - get previous before adding new ------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+
+            foreach($requests as $request){
+                if ($request['userId'] !== null) {
+                    $previousRequestsDatabaseRows = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
+                }
+            }
+
+            // ---------------------------------------------------------------------------------------------------------
+            // part 5 of 6 - insert requests ---------------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             /*
              * every association of the request (everything that itself is an entity should already have
              * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
              */
             $requestsEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
+
+
+            // ---------------------------------------------------------------------------------------------------------
+            // part 6 of 6 - updateAnonymousRecords --------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+
+            $this->requestTracker->updateAnonymousRecords($requestsEntities, $previousRequestsDatabaseRows ?? []);
         }
 
         return $requestsEntities ?? collect([]);
