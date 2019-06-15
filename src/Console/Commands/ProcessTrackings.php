@@ -396,6 +396,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequests($valuesThisChunk)
     {
+        $entities = [];
+
         $requests = $valuesThisChunk->filter(function($candidate){
             return $candidate['type'] === 'request';
         });
