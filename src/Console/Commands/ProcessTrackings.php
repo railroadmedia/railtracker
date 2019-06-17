@@ -415,7 +415,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         if(!empty($requests)){
 
             // ---------------------------------------------------------------------------------------------------------
-            // part 1 of 4 - simple associations or requests -----------------------------------------------------------
+            // part 1 of 6 - simple associations -----------------------------------------------------------------------
             // ---------------------------------------------------------------------------------------------------------
 
             $mappedAgents = $this->getForTypeAndKeyByHash($requests, RequestAgent::$KEY);
@@ -446,7 +446,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
 
             // ---------------------------------------------------------------------------------------------------------
-            // part 2 of 4 - associations of urls ----------------------------------------------------------------------
+            // part 2 of 6 - associations of urls ----------------------------------------------------------------------
             // ---------------------------------------------------------------------------------------------------------
 
             $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
@@ -485,7 +485,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
 
             // ---------------------------------------------------------------------------------------------------------
-            // part 3 of 4 - attaching children to urls and then processing those --------------------------------------
+            // part 3 of 6 - attaching children to urls and then processing those --------------------------------------
             // ---------------------------------------------------------------------------------------------------------
 
             $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
@@ -503,6 +503,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
             // part 4 of 6 - get previous before adding new ------------------------------------------------------------
             // ---------------------------------------------------------------------------------------------------------
 
+            /*
+             * get previous before adding new, otherwise result will contain new, and to get the "previous" you'd have
+             * to skip the first result.
+             */
+
             foreach($requests as $request){
                 if ($request['userId'] !== null) {
                     $previousRequestsDatabaseRows = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
@@ -518,7 +523,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
              * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
              */
             $requestsEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
-
 
             // ---------------------------------------------------------------------------------------------------------
             // part 6 of 6 - updateAnonymousRecords --------------------------------------------------------------------
@@ -559,80 +563,119 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return $candidate['type'] === 'response';
         });
 
-        if(!empty($responses)){
+        if(empty($responses)){
+            return collect([]);
+        }
 
-            // part 1 of 2 - associated entities
+        // ---------------------------------------------------------------------------------------------------------
+        // part 1 of _ - get associated entities -------------------------------------------------------------------
 
-            $mappedStatusCodesRaw = $responses->map(function($response){
-                $value = $response[ResponseStatusCode::$KEY];
-                return [ResponseStatusCode::$KEY => $value];
-            })->all();
+        // gather associated entities by type
 
-            $mappedStatusCodes = array_unique($mappedStatusCodesRaw, SORT_REGULAR);
+//        foreach($responses as &$response) {
+//            $statusCode = new ResponseStatusCode();
+//            $statusCode->setFromData($response['status_code']);
+//            $statusCodes[] = $statusCode;
+//        };
+//
+//        $statusCodes = $this->keyByHash($statusCodes);
+//
+//        unset($response);
+////        key by hash
+//
 
-            try {
-                $responseStatusCodes =
-                    $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
+        $mappedStatusCodes = $this->getForTypeAndKeyByHash($responses, ResponseStatusCode::$KEY);
 
-                $this->entityManager->flush();
-            } catch (Exception $e) {
-                error_log($e);
-            }
+        try {
+            $entities[ResponseStatusCode::class] =
+                $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
 
-            // part 2 of 2 - responses
 
-            foreach($responses as &$responseData){
+        $stopHere = true;
+        $stopHere = true;
+        $stopHere = true;
+        $stopHere = true;
+        $stopHere = true;
 
-                $hashRequired = $responseData[ResponseStatusCode::$KEY]['hash'];
-                $candidates = $responseStatusCodes ?? [];
 
-                if(isset($candidates[$hashRequired])) {
-                    $requestData[ResponseStatusCode::$KEY] = $candidates[$hashRequired];
-                }
+        // ---------------------------------------------------------------------------------------------------------
+        // part 2 of 3 - get|create to-be associated entities ------------------------------------------------------
+//
+//        $mappedStatusCodesRaw = $responses->map(function($response){
+//            $value = $response[ResponseStatusCode::$KEY];
+//            return [$hash => $value];
+//        })->all();
 
-                try{
-                    $response = new Response();
+//        $mappedStatusCodes = array_unique($mappedStatusCodesRaw, SORT_REGULAR);
 
-                    $collectionWithSingleRequest = $requests->filter(function($request) use ($responseData){
-                        /** @var Request $request */
-                        return $responseData['uuid'] === $request->getUuid();
-                    });
+        try {
+            $responseStatusCodes =
+                $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
 
-                    if($collectionWithSingleRequest->count() !== 1){
-                        error_log(
-                            '"$collectionWithSingleRequest->count() !== 1" for responseData ' .
-                            var_export($responseData, true)
-                        );
-                    }
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
 
-                    $request = $collectionWithSingleRequest->first();
 
-                    $response->setRequest($request);
-                    $response->setRespondedOn($responseData['respondedOn']);
-                    $response->setResponseDurationMs($responseData['responseDurationMs']);
+        // ---------------------------------------------------------------------------------------------------------
+        // part 3 of 3 - persist Responses -------------------------------------------------------------------------
 
-                    foreach($responseStatusCodes ?? [] as $code){
-                        /** @var $code ResponseStatusCode */
-                        if($code->getCode() === $responseData['status_code']){
-                            $response->setStatusCode($code);
-                        }
-                    }
 
-                    $this->entityManager->persist($response);
+        foreach($responses as &$responseData){
 
-                    $responseEntities[] = $response;
+            $hashRequired = $responseData[ResponseStatusCode::$KEY]['hash'];
+            $candidates = $responseStatusCodes ?? [];
 
-                }catch(Exception $e){
-                    error_log($e);
-                }
+            if(isset($candidates[$hashRequired])) {
+                $requestData[ResponseStatusCode::$KEY] = $candidates[$hashRequired];
             }
 
             try{
-                $this->entityManager->flush();
+                $response = new Response();
+
+                $collectionWithSingleRequest = $requests->filter(function($request) use ($responseData){
+                    /** @var Request $request */
+                    return $responseData['uuid'] === $request->getUuid();
+                });
+
+                if($collectionWithSingleRequest->count() !== 1){
+                    error_log(
+                        '"$collectionWithSingleRequest->count() !== 1" for responseData ' .
+                        var_export($responseData, true)
+                    );
+                }
+
+                $request = $collectionWithSingleRequest->first();
+
+                $response->setRequest($request);
+                $response->setRespondedOn($responseData['respondedOn']);
+                $response->setResponseDurationMs($responseData['responseDurationMs']);
+
+                foreach($responseStatusCodes ?? [] as $code){
+                    /** @var $code ResponseStatusCode */
+                    if($code->getCode() === $responseData['status_code']){
+                        $response->setStatusCode($code);
+                    }
+                }
+
+                $this->entityManager->persist($response);
+
+                $responseEntities[] = $response;
+
             }catch(Exception $e){
                 error_log($e);
             }
+        }
 
+        try{
+            $this->entityManager->flush();
+        }catch(Exception $e){
+            error_log($e);
         }
 
         return collect($responseEntities ?? []);
@@ -641,6 +684,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * @param Collection $valuesThisChunk
      * @param Collection $requests
+     * @return Collection
      */
     private function processRequestExceptions(Collection $valuesThisChunk, Collection $requests)
     {

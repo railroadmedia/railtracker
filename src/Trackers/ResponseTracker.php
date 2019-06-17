@@ -73,7 +73,7 @@ class ResponseTracker extends TrackerBase
      * @param HttpResponse $httpResponse
      * @return array
      */
-    public function serializedFromHttpResponse($httpResponse)
+    public function serializedFromHttpResponse($httpResponse) // todo: any reason to not typehint with "HttpResponse"? If not, do it.
     {
         $response = new Response();
 
@@ -84,11 +84,26 @@ class ResponseTracker extends TrackerBase
 
         $response = $this->serialize($response);
 
-        $response[ResponseStatusCode::$KEY] = $httpResponse->getStatusCode();
+        $response[ResponseStatusCode::$KEY] = $this->serialize($this->fillResponseStatusCode($httpResponse));
         $response['type'] = 'response';
         $response['uuid'] = RequestTracker::$uuid;
 
         return $response;
+    }
+
+    /**
+     * @param HttpResponse $httpResponse
+     * @return ResponseStatusCode
+     */
+    private function fillResponseStatusCode(HttpResponse $httpResponse)
+    {
+        $statusCode = $httpResponse->getStatusCode();
+
+        $responseStatusCode = new ResponseStatusCode();
+        $responseStatusCode->setCode($statusCode);
+        $responseStatusCode->setHash();
+
+        return $responseStatusCode;
     }
 
     /**

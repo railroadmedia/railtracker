@@ -72,8 +72,7 @@ class ResponseStatusCode extends RailtrackerEntity implements RailtrackerEntityI
 
     public function setFromData($data)
     {
-        $this->setCode($data[$this::$KEY]);
-        $this->setHash(); // this here?
+        $this->setCode($data['code']);
     }
 
     public function allValuesAreEmpty()
