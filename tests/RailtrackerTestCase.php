@@ -561,7 +561,8 @@ class RailtrackerTestCase extends BaseTestCase
         $response = $this->createResponse($responseStatus);
 
         if(!$exception){
-            $exception = new \Exception($exceptionMessage);
+//            $exception = new \Exception($exceptionMessage);
+            $exception = new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException($exceptionMessage);
         }
 
         $next = function ($request) use ($response, $exception) {
