@@ -644,12 +644,71 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequestExceptions(Collection $valuesThisChunk, Collection $requests)
     {
+        $entities = [];
+
         $requestExceptionsData = $valuesThisChunk->filter(function($candidate){
             return $candidate['type'] === 'request-exception';
         });
 
         if(!empty($requestExceptionsData)){
-            $requestExceptions = $this->hydrateRequestExceptions($requestExceptionsData, $requests);
+
+            $exceptions = $this->getForTypeAndKeyByHash($requestExceptionsData, 'exception');
+
+            try{
+                $entities[ExceptionEntity::class] =
+                    $this->getExistingBulkInsertNew(ExceptionEntity::class, $exceptions);
+
+                $this->entityManager->flush();
+            } catch (Exception $e) {
+                error_log($e);
+            }
+
+            // Map exceptions To RequestExceptions
+
+            $exceptionsToMapToRequestExceptions = $entities[ExceptionEntity::class];
+
+            $requestExceptionsData = $requestExceptionsData->map(function($singleRequestException) use ($exceptionsToMapToRequestExceptions){
+                $targetHash = $singleRequestException['exception']['hash'];
+
+                $exceptionToAttach = $exceptionsToMapToRequestExceptions[$targetHash] ?? null;
+
+                if($exceptionToAttach) {
+                    $singleRequestException['exception'] = $exceptionToAttach;
+                }
+
+                return $singleRequestException;
+            });
+
+            // ---------------------------------------------------------------------------------------------------------
+
+            // moved from "$requestExceptions = $this->hydrateRequestExceptions($requestExceptionsData, $requests);"
+
+            $requestExceptionsMatchedWithRequestsKeyedByUuid = $this->matchWithRequest($requestExceptionsData, $requests);
+
+            foreach($requestExceptionsMatchedWithRequestsKeyedByUuid as $set){
+
+                $requestExceptionData = $set['request-exception'];
+                $request = $set['request'];
+
+                $exceptionData = $requestExceptionData['exception'];
+
+                $exception = $exceptionData;
+
+                if(!is_a($exceptionData, ExceptionEntity::class)){
+                    error_log('Exception entity not set here, and this should not be possible.');
+                } // todo: remove this, ideally by addressing the insecurity that leads you to believe it necessary.
+
+                $requestException = new RequestException();
+                $requestException->setRequest($request);
+                $requestException->setException($exception);
+                $requestException->setCreatedAtTimestampMs($requestExceptionData['createdAtTimestampMs']);
+
+                $requestExceptions[] = $requestException;
+            }
+
+            $requestExceptions = collect($requestExceptions ?? []);
+
+            // ---------------------------------------------------------------------------------------------------------
 
             foreach($requestExceptions as $requestException){
                 try{
@@ -676,32 +735,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function hydrateRequestExceptions($requestExceptionsData, $requests)
     {
-        $requestExceptionsMatchedWithRequestsKeyedByUuid = $this->matchWithRequest($requestExceptionsData, $requests);
 
-        foreach($requestExceptionsMatchedWithRequestsKeyedByUuid as $set){
-
-            $requestExceptionData = $set['request-exception'];
-            $request = $set['request'];
-
-            $exceptionData = $requestExceptionData['exception'];
-
-            $exception = new ExceptionEntity();
-            $exception->setCode($exceptionData['code']);
-            $exception->setLine($exceptionData['line']);
-            $exception->setExceptionClass($exceptionData['exceptionClass']);
-            $exception->setFile($exceptionData['file']);
-            $exception->setMessage($exceptionData['message']);
-            $exception->setTrace($exceptionData['trace']);
-
-            $requestException = new RequestException();
-            $requestException->setRequest($request);
-            $requestException->setException($exception);
-            $requestException->setCreatedAtTimestampMs($requestExceptionData['createdAtTimestampMs']);
-
-            $requestExceptions[] = $requestException;
-        }
-
-        return collect($requestExceptions ?? []);
     }
 
     /**

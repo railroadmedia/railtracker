@@ -65,6 +65,7 @@ class ExceptionTracker extends TrackerBase
                 $exceptionEntity->setFile($exception->getFile());
                 $exceptionEntity->setMessage($exception->getMessage());
                 $exceptionEntity->setTrace($exception->getTraceAsString());
+                $exceptionEntity->setHash();
                 $exceptionEntitySerialized = $this->serialize($exceptionEntity);
 
                 $requestExceptionEntitySerialized = $this->trackRequestException(

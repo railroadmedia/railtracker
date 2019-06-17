@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_exceptions")
  */
-class Exception
+class Exception extends RailtrackerEntity implements RailtrackerEntityInterface
 {
     /**
      * @ORM\Id
@@ -46,6 +46,11 @@ class Exception
      * @ORM\Column(type="text")
      */
     private $trace;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
 
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -153,4 +158,48 @@ class Exception
         $this->trace = $trace;
     }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @param $data
+     * @return void
+     */
+    public function setFromData($data)
+    {
+        $this->setCode($data['code']);
+        $this->setLine($data['line']);
+        $this->setExceptionClass($data['exceptionClass']);
+        $this->setFile($data['file']);
+        $this->setMessage($data['message']);
+        $this->setTrace($data['trace']);
+    }
+
+    /**
+     * @return void
+     */
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getCode(),
+            $this->getLine(),
+            $this->getExceptionClass(),
+            $this->getFile(),
+            $this->getMessage(),
+            $this->getTrace(),
+        ]));
+    }
+
+    /**
+     * @return boolean
+     */
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getCode()) &&
+            empty($this->getLine()) &&
+            empty($this->getExceptionClass()) &&
+            empty($this->getFile()) &&
+            empty($this->getMessage()) &&
+            empty($this->getTrace());
+    }
 }
