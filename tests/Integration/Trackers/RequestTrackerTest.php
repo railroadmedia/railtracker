@@ -3,11 +3,9 @@
 namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Railroad\Railtracker\Entities\Request as RequestEntity;
 use Railroad\Railtracker\Events\RequestTracked;
-use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Tests\Resources\Models\User;
