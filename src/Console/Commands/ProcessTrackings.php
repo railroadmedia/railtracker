@@ -261,7 +261,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param $keyToMap
      * @return array
      */
-    private function mapForKeyAndKeyByHash(Collection $urls, $keyToMap){
+    private function getForTypeAndKeyByHash(Collection $urls, $keyToMap){
         $mappedEntities = $urls->map(
             function($url) use ($keyToMap){
                 return $url[$keyToMap];
@@ -418,11 +418,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
             // part 1 of 4 - simple associations or requests -----------------------------------------------------------
             // ---------------------------------------------------------------------------------------------------------
 
-            $mappedAgents = $this->mapForKeyAndKeyByHash($requests, RequestAgent::$KEY);
-            $mappedDevices = $this->mapForKeyAndKeyByHash($requests, RequestDevice::$KEY);
-            $mappedLanguages = $this->mapForKeyAndKeyByHash($requests, RequestLanguage::$KEY);
-            $mappedMethods = $this->mapForKeyAndKeyByHash($requests, RequestMethod::$KEY);
-            $mappedRoutes = $this->mapForKeyAndKeyByHash($requests, Route::$KEY);
+            $mappedAgents = $this->getForTypeAndKeyByHash($requests, RequestAgent::$KEY);
+            $mappedDevices = $this->getForTypeAndKeyByHash($requests, RequestDevice::$KEY);
+            $mappedLanguages = $this->getForTypeAndKeyByHash($requests, RequestLanguage::$KEY);
+            $mappedMethods = $this->getForTypeAndKeyByHash($requests, RequestMethod::$KEY);
+            $mappedRoutes = $this->getForTypeAndKeyByHash($requests, Route::$KEY);
 
             try {
                 $entities[RequestAgent::class] =
@@ -453,17 +453,17 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             // protocol and domain are *not* nullable
 
-            $mappedUrlProtocols = $this->mapForKeyAndKeyByHash($mappedUrls, UrlProtocol::$KEY);
+            $mappedUrlProtocols = $this->getForTypeAndKeyByHash($mappedUrls, UrlProtocol::$KEY);
 
-            $mappedUrlDomains = $this->mapForKeyAndKeyByHash($mappedUrls, UrlDomain::$KEY);
+            $mappedUrlDomains = $this->getForTypeAndKeyByHash($mappedUrls, UrlDomain::$KEY);
 
             // path and query *are* nullable
 
             $urlsWithPaths = $this->filterForSetEntitiesOfAType($mappedUrls, UrlPath::$KEY);
-            $mappedUrlPaths = $this->mapForKeyAndKeyByHash($urlsWithPaths, UrlPath::$KEY);
+            $mappedUrlPaths = $this->getForTypeAndKeyByHash($urlsWithPaths, UrlPath::$KEY);
 
             $urlsWithQueries = $this->filterForSetEntitiesOfAType($mappedUrls, UrlQuery::$KEY);
-            $mappedUrlQueries = $this->mapForKeyAndKeyByHash($urlsWithQueries, UrlQuery::$KEY);
+            $mappedUrlQueries = $this->getForTypeAndKeyByHash($urlsWithQueries, UrlQuery::$KEY);
 
             try{
                 $entities[UrlProtocol::class] =
