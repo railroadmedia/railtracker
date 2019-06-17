@@ -257,14 +257,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @param Collection $urls
+     * @param Collection $items
      * @param $keyToMap
      * @return array
      */
-    private function getForTypeAndKeyByHash(Collection $urls, $keyToMap){
-        $mappedEntities = $urls->map(
-            function($url) use ($keyToMap){
-                return $url[$keyToMap];
+    private function getForTypeAndKeyByHash(Collection $items, $keyToMap){
+        $mappedEntities = $items->map(
+            function($item) use ($keyToMap){
+                return $item[$keyToMap];
             }
         )->all();
         return $this->keyByHash($mappedEntities);
