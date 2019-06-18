@@ -188,7 +188,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     {
         $existingEntitiesByHash = $this->getPreExistingFromSet($class, $arraysByHash);
 
-        $entities = $this->createIfNeeded($class, $arraysByHash, $existingEntitiesByHash);
+        $entities = $this->useIfAvailableElseCreateIfNeeded($class, $arraysByHash, $existingEntitiesByHash);
 
         return $entities;
     }
@@ -199,7 +199,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param array $existingEntitiesByHash
      * @return array
      */
-    private function createIfNeeded($class, $arraysByHash, $existingEntitiesByHash = [])
+    private function useIfAvailableElseCreateIfNeeded($class, $arraysByHash, $existingEntitiesByHash = [])
     {
         $entities = [];
 
@@ -393,6 +393,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $existingEntitiesByHash = [];
 
+        // key by hash
         foreach ($existingEntities as $existingEntity) {
             $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
         }
@@ -559,30 +560,38 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processResponses(Collection $valuesThisChunk, Collection $requests)
     {
-        $entities = [];
-
-        $responses = $valuesThisChunk->filter(function($candidate){
-            return $candidate['type'] === 'response';
-        });
+        $responses = $this->getResponses($valuesThisChunk);
 
         if(empty($responses)){
             return collect([]);
         }
 
-        // get|create to-be associated entities
+        $statusCodes = $this->getOrCreateResponseAssociatedEntities($responses);
 
-        $mappedStatusCodes = $this->getForTypeAndKeyByHash($responses, ResponseStatusCode::$KEY);
+        $responseEntities = $this->hydrateAndPersistResponses($responses, $requests, $statusCodes);
 
-        try {
-            $entities[ResponseStatusCode::class] =
-                $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
-            $this->entityManager->flush();
-        } catch (Exception $e) {
-            error_log($e);
-        }
+        return $responseEntities;
+    }
 
-        // set ResponseStatusCode entities on Response entities
+    /**
+     * @param $valuesThisChunk
+     * @return mixed
+     */
+    private function getResponses($valuesThisChunk)
+    {
+        return $valuesThisChunk->filter(function($candidate){
+            return $candidate['type'] === 'response';
+        });
+    }
 
+    /**
+     * @param $responses
+     * @param $requests
+     * @param $statusCodes
+     * @return Collection
+     */
+    private function hydrateAndPersistResponses($responses, $requests, $statusCodes)
+    {
         foreach($responses as $responseData) {
 
             $responseEntity = new Response();
@@ -606,31 +615,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             // association two: status_code
 
-            $statusCodeCandidates = $entities[ResponseStatusCode::class] ?? null;
-
-
-            if (!$statusCodeCandidates) {
-                // todo: again, what to do with this?
-                logger('!$statusCodeCandidates');
-            }
-
             $statusCodeToUse = null;
 
             $statusCodeHashToFind = $responseData['status_code']['hash'] ?? null;
 
-            if(!$statusCodeHashToFind){ // todo: remove this check probably
-                logger('!$statusCodeHashToFind');
-            }
-
-            foreach ($statusCodeCandidates as $candidateHash => $candidate) {
+            foreach ($statusCodes as $candidateHash => $candidate) {
                 if ($statusCodeHashToFind === $candidateHash) {
                     $statusCodeToUse = $candidate;
                 }
-            }
-
-            if (!$statusCodeToUse) {
-                // todo: again, what to do with this?
-                logger('!$statusCodeToUse');
             }
 
             $responseEntity->setStatusCode($statusCodeToUse);
@@ -654,6 +646,23 @@ class ProcessTrackings extends \Illuminate\Console\Command
         return collect($responseEntities ?? []);
     }
 
+    /**
+     * @param $responses
+     * @return array
+     */
+    private function getOrCreateResponseAssociatedEntities($responses)
+    {
+        $mappedStatusCodes = $this->getForTypeAndKeyByHash($responses, ResponseStatusCode::$KEY);
+
+        try {
+            $entities = $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        return $entities ?? [];
+    }
     /**
      * @param Collection $valuesThisChunk
      * @param Collection $requests

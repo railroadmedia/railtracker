@@ -142,8 +142,6 @@ class ExceptionTrackerTest extends RailtrackerTestCase
             ]
         );
 
-        $_db_ = $this->seeDbWhileDebugging();
-
         $this->assertDatabaseHas(
             ConfigService::$tableResponses,
             [
