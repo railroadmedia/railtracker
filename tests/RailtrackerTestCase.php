@@ -475,7 +475,7 @@ class RailtrackerTestCase extends BaseTestCase
      * @param Request $request
      * @param null $response
      */
-    protected function sendRequestAndCallProcessCommand(Request $request, $response = null)
+    protected function sendRequest(Request $request, $response = null)
     {
         /** @var RailtrackerMiddleware $middleware */
         $middleware = resolve(RailtrackerMiddleware::class);
@@ -489,6 +489,15 @@ class RailtrackerTestCase extends BaseTestCase
         };
 
         $middleware->handle($request, $next);
+    }
+
+    /**
+     * @param Request $request
+     * @param null $response
+     */
+    protected function sendRequestAndCallProcessCommand(Request $request, $response = null)
+    {
+        $this->sendRequest($request, $response);
 
         try {
             $this->processTrackings();
