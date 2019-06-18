@@ -559,6 +559,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processResponses(Collection $valuesThisChunk, Collection $requests)
     {
+        $entities = [];
+
         $responses = $valuesThisChunk->filter(function($candidate){
             return $candidate['type'] === 'response';
         });
@@ -567,22 +569,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return collect([]);
         }
 
-        // ---------------------------------------------------------------------------------------------------------
-        // part 1 of _ - get associated entities -------------------------------------------------------------------
-
-        // gather associated entities by type
-
-//        foreach($responses as &$response) {
-//            $statusCode = new ResponseStatusCode();
-//            $statusCode->setFromData($response['status_code']);
-//            $statusCodes[] = $statusCode;
-//        };
-//
-//        $statusCodes = $this->keyByHash($statusCodes);
-//
-//        unset($response);
-////        key by hash
-//
+        // get|create to-be associated entities
 
         $mappedStatusCodes = $this->getForTypeAndKeyByHash($responses, ResponseStatusCode::$KEY);
 
@@ -594,82 +581,68 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
+        // set ResponseStatusCode entities on Response entities
 
-        $stopHere = true;
-        $stopHere = true;
-        $stopHere = true;
-        $stopHere = true;
-        $stopHere = true;
+        foreach($responses as $responseData) {
 
+            $responseEntity = new Response();
 
-        // ---------------------------------------------------------------------------------------------------------
-        // part 2 of 3 - get|create to-be associated entities ------------------------------------------------------
-//
-//        $mappedStatusCodesRaw = $responses->map(function($response){
-//            $value = $response[ResponseStatusCode::$KEY];
-//            return [$hash => $value];
-//        })->all();
+            // simple|scalar values
 
-//        $mappedStatusCodes = array_unique($mappedStatusCodesRaw, SORT_REGULAR);
+            $responseEntity->setRespondedOn($responseData['respondedOn']);
+            $responseEntity->setResponseDurationMs($responseData['responseDurationMs']);
 
-        try {
-            $responseStatusCodes =
-                $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
+            // association one: request
 
-            $this->entityManager->flush();
-        } catch (Exception $e) {
-            error_log($e);
-        }
+            $uuid = $responseData['uuid'];
+            $requestToUse = $requests[$uuid] ?? null;
 
-
-        // ---------------------------------------------------------------------------------------------------------
-        // part 3 of 3 - persist Responses -------------------------------------------------------------------------
-
-
-        foreach($responses as &$responseData){
-
-            $hashRequired = $responseData[ResponseStatusCode::$KEY]['hash'];
-            $candidates = $responseStatusCodes ?? [];
-
-            if(isset($candidates[$hashRequired])) {
-                $requestData[ResponseStatusCode::$KEY] = $candidates[$hashRequired];
+            if (!$requestToUse) {
+                // todo: what to do here? Not need to assume it's present? send an Exception up level or something? Maybe remove the need for this error log? ... and|or make sure this is all handled and set up properly
+                error_log('No matching request found');
             }
 
-            try{
-                $response = new Response();
+            $responseEntity->setRequest($requestToUse);
 
-                $collectionWithSingleRequest = $requests->filter(function($request) use ($responseData){
-                    /** @var Request $request */
-                    return $responseData['uuid'] === $request->getUuid();
-                });
+            // association two: status_code
 
-                if($collectionWithSingleRequest->count() !== 1){
-                    error_log(
-                        '"$collectionWithSingleRequest->count() !== 1" for responseData ' .
-                        var_export($responseData, true)
-                    );
-                }
+            $statusCodeCandidates = $entities[ResponseStatusCode::class] ?? null;
 
-                $request = $collectionWithSingleRequest->first();
 
-                $response->setRequest($request);
-                $response->setRespondedOn($responseData['respondedOn']);
-                $response->setResponseDurationMs($responseData['responseDurationMs']);
-
-                foreach($responseStatusCodes ?? [] as $code){
-                    /** @var $code ResponseStatusCode */
-                    if($code->getCode() === $responseData['status_code']){
-                        $response->setStatusCode($code);
-                    }
-                }
-
-                $this->entityManager->persist($response);
-
-                $responseEntities[] = $response;
-
-            }catch(Exception $e){
-                error_log($e);
+            if (!$statusCodeCandidates) {
+                // todo: again, what to do with this?
+                logger('!$statusCodeCandidates');
             }
+
+            $statusCodeToUse = null;
+
+            $statusCodeHashToFind = $responseData['status_code']['hash'] ?? null;
+
+            if(!$statusCodeHashToFind){ // todo: remove this check probably
+                logger('!$statusCodeHashToFind');
+            }
+
+            foreach ($statusCodeCandidates as $candidateHash => $candidate) {
+                if ($statusCodeHashToFind === $candidateHash) {
+                    $statusCodeToUse = $candidate;
+                }
+            }
+
+            if (!$statusCodeToUse) {
+                // todo: again, what to do with this?
+                logger('!$statusCodeToUse');
+            }
+
+            $responseEntity->setStatusCode($statusCodeToUse);
+
+            // persist
+
+            try {
+                $this->entityManager->persist($responseEntity);
+            } catch (Exception $exception) {
+                logger($exception); // todo: what to do here? What level of log to use? Alert? Error?
+            }
+            $responseEntities[] = $responseEntity;
         }
 
         try{
@@ -770,16 +743,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         return $requestExceptions ?? collect([]);
-    }
-
-    /**
-     * @param $requestExceptionsData
-     * @param $requests
-     * @return Collection
-     */
-    private function hydrateRequestExceptions($requestExceptionsData, $requests)
-    {
-
     }
 
     /**
