@@ -693,17 +693,20 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $exceptionsToMapToRequestExceptions = $entities[ExceptionEntity::class];
 
-            $requestExceptionsData = $requestExceptionsData->map(function($singleRequestException) use ($exceptionsToMapToRequestExceptions){
-                $targetHash = $singleRequestException['exception']['hash'];
+            $requestExceptionsData = $requestExceptionsData->map(
+                function($singleRequestException) use ($exceptionsToMapToRequestExceptions)
+                {
+                    $targetHash = $singleRequestException['exception']['hash'];
 
-                $exceptionToAttach = $exceptionsToMapToRequestExceptions[$targetHash] ?? null;
+                    $exceptionToAttach = $exceptionsToMapToRequestExceptions[$targetHash] ?? null;
 
-                if($exceptionToAttach) {
-                    $singleRequestException['exception'] = $exceptionToAttach;
+                    if($exceptionToAttach) {
+                        $singleRequestException['exception'] = $exceptionToAttach;
+                    }
+
+                    return $singleRequestException;
                 }
-
-                return $singleRequestException;
-            });
+            );
 
             // ---------------------------------------------------------------------------------------------------------
 
