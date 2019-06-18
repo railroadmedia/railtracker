@@ -559,21 +559,23 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param Request $request
+     * @param Collection|Request[] $requests
      * @return void
      */
-    private function updateUsersAnonymousRequests(Request $request)
+    public function updateUsersAnonymousRequests(Collection $requests)
     {
-        $userId = $request->getUserId();
-        $cookieId = $request->getCookieId();
+        foreach($requests as $request){
+            $userId = $request->getUserId();
+            $cookieId = $request->getCookieId();
 
-        if ($userId && $cookieId) {
-            $this->databaseManager->table(ConfigService::$tableRequests)
-                ->where(['cookie_id' => $cookieId])
-                ->whereNull('user_id')
-                ->update(['user_id' => $userId]);
+            if ($userId && $cookieId) {
+                $this->databaseManager->table(ConfigService::$tableRequests)
+                    ->where(['cookie_id' => $cookieId])
+                    ->whereNull('user_id')
+                    ->update(['user_id' => $userId]);
 
-            $this->deleteCookieForAuthenticatedUser();
+                $this->deleteCookieForAuthenticatedUser();
+            }
         }
     }
 
@@ -581,12 +583,10 @@ class RequestTracker extends TrackerBase
      * @param Collection $requestEntities
      * @param array $previousRequestsDatabaseRows
      */
-    public function updateAnonymousRecords(Collection $requestEntities, $previousRequestsDatabaseRows = [])
+    public function fireRequestTrackedEvents(Collection $requestEntities, $previousRequestsDatabaseRows = [])
     {
-        // todo: optimize this - so processes in bulk
-
-        /** @var Request $requestsEntity */
-        foreach($requestEntities as $requestsEntity){
+        /** @var Request $requestEntity */
+        foreach($requestEntities as $requestEntity){
 
             if (!empty($previousRequestsDatabaseRows)) {
                 $lastRequestedOn = end($previousRequestsDatabaseRows)->requested_on;
@@ -594,18 +594,21 @@ class RequestTracker extends TrackerBase
             }
             event(
                 new RequestTracked(
-                    $requestsEntity->getId(),
-                    $requestsEntity->getUserId(),
-                    $requestsEntity->getClientIp(),
-                    $requestsEntity->getAgent()->getName(),
-                    $requestsEntity->getRequestedOn(),
+                    $requestEntity->getId(),
+                    $requestEntity->getUserId(),
+                    $requestEntity->getClientIp(),
+                    $requestEntity->getAgent()->getName(),
+                    $requestEntity->getRequestedOn(),
                     $timeOfUsersPreviousRequest ?? null
                 )
             );
-            $this->updateUsersAnonymousRequests($requestsEntity);
         }
     }
 
+    /**
+     * @param $requestEntity
+     * @return array
+     */
     public function getPreviousRequestsDatabaseRows($requestEntity)
     {
         $results = $this->databaseManager->table(ConfigService::$tableRequests)

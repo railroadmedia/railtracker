@@ -523,16 +523,18 @@ class ProcessTrackings extends \Illuminate\Console\Command
              * every association of the request (everything that itself is an entity should already have
              * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
              */
-            $requestsEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
+            $requestEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
 
             // ---------------------------------------------------------------------------------------------------------
-            // part 6 of 6 - updateAnonymousRecords --------------------------------------------------------------------
+            // part 6 of 6 - misc hooks --------------------------------------------------------------------------------
             // ---------------------------------------------------------------------------------------------------------
 
-            $this->requestTracker->updateAnonymousRecords($requestsEntities, $previousRequestsDatabaseRows ?? []);
+            $this->requestTracker->fireRequestTrackedEvents($requestEntities, $previousRequestsDatabaseRows ?? []);
+
+            $this->requestTracker->updateUsersAnonymousRequests($requestEntities);
         }
 
-        return $requestsEntities ?? collect([]);
+        return $requestEntities ?? collect([]);
     }
 
     /**
