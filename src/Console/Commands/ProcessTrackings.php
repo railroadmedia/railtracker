@@ -188,7 +188,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     {
         $existingEntitiesByHash = $this->getPreExistingFromSet($class, $arraysByHash);
 
-        $entities = $this->useIfAvailableElseCreateIfNeeded($class, $arraysByHash, $existingEntitiesByHash);
+        $entities = $this->getRecordsOfTypeCreateNewAsNeeded($class, $arraysByHash, $existingEntitiesByHash);
 
         return $entities;
     }
@@ -199,7 +199,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param array $existingEntitiesByHash
      * @return array
      */
-    private function useIfAvailableElseCreateIfNeeded($class, $arraysByHash, $existingEntitiesByHash = [])
+    private function getRecordsOfTypeCreateNewAsNeeded($class, $arraysByHash, $existingEntitiesByHash = [])
     {
         $entities = [];
 
