@@ -128,6 +128,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             if(!empty($keys)){
                 $this->determineValuesThisChunk($keys);
+
                 $this->processRequests();
                 $this->processRequestExceptions();
                 $this->processResponses();
@@ -579,6 +580,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         if(empty($responses)){
             $this->responsesThisChunk = collect([]);
+            return;
         }
 
         $statusCodes = $this->getOrCreateResponseAssociatedEntities($responses);
@@ -608,24 +610,25 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $responseEntity = new Response();
 
-            // simple|scalar values
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 1. simple|scalar values ----------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             $responseEntity->setRespondedOn($responseData['respondedOn']);
             $responseEntity->setResponseDurationMs($responseData['responseDurationMs']);
 
-            // association one: request
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 2. association one: request ------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             $uuid = $responseData['uuid'];
             $requestToUse = $this->requestsThisChunk[$uuid] ?? null;
 
-            if (!$requestToUse) {
-                // todo: what to do here? Not need to assume it's present? send an Exception up level or something? Maybe remove the need for this error log? ... and|or make sure this is all handled and set up properly
-                error_log('No matching request found');
-            }
-
             $responseEntity->setRequest($requestToUse);
 
-            // association two: status_code
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 3. association two: status_code --------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             $statusCodeToUse = null;
 
@@ -639,12 +642,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $responseEntity->setStatusCode($statusCodeToUse);
 
-            // persist
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 4. persist -----------------------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
 
             try {
                 $this->entityManager->persist($responseEntity);
             } catch (Exception $exception) {
-                logger($exception); // todo: what to do here? What level of log to use? Alert? Error?
+                error_log($exception);
             }
             $responseEntities[] = $responseEntity;
         }
@@ -681,90 +686,94 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequestExceptions()
     {
-        $entities = [];
+        $requestExceptionsData = $this->valuesThisChunk->filter(
+            function($candidate){
+                return $candidate['type'] === 'request-exception';
+            }
+        );
 
-        $requestExceptionsData = $this->valuesThisChunk->filter(function($candidate){
-            return $candidate['type'] === 'request-exception';
-        });
+        if($requestExceptionsData->isEmpty()){
+            $this->requestExceptionsThisChunk = collect([]);
+            return;
+        }
 
-        if(!empty($requestExceptionsData)){
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 1. Get exceptions, create new as needed ----------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
 
-            $exceptions = $this->getForTypeAndKeyByHash($requestExceptionsData, 'exception');
+        $exceptions = $this->getForTypeAndKeyByHash($requestExceptionsData, 'exception');
+
+        try{
+            $entities[ExceptionEntity::class] = $this->getExistingBulkInsertNew(ExceptionEntity::class, $exceptions);
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 2. Map exceptions To RequestExceptions -----------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        $requestExceptionsData = $requestExceptionsData->map(
+            function($singleRequestException) use ($entities)
+            {
+                $targetHash = $singleRequestException['exception']['hash'];
+
+                $exceptionsToMapToRequestExceptions = $entities[ExceptionEntity::class];
+
+                $exceptionToAttach = $exceptionsToMapToRequestExceptions[$targetHash] ?? null;
+
+                if($exceptionToAttach) {
+                    $singleRequestException['exception'] = $exceptionToAttach;
+                }
+
+                return $singleRequestException;
+            }
+        );
+
+
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 3. Map requests to RequestExceptions -------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        $matchedWithRequests = $this->matchWithRequest($requestExceptionsData, $this->requestsThisChunk);
+
+
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 4. Create entities -------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        foreach($matchedWithRequests as $set){
+
+            $requestExceptionData = $set['request-exception'];
+
+            $exception = $requestExceptionData['exception'];
+
+            $requestException = new RequestException();
+            $requestException->setRequest($set['request']);
+            $requestException->setException($exception);
+            $requestException->setCreatedAtTimestampMs($requestExceptionData['createdAtTimestampMs']);
+
+            $requestExceptions[] = $requestException;
 
             try{
-                $entities[ExceptionEntity::class] =
-                    $this->getExistingBulkInsertNew(ExceptionEntity::class, $exceptions);
-
-                $this->entityManager->flush();
-            } catch (Exception $e) {
-                error_log($e);
-            }
-
-            // Map exceptions To RequestExceptions
-
-            $exceptionsToMapToRequestExceptions = $entities[ExceptionEntity::class];
-
-            $requestExceptionsData = $requestExceptionsData->map(
-                function($singleRequestException) use ($exceptionsToMapToRequestExceptions)
-                {
-                    $targetHash = $singleRequestException['exception']['hash'];
-
-                    $exceptionToAttach = $exceptionsToMapToRequestExceptions[$targetHash] ?? null;
-
-                    if($exceptionToAttach) {
-                        $singleRequestException['exception'] = $exceptionToAttach;
-                    }
-
-                    return $singleRequestException;
-                }
-            );
-
-            // ---------------------------------------------------------------------------------------------------------
-
-            $requestExceptionsMatchedWithRequestsKeyedByUuid =
-                $this->matchWithRequest($requestExceptionsData, $this->requestsThisChunk);
-
-            foreach($requestExceptionsMatchedWithRequestsKeyedByUuid as $set){
-
-                $requestExceptionData = $set['request-exception'];
-                $request = $set['request'];
-
-                $exceptionData = $requestExceptionData['exception'];
-
-                $exception = $exceptionData;
-
-                if(!is_a($exceptionData, ExceptionEntity::class)){
-                    error_log('Exception entity not set here, and this should not be possible.');
-                } // todo: remove this, ideally by addressing the insecurity that leads you to believe it necessary.
-
-                $requestException = new RequestException();
-                $requestException->setRequest($request);
-                $requestException->setException($exception);
-                $requestException->setCreatedAtTimestampMs($requestExceptionData['createdAtTimestampMs']);
-
-                $requestExceptions[] = $requestException;
-            }
-
-            $requestExceptions = collect($requestExceptions ?? []);
-
-            // ---------------------------------------------------------------------------------------------------------
-
-            foreach($requestExceptions as $requestException){
-                try{
-                    $this->entityManager->persist($requestException);
-                }catch(Exception $exception){
-                    error_log($exception);
-                }
-            }
-
-            try{
-                $this->entityManager->flush();
+                $this->entityManager->persist($requestException);
             }catch(Exception $exception){
                 error_log($exception);
             }
         }
 
-        $this->requestExceptionsThisChunk = $requestExceptions ?? collect([]);
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 5. Store entities --------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        try{
+            $this->entityManager->flush();
+        }catch(Exception $exception){
+            error_log($exception);
+        }
+
+        $this->requestExceptionsThisChunk = collect($requestExceptions ?? []);
     }
 
     /**
