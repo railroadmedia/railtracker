@@ -325,6 +325,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function createRequestEntitiesAndAttachAssociatedEntities(Collection $requests, $entities)
     {
+        /*
+         * every association of the request (everything that itself is an entity) should already have
+         * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
+         */
+
         $associationsClassesAndKeys = [
             RequestAgent::$KEY => RequestAgent::class,
             RequestDevice::$KEY => RequestDevice::class,
@@ -519,71 +524,35 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return $candidate['type'] === 'request';
         });
 
-        if(!empty($requests)){
-
-            // ---------------------------------------------------------------------------------------------------------
-            // part 1 of 6 - simple associations -----------------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            $entities = $this->simpleAssociationsForRequests($requests);
-
-
-            // ---------------------------------------------------------------------------------------------------------
-            // part 2 of 6 - associations of urls ----------------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
-
-            $entities = $this->urlAssociationsForRequests($entities, $mappedUrls);
-
-            // ---------------------------------------------------------------------------------------------------------
-            // part 3 of 6 - attaching children to urls and then processing those --------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
-
-            try{
-                $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
-
-                $this->entityManager->flush();
-
-            } catch (Exception $e) {
-                error_log($e);
-            }
-
-            // ---------------------------------------------------------------------------------------------------------
-            // part 4 of 6 - get previous before adding new ------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            /*
-             * get previous before adding new, otherwise result will contain new, and to get the "previous" you'd have
-             * to skip the first result.
-             */
-
-            foreach($requests as $request){
-                if ($request['userId'] !== null) {
-                    $previousRequestsDatabaseRows = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
-                }
-            }
-
-            // ---------------------------------------------------------------------------------------------------------
-            // part 5 of 6 - insert requests ---------------------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            /*
-             * every association of the request (everything that itself is an entity should already have
-             * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
-             */
-            $requestEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
-
-            // ---------------------------------------------------------------------------------------------------------
-            // part 6 of 6 - misc hooks --------------------------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            $this->requestTracker->fireRequestTrackedEvents($requestEntities, $previousRequestsDatabaseRows ?? []);
-
-            $this->requestTracker->updateUsersAnonymousRequests($requestEntities);
+        if($requests->isEmpty()) {
+            $this->requestsThisChunk = collect([]);
+            return;
         }
+
+        $entities = $this->simpleAssociationsForRequests($requests);
+
+        $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
+        $entities = $this->urlAssociationsForRequests($entities, $mappedUrls);
+
+        $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
+        try{
+            $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        // get previous before adding new, otherwise result will contain new
+        foreach($requests as $request){
+            if ($request['userId'] !== null) {
+                $previousRequestsDatabaseRows = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
+            }
+        }
+
+        $requestEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
+
+        $this->requestTracker->fireRequestTrackedEvents($requestEntities, $previousRequestsDatabaseRows ?? []);
+        $this->requestTracker->updateUsersAnonymousRequests($requestEntities);
 
         $this->requestsThisChunk = $requestEntities ?? collect([]);
     }
