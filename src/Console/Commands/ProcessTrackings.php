@@ -65,6 +65,26 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $entityManager;
 
     /**
+     * @var Collection
+     */
+    private $valuesThisChunk;
+
+    /**
+     * @var Collection
+     */
+    private $requestsThisChunk;
+
+    /**
+     * @var Collection
+     */
+    private $requestExceptionsThisChunk;
+
+    /**
+     * @var Collection
+     */
+    private $responsesThisChunk;
+
+    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
@@ -107,17 +127,16 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $keys = $scanResult[1];
 
             if(!empty($keys)){
-                $valuesThisChunk = $this->getValuesThisChunk($keys);
-
-                $requests = $this->processRequests($valuesThisChunk);
-                $requestExceptions = $this->processRequestExceptions($valuesThisChunk, $requests);
-                $responses = $this->processResponses($valuesThisChunk, $requests);
+                $this->determineValuesThisChunk($keys);
+                $this->processRequests();
+                $this->processRequestExceptions();
+                $this->processResponses();
 
                 $this->batchService->forget($keys);
 
-                $counts['requests'] = ($counts['requests'] ?? 0) + $requests->count();
-                $counts['reqExc'] = ($counts['reqExc'] ?? 0) + $requestExceptions->count();
-                $counts['responses'] = ($counts['responses'] ?? 0) + $responses->count();
+                $counts['requests'] = ($counts['requests'] ?? 0) + $this->requestsThisChunk->count();
+                $counts['reqExc'] = ($counts['reqExc'] ?? 0) + $this->requestExceptionsThisChunk->count();
+                $counts['responses'] = ($counts['responses'] ?? 0) + $this->responsesThisChunk->count();
             }
         }
 
@@ -402,14 +421,13 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @param $valuesThisChunk
-     * @return array|Collection
+     * @return void
      */
-    private function processRequests(Collection $valuesThisChunk)
+    private function processRequests()
     {
         $entities = [];
 
-        $requests = $valuesThisChunk->filter(function($candidate){
+        $requests = $this->valuesThisChunk->filter(function($candidate){
             return $candidate['type'] === 'request';
         });
 
@@ -534,45 +552,38 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $this->requestTracker->updateUsersAnonymousRequests($requestEntities);
         }
 
-        return $requestEntities ?? collect([]);
+        $this->requestsThisChunk = $requestEntities ?? collect([]);
     }
 
     /**
      * @param $keysThisChunk
-     * @return Collection
      */
-    private function getValuesThisChunk($keysThisChunk)
+    private function determineValuesThisChunk($keysThisChunk)
     {
-        $valuesThisChunk = new Collection();
+        $this->valuesThisChunk = new Collection();
 
         foreach ($keysThisChunk as $keyThisChunk) {
             $values = $this->batchService->cache()->smembers($keyThisChunk);
             foreach($values as $value){
-                $valuesThisChunk->push(unserialize($value));
+                $this->valuesThisChunk->push(unserialize($value));
             }
         }
-
-        return $valuesThisChunk;
     }
 
     /**
-     * @param Collection $valuesThisChunk
-     * @param Collection $requests
-     * @return Collection
+     * @return void
      */
-    private function processResponses(Collection $valuesThisChunk, Collection $requests)
+    private function processResponses()
     {
-        $responses = $this->getResponses($valuesThisChunk);
+        $responses = $this->getResponses($this->valuesThisChunk);
 
         if(empty($responses)){
-            return collect([]);
+            $this->responsesThisChunk = collect([]);
         }
 
         $statusCodes = $this->getOrCreateResponseAssociatedEntities($responses);
 
-        $responseEntities = $this->hydrateAndPersistResponses($responses, $requests, $statusCodes);
-
-        return $responseEntities;
+        $this->responsesThisChunk = $this->hydrateAndPersistResponses($responses, $statusCodes);
     }
 
     /**
@@ -588,11 +599,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
     /**
      * @param $responses
-     * @param $requests
      * @param $statusCodes
      * @return Collection
      */
-    private function hydrateAndPersistResponses($responses, $requests, $statusCodes)
+    private function hydrateAndPersistResponses($responses, $statusCodes)
     {
         foreach($responses as $responseData) {
 
@@ -606,7 +616,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             // association one: request
 
             $uuid = $responseData['uuid'];
-            $requestToUse = $requests[$uuid] ?? null;
+            $requestToUse = $this->requestsThisChunk[$uuid] ?? null;
 
             if (!$requestToUse) {
                 // todo: what to do here? Not need to assume it's present? send an Exception up level or something? Maybe remove the need for this error log? ... and|or make sure this is all handled and set up properly
@@ -665,16 +675,15 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         return $entities ?? [];
     }
+
     /**
-     * @param Collection $valuesThisChunk
-     * @param Collection $requests
-     * @return Collection
+     * @return void
      */
-    private function processRequestExceptions(Collection $valuesThisChunk, Collection $requests)
+    private function processRequestExceptions()
     {
         $entities = [];
 
-        $requestExceptionsData = $valuesThisChunk->filter(function($candidate){
+        $requestExceptionsData = $this->valuesThisChunk->filter(function($candidate){
             return $candidate['type'] === 'request-exception';
         });
 
@@ -712,9 +721,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             // ---------------------------------------------------------------------------------------------------------
 
-            // moved from "$requestExceptions = $this->hydrateRequestExceptions($requestExceptionsData, $requests);"
-
-            $requestExceptionsMatchedWithRequestsKeyedByUuid = $this->matchWithRequest($requestExceptionsData, $requests);
+            $requestExceptionsMatchedWithRequestsKeyedByUuid =
+                $this->matchWithRequest($requestExceptionsData, $this->requestsThisChunk);
 
             foreach($requestExceptionsMatchedWithRequestsKeyedByUuid as $set){
 
@@ -756,7 +764,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
         }
 
-        return $requestExceptions ?? collect([]);
+        $this->requestExceptionsThisChunk = $requestExceptions ?? collect([]);
     }
 
     /**
