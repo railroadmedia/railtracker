@@ -32,8 +32,6 @@ class RequestException
      */
     private $createdAtTimestampMs;
 
-    // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * @return mixed
      */
@@ -89,8 +87,4 @@ class RequestException
     {
         $this->createdAtTimestampMs = $createdAtTimestampMs;
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
-
 }
