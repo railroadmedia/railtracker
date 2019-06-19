@@ -545,14 +545,44 @@ class ProcessTrackings extends \Illuminate\Console\Command
         // get previous before adding new, otherwise result will contain new
         foreach($requests as $request){
             if ($request['userId'] !== null) {
-                $previousRequestsDatabaseRows = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
+                $previousRequestsDatabaseRows[] = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
             }
         }
 
         $requestEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
 
-        $this->requestTracker->fireRequestTrackedEvents($requestEntities, $previousRequestsDatabaseRows ?? []);
         $this->requestTracker->updateUsersAnonymousRequests($requestEntities);
+
+        // getAfter,compare difference
+        foreach($requests as $request){
+            if ($request['userId'] !== null) {
+                $previousRequestsDatabaseRows_2[] = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
+            }
+        }
+
+        foreach($previousRequestsDatabaseRows_2 ?? [] as $r){
+            $length = count($r);
+
+            $longEnough = count($r) >= 3;
+
+            if(!$longEnough){
+                continue;
+            }
+
+            $keyOfLastSinceZeroBased = $length - 1;
+            $keyOfSecondToLast = $keyOfLastSinceZeroBased - 1;
+            $keyToGetFor = $keyOfSecondToLast;
+
+            $select = $r[$keyToGetFor];
+
+            $usersPreviousByRequestCookieId[$select->cookie_id] = $select;
+        }
+
+        /*
+         * Get the second-to-last
+         */
+
+        $this->requestTracker->fireRequestTrackedEvents($requestEntities, $usersPreviousByRequestCookieId ?? []);
 
         $this->requestsThisChunk = $requestEntities ?? collect([]);
     }

@@ -518,7 +518,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertEquals($userId, DB::table(ConfigService::$tableRequests)->first()->user_id);
     }
 
-    public function test_user_id_set_on_old_requests_after_authentication_multiple()
+    public function test_user_id_set_on_old_requests_after_authentication_multiple_users()
     {
         $numberToRun = 10;
 
@@ -610,6 +610,138 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->assertEquals($userIds[$i], $secondRequest->user_id);
         }
     }
+
+    public function test_user_id_set_on_old_requests_after_authentication_multiple_requests()
+    {
+        $numberOrUsers = 10;
+        $numberOrRequestsPerUser = 8;
+
+        $cookieKeys = [];
+        $userIds = [];
+
+        $now = Carbon::parse('2019-06-19 12:00:00');
+
+        Carbon::setTestNow($now);
+
+        // ============================ primary set of requests ========================================================
+
+        for ($i = 0; $i < $numberOrUsers; $i++){
+
+            $url = $this->faker->url;
+            $refererUrl = $this->faker->url;
+            $clientIp = $this->faker->ipv4;
+            $cookieKeys[$i] = $this->faker->word . rand(00000,99999);
+            $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+
+            $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
+            $this->sendRequest($request);
+            $this->assertDatabaseMissing(
+                ConfigService::$tableRequests,
+                ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
+            );
+        }
+
+        for ($i = 0; $i < $numberOrUsers; $i++){
+
+            for ($r = 0; $r < $numberOrRequestsPerUser; $r++){
+
+                $url = $this->faker->url;
+                $refererUrl = $this->faker->url;
+                $clientIp = $this->faker->ipv4;
+                $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+
+                $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
+                $this->sendRequest($request);
+                $this->assertDatabaseMissing(
+                    ConfigService::$tableRequests,
+                    ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
+                );
+            }
+        }
+
+        // ============================ process primary set ============================================================
+
+        try{
+            $this->processTrackings();
+        }catch(\Exception $exception){
+            $this->fail($exception->getMessage());
+        }
+
+        $_db_ = $this->seeDbWhileDebugging();
+        foreach($_db_['railtracker_requests'] as $_TEMP_request){
+            $_TEMP_cookieId = $_TEMP_request['cookie_id'];
+            $_TEMP_requestsByCookieId[$_TEMP_cookieId][] = $_TEMP_request;
+        }
+
+        // ============================ primary set of assertions ======================================================
+
+        for ($i = 0; $i < $numberOrUsers; $i++) {
+            $this->assertDatabaseHas(
+                ConfigService::$tableRequests,
+                ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
+            );
+        }
+
+
+        // ============================ wait before executing secondary set of requests ================================
+
+        $now->addHour(); // still needed?
+                         // still needed?
+                         // still needed?
+                         // still needed?
+                         // still needed?
+                         // still needed?
+
+//        Carbon::setTestNow($now);
+
+
+        // ============================ secondary set of requests (send, then process) =================================
+
+        for ($i = 0; $i < $numberOrUsers; $i++){
+            $url = $this->faker->url;
+            $refererUrl = $this->faker->url;
+            $clientIp = $this->faker->ipv4;
+            $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+
+            $userIds[$i] = $this->createAndLogInNewUser();
+            $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
+            $request->setUserResolver(function () use ($userIds, $i) { return User::query()->find($userIds[$i]); });
+            $this->sendRequest($request);
+        }
+
+
+        // ============================ process secondary set ==========================================================
+
+        try{
+            $this->processTrackings();
+        }catch(\Exception $exception){
+            $this->fail($exception->getMessage());
+        }
+
+
+        // ============================ secondary set of assertions ====================================================
+
+        $requests = collect(DB::table(ConfigService::$tableRequests)->get()->all());
+
+        $requestsKeyedByCookieId = [];
+
+        // key by id
+        foreach($requests as $request){
+            $requestsKeyedByCookieId[$request->cookie_id] = $request;
+        }
+
+        for ($i = 0; $i < $numberOrUsers; $i++) {
+            $this->assertDatabaseHas(
+                ConfigService::$tableRequests,
+                ['user_id' => $userIds[$i], 'cookie_id' => $cookieKeys[$i]]
+            );
+
+            $secondRequest = $requestsKeyedByCookieId[$cookieKeys[$i]];
+
+            $this->assertEquals($userIds[$i], $secondRequest->user_id);
+        }
+    }
+
 
     public function test_track_request_with_not_excluded_paths()
     {

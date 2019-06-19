@@ -581,17 +581,16 @@ class RequestTracker extends TrackerBase
 
     /**
      * @param Collection $requestEntities
-     * @param array $previousRequestsDatabaseRows
+     * @param array $usersPreviousRequestsByCookieId
      */
-    public function fireRequestTrackedEvents(Collection $requestEntities, $previousRequestsDatabaseRows = [])
+    public function fireRequestTrackedEvents(Collection $requestEntities, $usersPreviousRequestsByCookieId = [])
     {
         /** @var Request $requestEntity */
         foreach($requestEntities as $requestEntity){
 
-            if (!empty($previousRequestsDatabaseRows)) {
-                $lastRequestedOn = end($previousRequestsDatabaseRows)->requested_on;
-                $timeOfUsersPreviousRequest = Carbon::parse($lastRequestedOn)->toDateTimeString();
-            }
+            $timeOfPreviousRequest =
+                $usersPreviousRequestsByCookieId[$requestEntity->getCookieId()]->requested_on ?? null;
+
             event(
                 new RequestTracked(
                     $requestEntity->getId(),
@@ -599,7 +598,7 @@ class RequestTracker extends TrackerBase
                     $requestEntity->getClientIp(),
                     $requestEntity->getAgent()->getName(),
                     $requestEntity->getRequestedOn(),
-                    $timeOfUsersPreviousRequest ?? null
+                    $timeOfPreviousRequest
                 )
             );
         }
