@@ -422,12 +422,99 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
+     * @param $requests
+     * @return array
+     */
+    private function simpleAssociationsForRequests($requests)
+    {
+        $entities = [];
+
+        $mappedAgents = $this->getForTypeAndKeyByHash($requests, RequestAgent::$KEY);
+        $mappedDevices = $this->getForTypeAndKeyByHash($requests, RequestDevice::$KEY);
+        $mappedLanguages = $this->getForTypeAndKeyByHash($requests, RequestLanguage::$KEY);
+        $mappedMethods = $this->getForTypeAndKeyByHash($requests, RequestMethod::$KEY);
+        $mappedRoutes = $this->getForTypeAndKeyByHash($requests, Route::$KEY);
+
+        try {
+            $entities[RequestAgent::class] =
+                $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
+
+            $entities[RequestDevice::class] =
+                $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
+
+            $entities[RequestLanguage::class] =
+                $this->getExistingBulkInsertNew(RequestLanguage::class, $mappedLanguages);
+
+            $entities[RequestMethod::class] =
+                $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
+
+            $entities[Route::class] =
+                $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
+
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        return $entities;
+    }
+
+    /**
+     * @param array $entities
+     * @param Collection $mappedUrls
+     * @return array
+     */
+    private function urlAssociationsForRequests($entities, Collection $mappedUrls)
+    {
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 1. protocol and domain are *not* nullable --------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        $mappedUrlProtocols = $this->getForTypeAndKeyByHash($mappedUrls, UrlProtocol::$KEY);
+
+        $mappedUrlDomains = $this->getForTypeAndKeyByHash($mappedUrls, UrlDomain::$KEY);
+
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 2. path and query *are* nullable -----------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        $urlsWithPaths = $this->filterForSetEntitiesOfAType($mappedUrls, UrlPath::$KEY);
+        $mappedUrlPaths = $this->getForTypeAndKeyByHash($urlsWithPaths, UrlPath::$KEY);
+
+        $urlsWithQueries = $this->filterForSetEntitiesOfAType($mappedUrls, UrlQuery::$KEY);
+        $mappedUrlQueries = $this->getForTypeAndKeyByHash($urlsWithQueries, UrlQuery::$KEY);
+
+        // -------------------------------------------------------------------------------------------------------------
+        // ---------- 3. get existing bulk insert new ------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
+
+        try{
+            $entities[UrlProtocol::class] =
+                $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
+
+            $entities[UrlDomain::class] =
+                $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
+
+            $entities[UrlPath::class] =
+                $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
+
+            $entities[UrlQuery::class] =
+                $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
+
+            $this->entityManager->flush();
+
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        return $entities;
+    }
+
+    /**
      * @return void
      */
     private function processRequests()
     {
-        $entities = [];
-
         $requests = $this->valuesThisChunk->filter(function($candidate){
             return $candidate['type'] === 'request';
         });
@@ -438,32 +525,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
             // part 1 of 6 - simple associations -----------------------------------------------------------------------
             // ---------------------------------------------------------------------------------------------------------
 
-            $mappedAgents = $this->getForTypeAndKeyByHash($requests, RequestAgent::$KEY);
-            $mappedDevices = $this->getForTypeAndKeyByHash($requests, RequestDevice::$KEY);
-            $mappedLanguages = $this->getForTypeAndKeyByHash($requests, RequestLanguage::$KEY);
-            $mappedMethods = $this->getForTypeAndKeyByHash($requests, RequestMethod::$KEY);
-            $mappedRoutes = $this->getForTypeAndKeyByHash($requests, Route::$KEY);
+            $entities = $this->simpleAssociationsForRequests($requests);
 
-            try {
-                $entities[RequestAgent::class] =
-                    $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
-
-                $entities[RequestDevice::class] =
-                    $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
-
-                $entities[RequestLanguage::class] =
-                    $this->getExistingBulkInsertNew(RequestLanguage::class, $mappedLanguages);
-
-                $entities[RequestMethod::class] =
-                    $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
-
-                $entities[Route::class] =
-                    $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
-
-                $this->entityManager->flush();
-            } catch (Exception $e) {
-                error_log($e);
-            }
 
             // ---------------------------------------------------------------------------------------------------------
             // part 2 of 6 - associations of urls ----------------------------------------------------------------------
@@ -471,38 +534,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
 
-            // protocol and domain are *not* nullable
-
-            $mappedUrlProtocols = $this->getForTypeAndKeyByHash($mappedUrls, UrlProtocol::$KEY);
-
-            $mappedUrlDomains = $this->getForTypeAndKeyByHash($mappedUrls, UrlDomain::$KEY);
-
-            // path and query *are* nullable
-
-            $urlsWithPaths = $this->filterForSetEntitiesOfAType($mappedUrls, UrlPath::$KEY);
-            $mappedUrlPaths = $this->getForTypeAndKeyByHash($urlsWithPaths, UrlPath::$KEY);
-
-            $urlsWithQueries = $this->filterForSetEntitiesOfAType($mappedUrls, UrlQuery::$KEY);
-            $mappedUrlQueries = $this->getForTypeAndKeyByHash($urlsWithQueries, UrlQuery::$KEY);
-
-            try{
-                $entities[UrlProtocol::class] =
-                    $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
-
-                $entities[UrlDomain::class] =
-                    $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
-
-                $entities[UrlPath::class] =
-                    $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
-
-                $entities[UrlQuery::class] =
-                    $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
-
-                $this->entityManager->flush();
-
-            } catch (Exception $e) {
-                error_log($e);
-            }
+            $entities = $this->urlAssociationsForRequests($entities, $mappedUrls);
 
             // ---------------------------------------------------------------------------------------------------------
             // part 3 of 6 - attaching children to urls and then processing those --------------------------------------
