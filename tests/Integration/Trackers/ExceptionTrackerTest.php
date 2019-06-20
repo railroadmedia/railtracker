@@ -19,13 +19,13 @@ class ExceptionTrackerTest extends RailtrackerTestCase
 {
     public function test_track_404_exception()
     {
-        $this->app->singleton(
+        app()->singleton(
             ExceptionHandler::class,
             Handler::class
         );
 
         $request = $this->randomRequest();
-        $kernel = $this->app->make(HttpKernel::class);
+        $kernel = app()->make(HttpKernel::class);
         $kernel->pushMiddleware(RailtrackerMiddleware::class);
         $kernel->handle($request);
 

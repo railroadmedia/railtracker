@@ -533,8 +533,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
         $entities = $this->urlAssociationsForRequests($entities, $mappedUrls);
-
         $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
+
         try{
             $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
             $this->entityManager->flush();
@@ -542,49 +542,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
-        // get previous before adding new, otherwise result will contain new
-        foreach($requests as $request){
-            if ($request['userId'] !== null) {
-                $previousRequestsDatabaseRows[] = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
-            }
-        }
+        $this->requestsThisChunk = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
 
-        $requestEntities = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
+        $this->requestTracker->updateUsersAnonymousRequests($this->requestsThisChunk);
 
-        $this->requestTracker->updateUsersAnonymousRequests($requestEntities);
-
-        // getAfter,compare difference
-        foreach($requests as $request){
-            if ($request['userId'] !== null) {
-                $previousRequestsDatabaseRows_2[] = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
-            }
-        }
-
-        foreach($previousRequestsDatabaseRows_2 ?? [] as $r){
-            $length = count($r);
-
-            $longEnough = count($r) >= 3;
-
-            if(!$longEnough){
-                continue;
-            }
-
-            $keyOfLastSinceZeroBased = $length - 1;
-            $keyOfSecondToLast = $keyOfLastSinceZeroBased - 1;
-            $keyToGetFor = $keyOfSecondToLast;
-
-            $select = $r[$keyToGetFor];
-
-            $usersPreviousByRequestCookieId[$select->cookie_id] = $select;
-        }
-
-        /*
-         * Get the second-to-last
-         */
-
-        $this->requestTracker->fireRequestTrackedEvents($requestEntities, $usersPreviousByRequestCookieId ?? []);
-
-        $this->requestsThisChunk = $requestEntities ?? collect([]);
+        $this->requestTracker->fireRequestTrackedEvents(
+            $this->requestsThisChunk,
+            $this->findUsersPreviousByRequestCookieId($requests)
+        );
     }
 
     /**
@@ -831,5 +796,23 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         return $matched ?? [];
+    }
+
+    private function findUsersPreviousByRequestCookieId($requests)
+    {
+        foreach($requests as $request){
+            if ($request['userId'] !== null) {
+                $previousRequests = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
+                $enough = count($previousRequests) >= 2;
+                if(!$enough){
+                    continue;
+                }
+                end($previousRequests);
+                $secondMostRecent = prev($previousRequests);
+                $usersPreviousByRequestCookieId[$secondMostRecent->cookie_id] = $secondMostRecent;
+            }
+        }
+
+        return $usersPreviousByRequestCookieId ?? [];
     }
 }
