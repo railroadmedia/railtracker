@@ -702,22 +702,29 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequestExceptions()
     {
-        $entities = [];
+        $this->requestExceptionsThisChunk = collect([]);
 
         $requestExceptionsData = $this->valuesThisChunk->filter(
-            function($candidate){
-                return $candidate['type'] === 'request-exception';
-            }
+            function($candidate){ return $candidate['type'] === 'request-exception';}
         );
 
-        if($requestExceptionsData->isEmpty()){
-            $this->requestExceptionsThisChunk = collect([]);
-            return;
-        }
+        if($requestExceptionsData->isEmpty()) return;
 
-        // -------------------------------------------------------------------------------------------------------------
-        // ---------- 1. Get exceptions, create new as needed ----------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
+        $requestExceptionsData = $this->getExceptionsAndMapToExceptionRequests($requestExceptionsData);
+
+        $exceptionsMatchedWithRequests = $this->matchWithRequest($requestExceptionsData, $this->requestsThisChunk);
+
+        $this->createRequestExceptions($exceptionsMatchedWithRequests);
+    }
+
+    /**
+     * @param Collection $requestExceptionsData
+     * @param $entities
+     * @return Collection
+     */
+    private function getExceptionsAndMapToExceptionRequests(Collection $requestExceptionsData)
+    {
+        $entities = [];
 
         $exceptions = $this->getForTypeAndKeyByHash($requestExceptionsData, 'exception');
 
@@ -728,11 +735,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
-        // -------------------------------------------------------------------------------------------------------------
-        // ---------- 2. Map exceptions To RequestExceptions -----------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
-
-        $requestExceptionsData = $requestExceptionsData->map(
+        return $requestExceptionsData->map(
             function($singleRequestException) use ($entities)
             {
                 $targetHash = $singleRequestException['exception']['hash'];
@@ -748,20 +751,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 return $singleRequestException;
             }
         );
+    }
 
-
-        // -------------------------------------------------------------------------------------------------------------
-        // ---------- 3. Map requests to RequestExceptions -------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
-
-        $matchedWithRequests = $this->matchWithRequest($requestExceptionsData, $this->requestsThisChunk);
-
-
-        // -------------------------------------------------------------------------------------------------------------
-        // ---------- 4. Create entities -------------------------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
-
-        foreach($matchedWithRequests as $set){
+    /**
+     * @param array $exceptionsMatchedWithRequests
+     */
+    private function createRequestExceptions($exceptionsMatchedWithRequests)
+    {
+        foreach($exceptionsMatchedWithRequests as $set){
 
             $requestExceptionData = $set['request-exception'];
 
@@ -780,10 +777,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 error_log($exception);
             }
         }
-
-        // -------------------------------------------------------------------------------------------------------------
-        // ---------- 5. Store entities --------------------------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
 
         try{
             $this->entityManager->flush();
