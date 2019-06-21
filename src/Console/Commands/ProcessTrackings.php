@@ -151,6 +151,85 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
+     * @return void
+     */
+    private function processRequests()
+    {
+        $requests = $this->valuesThisChunk->filter(function($candidate){
+            return $candidate['type'] === 'request';
+        });
+
+        if($requests->isEmpty()) {
+            $this->requestsThisChunk = collect([]);
+            return;
+        }
+
+        $entities = $this->simpleAssociationsForRequests($requests);
+
+        $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
+        $entities = $this->urlAssociationsForRequests($entities, $mappedUrls);
+        $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
+
+        try{
+            $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        $this->requestsThisChunk = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
+
+        $this->requestTracker->updateUsersAnonymousRequests($this->requestsThisChunk);
+
+        $this->requestTracker->fireRequestTrackedEvents(
+            $this->requestsThisChunk,
+            $this->findUsersPreviousByRequestCookieId($requests)
+        );
+    }
+
+    /**
+     * @return void
+     */
+    private function processRequestExceptions()
+    {
+        $this->requestExceptionsThisChunk = collect([]);
+
+        $requestExceptionsData = $this->valuesThisChunk->filter(
+            function($candidate){ return $candidate['type'] === 'request-exception';}
+        );
+
+        if($requestExceptionsData->isEmpty()) return;
+
+        $requestExceptionsData = $this->getExceptionsAndMapToExceptionRequests($requestExceptionsData);
+
+        $exceptionsMatchedWithRequests = $this->matchWithRequest($requestExceptionsData, $this->requestsThisChunk);
+
+        $this->createRequestExceptions($exceptionsMatchedWithRequests);
+    }
+
+    /**
+     * @return void
+     */
+    private function processResponses()
+    {
+        $responses = $this->getResponses($this->valuesThisChunk);
+
+        if(empty($responses)){
+            $this->responsesThisChunk = collect([]);
+            return;
+        }
+
+        $statusCodes = $this->getOrCreateResponseAssociatedEntities($responses);
+
+        $this->responsesThisChunk = $this->hydrateAndPersistResponses($responses, $statusCodes);
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // used only by handle ---------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
      * @param array $counts
      * @return array
      */
@@ -178,151 +257,122 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @param Collection $mappedUrls
-     * @param $entities
-     * @return array
+     * @param $keysThisChunk
      */
-    private function mapChildrenToUrls(Collection $mappedUrls, $entities)
+    private function determineValuesThisChunk($keysThisChunk)
     {
-        return $mappedUrls->map(function($url) use ($entities)
-        {
-            $typesToSearch = [
-                UrlProtocol::class,
-                UrlDomain::class,
-                UrlPath::class,
-                UrlQuery::class
-            ];
+        $this->valuesThisChunk = new Collection();
 
-            $keys = [
-                'protocol',
-                'domain',
-                'path',
-                'query'
-            ];
-
-            /** @var $url Url */
-            foreach($keys as $key){
-
-                if(empty($url[$key])) {
-                    continue;
-                }
-                $hash = $url[$key]['hash'];
-
-                foreach ($entities as $type => $data) {
-                    if (in_array($type, $typesToSearch) && isset($data[$hash])) {
-                        $entityToAttach = $data[$hash];
-                        $url[$key] = $entityToAttach;
-                    }
-                }
-            }
-            return $url;
-        })->all();
-    }
-
-    /**
-     * @param string $class
-     * @param array $arraysByHash
-     * @return array
-     */
-    private function getExistingBulkInsertNew($class, $arraysByHash)
-    {
-        $existingEntitiesByHash = $this->getPreExistingFromSet($class, $arraysByHash);
-
-        $entities = $this->getRecordsOfTypeCreateNewAsNeeded($class, $arraysByHash, $existingEntitiesByHash);
-
-        return $entities;
-    }
-
-    /**
-     * @param $class
-     * @param $arraysByHash
-     * @param array $existingEntitiesByHash
-     * @return array
-     */
-    private function getRecordsOfTypeCreateNewAsNeeded($class, $arraysByHash, $existingEntitiesByHash = [])
-    {
-        $entities = [];
-
-        foreach ($arraysByHash as $hash => $entity) {
-
-            if (isset($existingEntitiesByHash[$hash])) {
-                $entities[$hash] = $existingEntitiesByHash[$hash];
-            }else{
-                try{
-                    $entity = $this->processForType($class, $entity);
-
-                    if($entity->allValuesAreEmpty()){
-                        continue;
-                    }
-
-                    $entities[$entity->getHash()] = $entity;
-
-                    $this->entityManager->persist($entity);
-                }catch(Exception $exception){
-                    error_log($exception);
-                }
+        foreach ($keysThisChunk as $keyThisChunk) {
+            $values = $this->batchService->cache()->smembers($keyThisChunk);
+            foreach($values as $value){
+                $this->valuesThisChunk->push(unserialize($value));
             }
         }
-        return $entities;
     }
 
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // helper methods for processing responses -------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
     /**
-     * @param $class
-     * @param $data
-     * @return RailtrackerEntityInterface
-     * @throws Exception
+     * @param $valuesThisChunk
+     * @return mixed
      */
-    private function processForType($class, $data)
+    private function getResponses($valuesThisChunk)
     {
-        /** @var RailtrackerEntityInterface $entity */
-        $entity = new $class;
-        $entity->setFromData($data);
-        $entity->setHash();
-        return $entity;
+        return $valuesThisChunk->filter(function($candidate){
+            return $candidate['type'] === 'response';
+        });
     }
 
     /**
-     * @param $data
-     * @return array
-     */
-    private function keyByHash($data)
-    {
-        foreach($data as $datum){
-            if(isset($datum['hash'])){
-                $arraysByHash[$datum['hash']] = $datum;
-            }
-        }
-
-        return $arraysByHash ?? [];
-    }
-
-    /**
-     * @param Collection $items
-     * @param $keyToMap
-     * @return array
-     */
-    private function getForTypeAndKeyByHash(Collection $items, $keyToMap){
-        $mappedEntities = $items->map(
-            function($item) use ($keyToMap){
-                return $item[$keyToMap];
-            }
-        )->all();
-        return $this->keyByHash($mappedEntities);
-    }
-
-    /**
-     * @param Collection $urls
-     * @param $keyForRequired
+     * @param $responses
+     * @param $statusCodes
      * @return Collection
      */
-    private function filterForSetEntitiesOfAType(Collection $urls, $keyForRequired)
+    private function hydrateAndPersistResponses($responses, $statusCodes)
     {
-        $existant = $urls->filter(function($url) use ($keyForRequired){
-            return !empty($url[$keyForRequired]);
-        })->all();
+        foreach($responses as $responseData) {
 
-        return collect($existant);
+            $responseEntity = new Response();
+
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 1. simple|scalar values ----------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+
+            $responseEntity->setRespondedOn($responseData['respondedOn']);
+            $responseEntity->setResponseDurationMs($responseData['responseDurationMs']);
+
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 2. association one: request ------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+
+            $uuid = $responseData['uuid'];
+            $requestToUse = $this->requestsThisChunk[$uuid] ?? null;
+
+            $responseEntity->setRequest($requestToUse);
+
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 3. association two: status_code --------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+
+            $statusCodeToUse = null;
+
+            $statusCodeHashToFind = $responseData['status_code']['hash'] ?? null;
+
+            foreach ($statusCodes as $candidateHash => $candidate) {
+                if ($statusCodeHashToFind === $candidateHash) {
+                    $statusCodeToUse = $candidate;
+                }
+            }
+
+            $responseEntity->setStatusCode($statusCodeToUse);
+
+            // ---------------------------------------------------------------------------------------------------------
+            // ---------- 4. persist -----------------------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------------------------
+
+            try {
+                $this->entityManager->persist($responseEntity);
+            } catch (Exception $exception) {
+                error_log($exception);
+            }
+            $responseEntities[] = $responseEntity;
+        }
+
+        try{
+            $this->entityManager->flush();
+        }catch(Exception $e){
+            error_log($e);
+        }
+
+        return collect($responseEntities ?? []);
     }
+
+    /**
+     * @param $responses
+     * @return array
+     */
+    private function getOrCreateResponseAssociatedEntities($responses)
+    {
+        $mappedStatusCodes = $this->getForTypeAndKeyByHash($responses, ResponseStatusCode::$KEY);
+
+        try {
+            $entities = $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
+            $this->entityManager->flush();
+        } catch (Exception $e) {
+            error_log($e);
+        }
+
+        return $entities ?? [];
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // helper methods for processing requests --------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @param Collection $requests
@@ -419,34 +469,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @param string $class
-     * @param array $arraysByHash
-     * @return array
-     */
-    private function getPreExistingFromSet($class, $arraysByHash)
-    {
-        $qb = $this->entityManager->createQueryBuilder();
-
-        /** @var RailtrackerEntityInterface[] $existingEntities */
-        $existingEntities =
-            $qb->select('a')
-                ->from($class, 'a')
-                ->where('a.hash IN (:whereValues)')
-                ->setParameter('whereValues', array_keys($arraysByHash))
-                ->getQuery()
-                ->getResult();
-
-        $existingEntitiesByHash = [];
-
-        // key by hash
-        foreach ($existingEntities as $existingEntity) {
-            $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
-        }
-
-        return $existingEntitiesByHash;
-    }
-
-    /**
      * @param $requests
      * @return array
      */
@@ -536,186 +558,73 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @return void
-     */
-    private function processRequests()
-    {
-        $requests = $this->valuesThisChunk->filter(function($candidate){
-            return $candidate['type'] === 'request';
-        });
-
-        if($requests->isEmpty()) {
-            $this->requestsThisChunk = collect([]);
-            return;
-        }
-
-        $entities = $this->simpleAssociationsForRequests($requests);
-
-        $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
-        $entities = $this->urlAssociationsForRequests($entities, $mappedUrls);
-        $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
-
-        try{
-            $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
-            $this->entityManager->flush();
-        } catch (Exception $e) {
-            error_log($e);
-        }
-
-        $this->requestsThisChunk = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
-
-        $this->requestTracker->updateUsersAnonymousRequests($this->requestsThisChunk);
-
-        $this->requestTracker->fireRequestTrackedEvents(
-            $this->requestsThisChunk,
-            $this->findUsersPreviousByRequestCookieId($requests)
-        );
-    }
-
-    /**
-     * @param $keysThisChunk
-     */
-    private function determineValuesThisChunk($keysThisChunk)
-    {
-        $this->valuesThisChunk = new Collection();
-
-        foreach ($keysThisChunk as $keyThisChunk) {
-            $values = $this->batchService->cache()->smembers($keyThisChunk);
-            foreach($values as $value){
-                $this->valuesThisChunk->push(unserialize($value));
-            }
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private function processResponses()
-    {
-        $responses = $this->getResponses($this->valuesThisChunk);
-
-        if(empty($responses)){
-            $this->responsesThisChunk = collect([]);
-            return;
-        }
-
-        $statusCodes = $this->getOrCreateResponseAssociatedEntities($responses);
-
-        $this->responsesThisChunk = $this->hydrateAndPersistResponses($responses, $statusCodes);
-    }
-
-    /**
-     * @param $valuesThisChunk
-     * @return mixed
-     */
-    private function getResponses($valuesThisChunk)
-    {
-        return $valuesThisChunk->filter(function($candidate){
-            return $candidate['type'] === 'response';
-        });
-    }
-
-    /**
-     * @param $responses
-     * @param $statusCodes
-     * @return Collection
-     */
-    private function hydrateAndPersistResponses($responses, $statusCodes)
-    {
-        foreach($responses as $responseData) {
-
-            $responseEntity = new Response();
-
-            // ---------------------------------------------------------------------------------------------------------
-            // ---------- 1. simple|scalar values ----------------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            $responseEntity->setRespondedOn($responseData['respondedOn']);
-            $responseEntity->setResponseDurationMs($responseData['responseDurationMs']);
-
-            // ---------------------------------------------------------------------------------------------------------
-            // ---------- 2. association one: request ------------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            $uuid = $responseData['uuid'];
-            $requestToUse = $this->requestsThisChunk[$uuid] ?? null;
-
-            $responseEntity->setRequest($requestToUse);
-
-            // ---------------------------------------------------------------------------------------------------------
-            // ---------- 3. association two: status_code --------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            $statusCodeToUse = null;
-
-            $statusCodeHashToFind = $responseData['status_code']['hash'] ?? null;
-
-            foreach ($statusCodes as $candidateHash => $candidate) {
-                if ($statusCodeHashToFind === $candidateHash) {
-                    $statusCodeToUse = $candidate;
-                }
-            }
-
-            $responseEntity->setStatusCode($statusCodeToUse);
-
-            // ---------------------------------------------------------------------------------------------------------
-            // ---------- 4. persist -----------------------------------------------------------------------------------
-            // ---------------------------------------------------------------------------------------------------------
-
-            try {
-                $this->entityManager->persist($responseEntity);
-            } catch (Exception $exception) {
-                error_log($exception);
-            }
-            $responseEntities[] = $responseEntity;
-        }
-
-        try{
-            $this->entityManager->flush();
-        }catch(Exception $e){
-            error_log($e);
-        }
-
-        return collect($responseEntities ?? []);
-    }
-
-    /**
-     * @param $responses
+     * @param Collection $mappedUrls
+     * @param $entities
      * @return array
      */
-    private function getOrCreateResponseAssociatedEntities($responses)
+    private function mapChildrenToUrls(Collection $mappedUrls, $entities)
     {
-        $mappedStatusCodes = $this->getForTypeAndKeyByHash($responses, ResponseStatusCode::$KEY);
+        return $mappedUrls->map(function($url) use ($entities)
+        {
+            $typesToSearch = [
+                UrlProtocol::class,
+                UrlDomain::class,
+                UrlPath::class,
+                UrlQuery::class
+            ];
 
-        try {
-            $entities = $this->getExistingBulkInsertNew(ResponseStatusCode::class, $mappedStatusCodes);
-            $this->entityManager->flush();
-        } catch (Exception $e) {
-            error_log($e);
-        }
+            $keys = [
+                'protocol',
+                'domain',
+                'path',
+                'query'
+            ];
 
-        return $entities ?? [];
+            /** @var $url Url */
+            foreach($keys as $key){
+
+                if(empty($url[$key])) {
+                    continue;
+                }
+                $hash = $url[$key]['hash'];
+
+                foreach ($entities as $type => $data) {
+                    if (in_array($type, $typesToSearch) && isset($data[$hash])) {
+                        $entityToAttach = $data[$hash];
+                        $url[$key] = $entityToAttach;
+                    }
+                }
+            }
+            return $url;
+        })->all();
     }
 
     /**
-     * @return void
+     * @param $requests
+     * @return array
      */
-    private function processRequestExceptions()
+    private function findUsersPreviousByRequestCookieId($requests)
     {
-        $this->requestExceptionsThisChunk = collect([]);
+        foreach($requests as $request){
+            if ($request['userId'] !== null) {
+                $previousRequests = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
+                $enough = count($previousRequests) >= 2;
+                if(!$enough){
+                    continue;
+                }
+                end($previousRequests);
+                $secondMostRecent = prev($previousRequests);
+                $usersPreviousByRequestCookieId[$secondMostRecent->cookie_id] = $secondMostRecent;
+            }
+        }
 
-        $requestExceptionsData = $this->valuesThisChunk->filter(
-            function($candidate){ return $candidate['type'] === 'request-exception';}
-        );
-
-        if($requestExceptionsData->isEmpty()) return;
-
-        $requestExceptionsData = $this->getExceptionsAndMapToExceptionRequests($requestExceptionsData);
-
-        $exceptionsMatchedWithRequests = $this->matchWithRequest($requestExceptionsData, $this->requestsThisChunk);
-
-        $this->createRequestExceptions($exceptionsMatchedWithRequests);
+        return $usersPreviousByRequestCookieId ?? [];
     }
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // helper methods for processing request exceptions ----------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @param Collection $requestExceptionsData
@@ -813,21 +722,147 @@ class ProcessTrackings extends \Illuminate\Console\Command
         return $matched ?? [];
     }
 
-    private function findUsersPreviousByRequestCookieId($requests)
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // helper functions, level one (used by entity-processing methods) -------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @param string $class
+     * @param array $arraysByHash
+     * @return array
+     */
+    private function getExistingBulkInsertNew($class, $arraysByHash)
     {
-        foreach($requests as $request){
-            if ($request['userId'] !== null) {
-                $previousRequests = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
-                $enough = count($previousRequests) >= 2;
-                if(!$enough){
-                    continue;
-                }
-                end($previousRequests);
-                $secondMostRecent = prev($previousRequests);
-                $usersPreviousByRequestCookieId[$secondMostRecent->cookie_id] = $secondMostRecent;
+        $existingEntitiesByHash = $this->getPreExistingFromSet($class, $arraysByHash);
+
+        $entities = $this->getRecordsOfTypeCreateNewAsNeeded($class, $arraysByHash, $existingEntitiesByHash);
+
+        return $entities;
+    }
+
+    /**
+     * @param Collection $urls
+     * @param $keyForRequired
+     * @return Collection
+     */
+    private function filterForSetEntitiesOfAType(Collection $urls, $keyForRequired)
+    {
+        $existant = $urls->filter(function($url) use ($keyForRequired){
+            return !empty($url[$keyForRequired]);
+        })->all();
+
+        return collect($existant);
+    }
+
+    /**
+     * @param Collection $items
+     * @param $keyToMap
+     * @return array
+     */
+    private function getForTypeAndKeyByHash(Collection $items, $keyToMap)
+    {
+        $mappedEntities = $items->map(
+            function($item) use ($keyToMap){
+                return $item[$keyToMap];
+            }
+        )->all();
+        return $this->keyByHash($mappedEntities);
+    }
+
+    /**
+     * @param $data
+     * @return array
+     */
+    private function keyByHash($data)
+    {
+        foreach($data as $datum){
+            if(isset($datum['hash'])){
+                $arraysByHash[$datum['hash']] = $datum;
             }
         }
 
-        return $usersPreviousByRequestCookieId ?? [];
+        return $arraysByHash ?? [];
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // helper-helper functions, level two (used by helper functions) ---------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @param string $class
+     * @param array $arraysByHash
+     * @return array
+     */
+    private function getPreExistingFromSet($class, $arraysByHash)
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+
+        /** @var RailtrackerEntityInterface[] $existingEntities */
+        $existingEntities =
+            $qb->select('a')
+                ->from($class, 'a')
+                ->where('a.hash IN (:whereValues)')
+                ->setParameter('whereValues', array_keys($arraysByHash))
+                ->getQuery()
+                ->getResult();
+
+        $existingEntitiesByHash = [];
+
+        // key by hash
+        foreach ($existingEntities as $existingEntity) {
+            $existingEntitiesByHash[$existingEntity->getHash()] = $existingEntity;
+        }
+
+        return $existingEntitiesByHash;
+    }
+
+    /**
+     * @param $class
+     * @param $arraysByHash
+     * @param array $existingEntitiesByHash
+     * @return array
+     */
+    private function getRecordsOfTypeCreateNewAsNeeded($class, $arraysByHash, $existingEntitiesByHash = [])
+    {
+        $entities = [];
+
+        foreach ($arraysByHash as $hash => $entity) {
+
+            if (isset($existingEntitiesByHash[$hash])) {
+                $entities[$hash] = $existingEntitiesByHash[$hash];
+            }else{
+                try{
+                    $entity = $this->processForType($class, $entity);
+
+                    if($entity->allValuesAreEmpty()){
+                        continue;
+                    }
+
+                    $entities[$entity->getHash()] = $entity;
+
+                    $this->entityManager->persist($entity);
+                }catch(Exception $exception){
+                    error_log($exception);
+                }
+            }
+        }
+        return $entities;
+    }
+
+    /**
+     * @param $class
+     * @param $data
+     * @return RailtrackerEntityInterface
+     * @throws Exception
+     */
+    private function processForType($class, $data)
+    {
+        /** @var RailtrackerEntityInterface $entity */
+        $entity = new $class;
+        $entity->setFromData($data);
+        $entity->setHash();
+        return $entity;
     }
 }
