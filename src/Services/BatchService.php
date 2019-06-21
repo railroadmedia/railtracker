@@ -25,7 +25,7 @@ class BatchService
      */
     public function __construct()
     {
-        $this->batchKeyPrefix = config('railtracker.batch-prefix');
+        $this->batchKeyPrefix = config('railtracker.batch-prefix', 'railtracker_');
 
         $this->store = Cache::store('redis');
         $this->connection = $this->store->connection();
