@@ -118,36 +118,29 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         while ($redisIterator !== 0) {
 
-            $matchString = $this->batchService->batchKeyPrefix . '*';
-            $batchSize = config('railtracker.scan-size', 1000);
-            $criteria = ['MATCH' => $matchString,'COUNT' => $batchSize];
-
-            $scanResult = $this->batchService->cache()->scan($redisIterator, $criteria);
+            $scanResult = $this->batchService->cache()->scan(
+                $redisIterator,
+                ['MATCH' => $this->batchService->batchKeyPrefix . '*', 'COUNT' => config('railtracker.scan-size', 1000)]
+            );
             $redisIterator = (integer) $scanResult[0];
             $keys = $scanResult[1];
 
-            if(!empty($keys)){
-                $this->determineValuesThisChunk($keys);
+            if(empty($keys)) continue;
 
-                $this->processRequests();
-                $this->processRequestExceptions();
-                $this->processResponses();
+            $this->determineValuesThisChunk($keys);
 
-                $this->batchService->forget($keys);
+            $this->processRequests();
+            $this->processRequestExceptions();
+            $this->processResponses();
 
-                $counts['requests'] = ($counts['requests'] ?? 0) + $this->requestsThisChunk->count();
-                $counts['reqExc'] = ($counts['reqExc'] ?? 0) + $this->requestExceptionsThisChunk->count();
-                $counts['responses'] = ($counts['responses'] ?? 0) + $this->responsesThisChunk->count();
-            }
+            $this->batchService->forget($keys);
+
+            $this->incrementCountersForOutputMessage($counts);
         }
 
-        $output = 'Processed ' .
-            $counts['requests'] . ' ' . ($counts['requests'] === 1 ? 'request' : 'requests') . ', ' .
-            $counts['reqExc'] . ' ' . ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') . ', and ' .
-            $counts['responses'] . ' ' . ($counts['responses'] === 1 ? 'response' : 'responses') . '.';
+        $this->printTotalResultsInfo($counts);
 
-        $this->info($output);
-
+        // todo: try this *inside* the while-loop?
         try {
             $this->entityManager->clear();
         } catch (Exception $e) {
@@ -155,6 +148,33 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         return true;
+    }
+
+    /**
+     * @param array $counts
+     * @return array
+     */
+    private function incrementCountersForOutputMessage($counts)
+    {
+        $counts['requests'] = ($counts['requests'] ?? 0) + $this->requestsThisChunk->count();
+        $counts['reqExc'] = ($counts['reqExc'] ?? 0) + $this->requestExceptionsThisChunk->count();
+        $counts['responses'] = ($counts['responses'] ?? 0) + $this->responsesThisChunk->count();
+
+        return $counts;
+    }
+
+    /**
+     * @param array $counts
+     * @return void
+     */
+    private function printTotalResultsInfo($counts)
+    {
+        $output = 'Processed ' .
+            $counts['requests'] . ' ' . ($counts['requests'] === 1 ? 'request' : 'requests') . ', ' .
+            $counts['reqExc'] . ' ' . ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') . ', and ' .
+            $counts['responses'] . ' ' . ($counts['responses'] === 1 ? 'response' : 'responses') . '.';
+
+        $this->info($output);
     }
 
     /**
@@ -682,6 +702,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequestExceptions()
     {
+        $entities = [];
+
         $requestExceptionsData = $this->valuesThisChunk->filter(
             function($candidate){
                 return $candidate['type'] === 'request-exception';
