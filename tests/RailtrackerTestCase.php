@@ -18,13 +18,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
 use Railroad\Railtracker\Tests\Resources\Models\User;
-use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 
 class RailtrackerTestCase extends BaseTestCase
 {

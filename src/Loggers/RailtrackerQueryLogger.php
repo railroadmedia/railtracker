@@ -1,6 +1,6 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Resources;
+namespace Railroad\Railtracker\Loggers;
 
 use Doctrine\DBAL\Logging\SQLLogger;
 
@@ -18,17 +18,19 @@ class RailtrackerQueryLogger implements SQLLogger
     {
         $this->queries[] = $sql;
 
-        //        echo $sql . PHP_EOL;
-        //
-        //        if ($params) {
-        //            var_dump($params);
-        //        }
-        //
-        //        if (! $types) {
-        //            return;
-        //        }
-        //
-        //        var_dump($types);
+//                echo $sql . PHP_EOL;
+//
+//                if ($params) {
+//                    var_dump($params);
+//                }
+//
+//                if (! $types) {
+//                    return;
+//                }
+//
+//                var_dump($types);
+
+        echo "Query count: " . $this->count() . "\n";
     }
 
     /**
