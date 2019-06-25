@@ -10,6 +10,7 @@ use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Collection;
 use Jenssegers\Agent\Agent;
 use Railroad\Doctrine\Serializers\BasicEntitySerializer;
 use Railroad\DoctrineArrayHydrator\ArrayHydrator;
@@ -114,6 +115,7 @@ class RequestTracker extends TrackerBase
         $request['language'] = $this->serialize($this->fillLanguage($userAgent));
         $request['method'] = $this->serialize($this->fillMethod($httpRequest->method()));
         $request['route'] = $this->serialize($this->fillRoute($httpRequest));
+        $request['type'] = 'request';
 
         return $request;
     }
@@ -140,13 +142,13 @@ class RequestTracker extends TrackerBase
         // ---------- Step 2: Associated Objects, Simple ----------
         // These objects have only scalar values - they do *not* themselves have associated objects
 
-        $requestAgent = $this->getByData(RequestAgent::class, $requestSerialized['agent']);
+        $requestAgent = $this->getByData(RequestAgent::class, $requestSerialized[RequestAgent::$KEY]);
 
         if (empty($requestAgent)) {
             $requestAgent = new RequestAgent();
-            $requestAgent->setName($requestSerialized['agent']['name']);
-            $requestAgent->setBrowserVersion($requestSerialized['agent']['browserVersion']);
-            $requestAgent->setBrowser($requestSerialized['agent']['browser']);
+            $requestAgent->setName($requestSerialized[RequestAgent::$KEY]['name']);
+            $requestAgent->setBrowserVersion($requestSerialized[RequestAgent::$KEY]['browserVersion']);
+            $requestAgent->setBrowser($requestSerialized[RequestAgent::$KEY]['browser']);
 
             $this->persistAndFlushEntity($requestAgent);
         }
@@ -154,15 +156,15 @@ class RequestTracker extends TrackerBase
         $request->setAgent($requestAgent);
 
         // request device
-        $requestDevice = $this->getByData(RequestDevice::class, $requestSerialized['device']);
+        $requestDevice = $this->getByData(RequestDevice::class, $requestSerialized[RequestDevice::$KEY]);
     
         if (empty($requestDevice)) {
             $requestDevice = new RequestDevice();
-            $requestDevice->setIsMobile($requestSerialized['device']['isMobile']);
-            $requestDevice->setKind($requestSerialized['device']['kind']);
-            $requestDevice->setPlatform($requestSerialized['device']['platform']);
-            $requestDevice->setModel($requestSerialized['device']['model']);
-            $requestDevice->setPlatformVersion($requestSerialized['device']['platformVersion']);
+            $requestDevice->setIsMobile($requestSerialized[RequestDevice::$KEY]['isMobile']);
+            $requestDevice->setKind($requestSerialized[RequestDevice::$KEY]['kind']);
+            $requestDevice->setPlatform($requestSerialized[RequestDevice::$KEY]['platform']);
+            $requestDevice->setModel($requestSerialized[RequestDevice::$KEY]['model']);
+            $requestDevice->setPlatformVersion($requestSerialized[RequestDevice::$KEY]['platformVersion']);
 
             $this->persistAndFlushEntity($requestDevice);
         }
@@ -170,12 +172,12 @@ class RequestTracker extends TrackerBase
         $request->setDevice($requestDevice);
 
         // request language
-        $requestLanguage = $this->getByData(RequestLanguage::class, $requestSerialized['language']);
+        $requestLanguage = $this->getByData(RequestLanguage::class, $requestSerialized[RequestLanguage::$KEY]);
 
         if (empty($requestLanguage)) {
             $requestLanguage = new RequestLanguage();
-            $requestLanguage->setPreference($requestSerialized['language']['preference']);
-            $requestLanguage->setLanguageRange($requestSerialized['language']['languageRange']);
+            $requestLanguage->setPreference($requestSerialized[RequestLanguage::$KEY]['preference']);
+            $requestLanguage->setLanguageRange($requestSerialized[RequestLanguage::$KEY]['languageRange']);
 
             $this->persistAndFlushEntity($requestLanguage);
         }
@@ -184,11 +186,11 @@ class RequestTracker extends TrackerBase
 
         // request method
 
-        $requestMethod = $this->getByData(RequestMethod::class, $requestSerialized['method']);
+        $requestMethod = $this->getByData(RequestMethod::class, $requestSerialized[RequestMethod::$KEY]);
 
         if (empty($requestMethod)) {
             $requestMethod = new RequestMethod();
-            $value = $requestSerialized['method']['method'];
+            $value = $requestSerialized[RequestMethod::$KEY]['method'];
             $requestMethod->setMethod($value);
 
             $this->persistAndFlushEntity($requestMethod);
@@ -198,16 +200,16 @@ class RequestTracker extends TrackerBase
 
         // route
 
-        $routeNotNull = !empty($requestSerialized['route']['name']) || !empty($requestSerialized['route']['route']);
+        $routeNotNull = !empty($requestSerialized[Route::$KEY]['name']) || !empty($requestSerialized[Route::$KEY]['route']);
 
         if($routeNotNull){
-            $route = $route = $this->getByData(Route::class, $requestSerialized['route']);
+            $route = $route = $this->getByData(Route::class, $requestSerialized[Route::$KEY]);
 
             if (empty($route)) {
 
                 $route = new Route();
 
-                $route = $this->arrayHydrator->hydrate($route, $requestSerialized['route']);
+                $route = $this->arrayHydrator->hydrate($route, $requestSerialized[Route::$KEY]);
 
                 $this->persistAndFlushEntity($route);
             }
@@ -217,19 +219,16 @@ class RequestTracker extends TrackerBase
             }
         }
 
-        // url and referer url
+        // ---------- Step 3: Associated Objects, Complex ----------
+        // These objects have associated objects
 
-        if(!empty($requestSerialized['url'])){
-
-            $url = $this->getOrCreateUrlForData($requestSerialized['url']);
-
+        if(!empty($requestSerialized[Url::$KEY])){
+            $url = $this->getOrCreateUrlForData($requestSerialized[Url::$KEY]);
             $request->setUrl($url);
         }
 
         if(!empty($requestSerialized['refererUrl'])){
-
             $refererUrl = $this->getOrCreateUrlForData($requestSerialized['refererUrl']);
-
             $request->setRefererUrl($refererUrl);
         }
 
@@ -262,6 +261,7 @@ class RequestTracker extends TrackerBase
 
             $urlProtocol = new UrlProtocol();
             $urlProtocol->setProtocol($urlProtocolValue);
+            $urlProtocol->setHash();
 
             $this->entityManager->persist($urlProtocol);
         }
@@ -280,6 +280,7 @@ class RequestTracker extends TrackerBase
 
             $urlDomain = new UrlDomain();
             $urlDomain->setName($urlDomainValue);
+            $urlDomain->setHash();
 
             $this->entityManager->persist($urlDomain);
         }
@@ -294,6 +295,7 @@ class RequestTracker extends TrackerBase
 
                 $urlPath = new UrlPath();
                 $urlPath->setPath($urlAsArray['path']);
+                $urlPath->setHash();
 
                 $this->entityManager->persist($urlPath);
             }
@@ -309,6 +311,7 @@ class RequestTracker extends TrackerBase
 
                 $urlQuery = new UrlQuery();
                 $urlQuery->setString($urlAsArray['query']);
+                $urlQuery->setHash();
 
                 $this->entityManager->persist($urlQuery);
             }
@@ -359,7 +362,7 @@ class RequestTracker extends TrackerBase
 
 
         $url = $query->getQuery()
-            //->setResultCacheDriver($this->arrayCache) // todo: implement
+            //->setResultCacheDriver($this->arrayCache) // todo: implement?
             ->getResult()[0] ?? null;
 
         // 2.1 - set associated entities
@@ -383,53 +386,6 @@ class RequestTracker extends TrackerBase
         }
 
         return $url;
-    }
-
-    /**
-     * @param $data
-     * @return null|RequestEntity|Url
-     * @throws Exception
-     */
-    public function process($data)
-    {
-        $previousRequestsDatabaseRows = [];
-        $usersPreviousRequests = null;
-
-        $userId = $data['userId'];
-
-        if ($userId !== null) {
-            $previousRequestsDatabaseRows =
-                $this->databaseManager->table(ConfigService::$tableRequests)
-                    ->where(['user_id' => $userId])
-                    ->get()
-                    ->all();
-        }
-
-        $hydratedRequest = $this->hydrate($data);
-        $this->entityManager->persist($hydratedRequest);
-        $this->entityManager->flush();
-
-        if (!empty($previousRequestsDatabaseRows)) {
-            $timeOfUsersPreviousRequest =
-                Carbon::parse(end($previousRequestsDatabaseRows)->requested_on)
-                    ->toDateTimeString();
-        }
-
-        event(
-            new RequestTracked(
-                $hydratedRequest->getId(),
-                $hydratedRequest->getUserId(),
-                $hydratedRequest->getClientIp(),
-                $hydratedRequest->getAgent()
-                    ->getName(),
-                $hydratedRequest->getRequestedOn(),
-                $timeOfUsersPreviousRequest ?? null
-            )
-        );
-
-        $this->updateUsersAnonymousRequests($hydratedRequest);
-
-        return $hydratedRequest ?? null;
     }
 
     /**
@@ -474,6 +430,7 @@ class RequestTracker extends TrackerBase
         $requestDevice->setKind(substr($this->getDeviceKind($agent), 0, 16));
         $requestDevice->setModel(substr($agent->device(), 0, 64));
         $requestDevice->setIsMobile($agent->isMobile());
+        $requestDevice->setHash();
 
         return $requestDevice;
     }
@@ -489,6 +446,7 @@ class RequestTracker extends TrackerBase
         $requestAgent->setName(substr($agent->getUserAgent() ?: 'Other', 0, 180));
         $requestAgent->setBrowser(substr($agent->browser(), 0, 64));
         $requestAgent->setBrowserVersion(substr($agent->version($agent->browser()), 0, 32));
+        $requestAgent->setHash();
 
         return $requestAgent;
     }
@@ -511,13 +469,24 @@ class RequestTracker extends TrackerBase
             return null;
         }
 
+        $urlEntity->setHash();
+
+        $pathSerialized = $this->serialize($urlEntity->getPath());
+        $querySerialized = $this->serialize($urlEntity->getQuery());
+
+        $path = parse_url($url)['path'] ?? null;
+        $query = parse_url($url)['query'] ?? null;
+
+        $setPath = !empty($path) ? $pathSerialized : null;
+        $setQuery = !empty($query) ? $querySerialized : null;
+
         if ($returnSerialized) {
             return [
-                'id' => $urlEntity->getId(),
-                'protocol' => $urlEntity->getProtocolValue(),
-                'domain' => $urlEntity->getDomainValue(),
-                'path' => $urlEntity->getPathValue(),
-                'query' => $urlEntity->getQueryValue(),
+                'protocol' => $this->serialize($urlEntity->getProtocol()),
+                'domain' => $this->serialize($urlEntity->getDomain()),
+                'path' => $setPath,
+                'query' => $setQuery,
+                'hash' => $urlEntity->getHash(),
             ];
         }
 
@@ -530,6 +499,8 @@ class RequestTracker extends TrackerBase
      */
     public function fillRoute(HttpRequest $httpRequest)
     {
+        $routeNull = false;
+
         try {
             if (!empty($this->router->current())) {
                 $route = $this->router->current();
@@ -546,19 +517,17 @@ class RequestTracker extends TrackerBase
             $routeNull = true;
         }
 
-        if ($routeNull ?? false) {
-            $obj = new Route();
-            $obj->setName('');
-            $obj->setAction('');
+        $obj = new Route();
 
-            return $obj;
+        $obj->setName('');
+        $obj->setAction('');
+
+        if (!$routeNull) {
+            $obj->setName(substr($route->getName(), 0, 170));
+            $obj->setAction(substr($route->getActionName(), 0, 170));
         }
 
-        $obj = new Route();
-        $routeName = substr($route->getName(), 0, 170);
-        $obj->setName($routeName);
-        $obj->setAction(substr($route->getActionName(), 0, 170));
-
+        $obj->setHash();
         return $obj;
     }
 
@@ -570,6 +539,7 @@ class RequestTracker extends TrackerBase
     {
         $obj = new RequestMethod();
         $obj->setMethod(substr($method, 0, 8));
+        $obj->setHash();
 
         return $obj;
     }
@@ -583,26 +553,68 @@ class RequestTracker extends TrackerBase
         $obj = new RequestLanguage();
         $obj->setPreference(substr($agent->languages()[0] ?? 'en', 0, 12));
         $obj->setLanguageRange(substr(implode(',', $agent->languages()), 0, 180));
+        $obj->setHash();
 
         return $obj;
     }
 
     /**
-     * @param Request $request
+     * @param Collection|Request[] $requests
      * @return void
      */
-    private function updateUsersAnonymousRequests(Request $request)
+    public function updateUsersAnonymousRequests(Collection $requests)
     {
-        $userId = $request->getUserId();
-        $cookieId = $request->getCookieId();
+        foreach($requests as $request){
+            $userId = $request->getUserId();
+            $cookieId = $request->getCookieId();
 
-        if ($userId && $cookieId) {
-            $this->databaseManager->table(ConfigService::$tableRequests)
-                ->where(['cookie_id' => $cookieId])
-                ->whereNull('user_id')
-                ->update(['user_id' => $userId]);
+            if ($userId && $cookieId) {
+                $this->databaseManager->table(ConfigService::$tableRequests)
+                    ->where(['cookie_id' => $cookieId])
+                    ->whereNull('user_id')
+                    ->update(['user_id' => $userId]);
 
-            $this->deleteCookieForAuthenticatedUser();
+                $this->deleteCookieForAuthenticatedUser();
+            }
         }
+    }
+
+    /**
+     * @param Collection $requestEntities
+     * @param array $usersPreviousRequestsByCookieId
+     */
+    public function fireRequestTrackedEvents(Collection $requestEntities, $usersPreviousRequestsByCookieId = [])
+    {
+        /** @var Request $requestEntity */
+        foreach($requestEntities as $requestEntity){
+
+            $timeOfPreviousRequest =
+                $usersPreviousRequestsByCookieId[$requestEntity->getCookieId()]->requested_on ?? null;
+
+            event(
+                new RequestTracked(
+                    $requestEntity->getId(),
+                    $requestEntity->getUserId(),
+                    $requestEntity->getClientIp(),
+                    $requestEntity->getAgent()->getName(),
+                    $requestEntity->getRequestedOn(),
+                    $timeOfPreviousRequest
+                )
+            );
+        }
+    }
+
+    /**
+     * @param $requestEntity
+     * @return array
+     */
+    public function getPreviousRequestsDatabaseRows($requestEntity)
+    {
+        $results = $this->databaseManager->table(ConfigService::$tableRequests)
+            ->where(['user_id' => $requestEntity['userId']])
+            ->get()
+            ->all();
+
+        return $results;
     }
 }

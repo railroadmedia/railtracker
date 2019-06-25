@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_request_agents")
  */
-class RequestAgent
+class RequestAgent extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'agent';
+
     /**
      * @ORM\Id @ORM\GeneratedValue @ORM\Column(type="integer")
      * @var int
@@ -30,6 +32,11 @@ class RequestAgent
      * @ORM\Column(name="browser_version", length=32, unique=true)
      */
     protected $browserVersion;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
 
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -87,5 +94,35 @@ class RequestAgent
     public function setBrowserVersion($browserVersion)
     {
         $this->browserVersion = $browserVersion;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [$this->getName(), $this->getBrowser(), $this->getBrowserVersion()]));
+    }
+
+    /**
+     * @return string
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setName($data['name']);
+        $this->setBrowserVersion($data['browserVersion']);
+        $this->setBrowser($data['browser']);
+    }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getName()) &&
+            empty($this->getBrowserVersion()) &&
+            empty($this->getBrowser());
     }
 }

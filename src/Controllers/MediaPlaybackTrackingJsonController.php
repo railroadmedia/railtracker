@@ -29,7 +29,7 @@ class MediaPlaybackTrackingJsonController extends Controller
     }
 
     /**
-     * @param  Request  $request
+     * @param Request $request
      * @return JsonResponse
      * @throws Exception
      */
@@ -41,13 +41,12 @@ class MediaPlaybackTrackingJsonController extends Controller
             $this->validate(
                 $request,
                 [
-                    'data.type' => 'in:media-playback-session',
-                    'data.attributes.media_id' => 'required',
-                    'data.attributes.media_length_seconds' => 'required|numeric',
-                    'data.attributes.media_type' => 'required|string',
-                    'data.attributes.media_category' => 'required|string',
-                    'data.attributes.current_second' => 'numeric',
-                    'data.attributes.seconds_played' => 'numeric',
+                    'media_id' => 'required',
+                    'media_length_seconds' => 'required|numeric',
+                    'media_type' => 'required|string',
+                    'media_category' => 'required|string',
+                    'current_second' => 'numeric',
+                    'seconds_played' => 'numeric',
                 ]
             );
         } catch (ValidationException $exception) {
@@ -62,21 +61,21 @@ class MediaPlaybackTrackingJsonController extends Controller
         }
 
         $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType(
-            $request->input('data.attributes.media_type'),
-            $request->input('data.attributes.media_category')
+            $request->input('media_type'),
+            $request->input('media_category')
         );
 
         $data = $this->mediaPlaybackTracker->trackMediaPlaybackStart(
-            $request->input('data.attributes.media_id'),
-            $request->input('data.attributes.media_length_seconds'),
+            $request->input('media_id'),
+            $request->input('media_length_seconds'),
             $userId,
             $mediaTypeId,
-            $request->input('data.attributes.current_second', 0),
-            $request->input('data.attributes.seconds_played', 0)
+            $request->input('current_second', 0),
+            $request->input('seconds_played', 0)
         );
 
-        return response()->json([
-            'data' => [
+        return response()->json(
+            [
                 'type' => 'media-playback-session',
                 'id' => $data['id'],
                 'uuid' => $data['uuid'],
@@ -88,12 +87,13 @@ class MediaPlaybackTrackingJsonController extends Controller
                 'seconds_played' => $data['seconds_played'],
                 'started_on' => $data['started_on'],
                 'last_updated_on' => $data['last_updated_on'],
-            ]
-        ], 201);
+            ],
+            201
+        );
     }
 
     /**
-     * @param  Request  $request
+     * @param Request $request
      * @param $sessionId
      * @return JsonResponse
      */
@@ -103,8 +103,8 @@ class MediaPlaybackTrackingJsonController extends Controller
             $this->validate(
                 $request,
                 [
-                    'data.attributes.seconds_played' => 'required|numeric',
-                    'data.attributes.current_second' => 'required|numeric',
+                    'seconds_played' => 'required|numeric',
+                    'current_second' => 'required|numeric',
                 ]
             );
 
@@ -121,16 +121,16 @@ class MediaPlaybackTrackingJsonController extends Controller
 
         $data = $this->mediaPlaybackTracker->trackMediaPlaybackProgress(
             $sessionId,
-            $request->input('data.attributes.seconds_played'),
-            $request->input('data.attributes.current_second')
+            $request->input('seconds_played'),
+            $request->input('current_second')
         );
 
         if (!$data) {
             response()->json([], 404);
         }
 
-        return response()->json([
-            'data' => [
+        return response()->json(
+            [
                 'type' => 'media-playback-session',
                 'id' => $data['id'],
                 'uuid' => $data['uuid'],
@@ -142,7 +142,8 @@ class MediaPlaybackTrackingJsonController extends Controller
                 'seconds_played' => $data['seconds_played'],
                 'started_on' => $data['started_on'],
                 'last_updated_on' => $data['last_updated_on'],
-            ]
-        ], 200);
+            ],
+            200
+        );
     }
 }

@@ -22,7 +22,9 @@ use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Services\BatchService;
+use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
 use Railroad\Railtracker\Tests\Resources\Models\User;
+use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 
 class RailtrackerTestCase extends BaseTestCase
 {
@@ -56,6 +58,12 @@ class RailtrackerTestCase extends BaseTestCase
 
     /** @var BatchService */
     protected $batchService;
+
+    /** @var RailtrackerQueryLogger */
+    protected $queryLogger;
+
+    /** @var RailtrackerMiddleware $railtrackerMiddleware */
+    protected $railtrackerMiddleware;
 
     public static $prefixForTestBatchKeyPrefix = 'railtrackerTest-';
 
@@ -96,13 +104,22 @@ class RailtrackerTestCase extends BaseTestCase
         $this->authManager = $this->app->make(AuthManager::class);
         $this->router = $this->app->make(Router::class);
         $this->batchService = $this->app->make(BatchService::class);
+        $this->railtrackerMiddleware = $this->app->make(RailtrackerMiddleware::class);
 
         $this->getEnvironmentSetUp($this->app);
+
+        $this->queryLogger = app(RailtrackerQueryLogger::class);
+
+        // clear everything *first*
+        $toDelete = $this->batchService->cache()->keys('*');
+        if(!empty($toDelete)){
+            $this->batchService->cache()->del($toDelete);
+        }
     }
 
     public function tearDown()
     {
-        $toDelete = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . '*');
+        $toDelete = $this->batchService->cache()->keys('*');
 
         if(!empty($toDelete)){
             $this->batchService->cache()->del($toDelete);
@@ -150,6 +167,7 @@ class RailtrackerTestCase extends BaseTestCase
         config()->set('railtracker.database_user', 'root');
         config()->set('railtracker.database_password', 'root');
         config()->set('railtracker.database_in_memory', true);
+        config()->set('railtracker.enable_query_log', true);
 
         // if new packages entities are required for testing, their entity directory/namespace config should be merged here
         config()->set('railtracker.entities', $defaultConfig['entities']);
@@ -180,7 +198,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         Carbon::setTestNow(Carbon::now());
 
-        $time = Carbon::now()->timestamp . '-' . Carbon::now()->micro;
+        $time = Carbon::now()->timestamp . '_' . Carbon::now()->micro;
 
         $batchPrefix = 'railtracker_testing_' . $time . '_';
 
@@ -272,66 +290,6 @@ class RailtrackerTestCase extends BaseTestCase
      * @return Request
      */
     public function createRequest(
-        $userAgent = self::USER_AGENT_CHROME_WINDOWS_10,
-        $url = 'https://www.testing.com/?test=1',
-        $referer = 'http://www.referer-testing.com/?test=2',
-        $clientIp = '183.22.98.51',
-        $method = 'GET',
-        $cookies = []
-    ) {
-        return Request::create(
-            $url,
-            $method,
-            [],
-            $cookies,
-            [],
-            [
-                'SCRIPT_NAME' => parse_url($url)['path'] ?? '',
-                'REQUEST_URI' => parse_url($url)['path'] ?? '',
-                'QUERY_STRING' => parse_url($url)['query'] ?? '',
-                'REQUEST_METHOD' => 'GET',
-                'SERVER_PROTOCOL' => 'HTTP/1.1',
-                'GATEWAY_INTERFACE' => 'CGI/1.1',
-                'REMOTE_PORT' => '62517',
-                'SCRIPT_FILENAME' => '/var/www/index.php',
-                'SERVER_ADMIN' => '[no address given]',
-                'CONTEXT_DOCUMENT_ROOT' => '/var/www/',
-                'CONTEXT_PREFIX' => '',
-                'REQUEST_SCHEME' => 'http',
-                'DOCUMENT_ROOT' => '/var/www/',
-                'REMOTE_ADDR' => $clientIp,
-                'HTTP_X_FORWARDED_FOR' => $clientIp,
-                'SERVER_PORT' => '80',
-                'SERVER_ADDR' => '172.21.0.7',
-                'SERVER_NAME' => parse_url($url)['host'],
-                'SERVER_SOFTWARE' => 'Apache/2.4.18 (Ubuntu)',
-                'HTTP_ACCEPT_LANGUAGE' => 'en-GB,en-US;q=0.8,en;q=0.6',
-                'HTTP_ACCEPT_ENCODING' => 'gzip, deflate, sdch',
-                'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'HTTP_USER_AGENT' => $userAgent,
-                'HTTP_REFERER' => $referer,
-                'HTTP_UPGRADE_INSECURE_REQUESTS' => '1',
-                'HTTP_CONNECTION' => 'keep-alive',
-                'HTTP_HOST' => parse_url($url)['host'],
-                'FCGI_ROLE' => 'RESPONDER',
-                'PHP_SELF' => '/index.php',
-                'REQUEST_TIME_FLOAT' => 1496790020.5194,
-                'REQUEST_TIME' => 1496790020,
-                'argv' => ['test=1'],
-            ]
-        );
-    }
-
-    /**
-     * @param string $userAgent
-     * @param string $url
-     * @param string $referer
-     * @param string $clientIp
-     * @param string $method
-     * @param array $cookies
-     * @return Request
-     */
-    public function createRequestThatThrowsException(
         $userAgent = self::USER_AGENT_CHROME_WINDOWS_10,
         $url = 'https://www.testing.com/?test=1',
         $referer = 'http://www.referer-testing.com/?test=2',
@@ -505,6 +463,8 @@ class RailtrackerTestCase extends BaseTestCase
         try {
             Artisan::call('ProcessTrackings');
         }catch(\Exception $exception){
+            error_log($exception);
+            
             $this->fail(
                 'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
             );
@@ -515,7 +475,7 @@ class RailtrackerTestCase extends BaseTestCase
      * @param Request $request
      * @param null $response
      */
-    protected function sendRequestAndCallProcessCommand(Request $request, $response = null)
+    protected function sendRequest(Request $request, $response = null)
     {
         /** @var RailtrackerMiddleware $middleware */
         $middleware = resolve(RailtrackerMiddleware::class);
@@ -529,6 +489,15 @@ class RailtrackerTestCase extends BaseTestCase
         };
 
         $middleware->handle($request, $next);
+    }
+
+    /**
+     * @param Request $request
+     * @param null $response
+     */
+    protected function sendRequestAndCallProcessCommand(Request $request, $response = null)
+    {
+        $this->sendRequest($request, $response);
 
         try {
             $this->processTrackings();
@@ -580,5 +549,36 @@ class RailtrackerTestCase extends BaseTestCase
         }
 
         return $results ?? [];
+    }
+
+    protected function handleRequest(Request $request)
+    {
+        $response = $this->createResponse(200);
+        $next = function () use ($response) {
+            return $response;
+        };
+        $this->railtrackerMiddleware->handle($request, $next);
+    }
+
+    protected function throwExceptionDuringRequest(
+        Request $request,
+        $responseStatus = 500,
+        Exception $exception = null,
+        $exceptionMessage = 'Exception from throwExceptionDuringRequest method of RailtrackerTestCase'
+    )
+    {
+        $response = $this->createResponse($responseStatus);
+
+        if(!$exception){
+//            $exception = new \Exception($exceptionMessage);
+            $exception = new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException($exceptionMessage);
+        }
+
+        $next = function ($request) use ($response, $exception) {
+            app(Handler::class)->render($request, $exception);
+            return $response;
+        };
+
+        $this->railtrackerMiddleware->handle($request, $next);
     }
 }

@@ -59,19 +59,27 @@ class ExceptionTracker extends TrackerBase
         if(!empty(RequestTracker::$uuid)){
             try {
                 $exceptionEntity = new ExceptionEntity();
+
                 $exceptionEntity->setCode($exception->getCode());
                 $exceptionEntity->setLine($exception->getLine());
                 $exceptionEntity->setExceptionClass(get_class($exception));
                 $exceptionEntity->setFile($exception->getFile());
                 $exceptionEntity->setMessage($exception->getMessage());
                 $exceptionEntity->setTrace($exception->getTraceAsString());
+                $exceptionEntity->setHash();
+
                 $exceptionEntitySerialized = $this->serialize($exceptionEntity);
 
-                $requestExceptionEntitySerialized = $this->trackRequestException(
-                    $exceptionEntitySerialized
-                );
+                $requestExceptionEntity = new RequestException();
+                $requestExceptionEntity->setCreatedAtTimestampMs(round(microtime(true) * 1000));
 
-                $this->batchService->addToBatch($requestExceptionEntitySerialized, 'exception', $uuid);
+                $requestExceptionEntitySerialized = $this->serialize($requestExceptionEntity);
+                $requestExceptionEntitySerialized['uuid'] = RequestTracker::$uuid;
+                $requestExceptionEntitySerialized['type'] = 'request-exception';
+
+                $requestExceptionEntitySerialized['exception'] = $exceptionEntitySerialized;
+
+                $this->batchService->addToBatch($requestExceptionEntitySerialized, $uuid);
 
             } catch (Exception $exception) {
                 error_log($exception);
@@ -80,55 +88,11 @@ class ExceptionTracker extends TrackerBase
     }
 
     /**
-     * @param array $exceptionEntitySerialized
-     * @return array
-     */
-    public function trackRequestException($exceptionEntitySerialized)
-    {
-        $requestExceptionEntity = new RequestException();
-        $requestExceptionEntity->setCreatedAtTimestampMs(round(microtime(true) * 1000));
-        $requestExceptionEntitySerialized = $this->serialize($requestExceptionEntity);
-        $requestExceptionEntitySerialized['exception'] = $exceptionEntitySerialized;
-        return $requestExceptionEntitySerialized;
-    }
-
-    /**
-     * @param $data
-     * @param Request $request
-     * @return null |null
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     */
-    public function process($data, Request $request)
-    {
-        $hydratedExceptionOrRequestException = $this->hydrate($data);
-        $hydratedExceptionOrRequestException->setRequest($request);
-
-        $this->entityManager->persist($hydratedExceptionOrRequestException);
-        $this->entityManager->flush();
-
-        return $hydratedRequest ?? null;
-    }
-
-    /**
      * @param $data
      * @return ExceptionEntity|RequestException
      * @throws Exception
      */
     public function hydrate($data)
-    {
-        if($this->isRequestException($data)){
-            return $this->hydrateRequestException($data);
-        }
-
-        return $this->hydrateException($data);
-    }
-
-    /**
-     * @param $data
-     * @return ExceptionEntity
-     */
-    private function hydrateException($data)
     {
         $exceptionEntity = new ExceptionEntity();
 
@@ -139,75 +103,11 @@ class ExceptionTracker extends TrackerBase
         $exceptionEntity->setMessage($data['message'] ?? null);
         $exceptionEntity->setTrace($data['trace'] ?? null);
 
-        return $exceptionEntity;
-    }
-
-    /**
-     * @param $data
-     * @return RequestException
-     * @throws Exception
-     */
-    private function hydrateRequestException($data)
-    {
         $requestException = new RequestException();
 
-        $hydratedExceptionEntity = $this->hydrateException($data['exception']);
-
-        $requestException->setException($hydratedExceptionEntity);
+        $requestException->setException($exceptionEntity);
         $requestException->setCreatedAtTimestampMs($data['createdAtTimestampMs']);
 
         return $requestException;
-    }
-
-    /**
-     * @param $data
-     * @return bool
-     */
-    private function isRequestException($data)
-    {
-        $isException = false;
-        $isRequestException = false;
-
-        $keysInData = array_keys($data);
-
-        /*
-         * Note that this method currently depends on the two classes here not sharing any property names.
-         */
-        $exceptionEntityProperties = [
-            'code',
-            'line',
-            'exceptionClass',
-            'name',
-            'message',
-            'trace',
-        ];
-        $requestExceptionEntityProperties = [
-            'exception',
-            'request',
-            'createdAtTimestampMs',
-        ];
-
-        foreach($keysInData as $key){
-
-            $inArray = in_array($key, $exceptionEntityProperties);
-
-            if($inArray){
-                $isException = true;
-            }
-            if(in_array($key, $requestExceptionEntityProperties)){
-                $isRequestException = true;
-            }
-        }
-
-        $bothTrue = $isException && $isRequestException;
-        $bothFalse = !$isException && !$isRequestException;
-
-        if($bothTrue || $bothFalse){
-            error_log(
-                'error in isRequestException. Unable to determine entity type to use. Data: ' . var_export($data, true)
-            );
-        }
-
-        return $isRequestException;
     }
 }

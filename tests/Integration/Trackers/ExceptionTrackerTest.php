@@ -19,13 +19,13 @@ class ExceptionTrackerTest extends RailtrackerTestCase
 {
     public function test_track_404_exception()
     {
-        $this->app->singleton(
+        app()->singleton(
             ExceptionHandler::class,
             Handler::class
         );
 
         $request = $this->randomRequest();
-        $kernel = $this->app->make(HttpKernel::class);
+        $kernel = app()->make(HttpKernel::class);
         $kernel->pushMiddleware(RailtrackerMiddleware::class);
         $kernel->handle($request);
 
@@ -55,20 +55,16 @@ class ExceptionTrackerTest extends RailtrackerTestCase
 
     public function test_track_multiple_exceptions()
     {
-        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
-        $this->app->singleton(
+        app()->singleton(
             \Illuminate\Contracts\Debug\ExceptionHandler::class,
             \Railroad\Railtracker\Tests\Resources\Exceptions\Handler::class
         );
         $this->expectsEvents(RequestTracked::class);
 
         $userId = $this->createAndLogInNewUser();
-
-        $request = $this->createRequestThatThrowsException();
+        $request = $this->createRequest();
         $request->setUserResolver(function () use ($userId) {return User::query()->find($userId);});
-
-        $kernel->pushMiddleware(RailtrackerMiddleware::class);
-        $kernel->handle($request);
+        $this->throwExceptionDuringRequest($request);
 
         $this->processTrackings();
 
@@ -78,28 +74,22 @@ class ExceptionTrackerTest extends RailtrackerTestCase
         $hourLater = Carbon::now()->copy()->addHour();
         Carbon::setTestNow($hourLater);
 
-        $request = $this->createRequestThatThrowsException();
+        $request = $this->createRequest();
         $request->setUserResolver(function () use ($userId) {return User::query()->find($userId);});
-
-        $kernel->pushMiddleware(RailtrackerMiddleware::class);
-        $kernel->handle($request);
+        $this->throwExceptionDuringRequest($request);
 
         $this->processTrackings();
 
         $numberOfEventsAfter = count($this->firedEvents);
-        $this->assertEquals(3, $numberOfEventsBefore);
-        $this->assertEquals(5, $numberOfEventsAfter);
+        $this->assertEquals(2, $numberOfEventsBefore);
+        $this->assertEquals(3, $numberOfEventsAfter);
 
-        // $aa_db = $this->seeDbWhileDebugging(); // handy for debugging
+        $eventWithSecondRequest = $this->firedEvents[2];
 
-        $this->assertEquals($this->firedEvents[4]->userId, $userId);
-        $this->assertEquals($this->firedEvents[4]->requestedOnDateTime->toDateTimeString(),$hourLater->toDateTimeString());
+        $this->assertEquals($eventWithSecondRequest->userId, $userId);
+        $this->assertEquals($eventWithSecondRequest->requestedOnDateTime->toDateTimeString(),$hourLater->toDateTimeString());
 
-        foreach($this->firedEvents as $event){
-            if(isset($event->usersPreviousRequestedOnDateTime)){
-                $usersPreviousRequestedOnDateTime = $this->firedEvents[4]->usersPreviousRequestedOnDateTime;
-            }
-        }
+        $usersPreviousRequestedOnDateTime = $eventWithSecondRequest->usersPreviousRequestedOnDateTime;
 
         $this->assertEquals(
             $usersPreviousRequestedOnDateTime ?? 'Not found in any of the fired events.',

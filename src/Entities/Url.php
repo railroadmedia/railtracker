@@ -8,8 +8,11 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_urls")
  */
-class Url
+class Url extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'url';
+    public static $REFERER_URL_KEY = 'refererUrl';
+
     /**
      * @ORM\Id
      * @ORM\Column(type="bigint")
@@ -40,14 +43,19 @@ class Url
     protected $query;
 
     /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
      * @return integer
      */
     public function getId()
     {
         return $this->id;
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return UrlProtocol
@@ -66,16 +74,6 @@ class Url
     }
 
     /**
-     * @return string
-     */
-    public function getProtocolValue()
-    {
-        return $this->getProtocol()->getProtocol();
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
      * @return UrlDomain
      */
     public function getDomain()
@@ -90,16 +88,6 @@ class Url
     {
         $this->domain = $domain;
     }
-
-    /**
-     * @return string
-     */
-    public function getDomainValue()
-    {
-        return $this->getDomain()->getName();
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return UrlPath
@@ -118,16 +106,6 @@ class Url
     }
 
     /**
-     * @return null|string
-     */
-    public function getPathValue()
-    {
-        return $this->getPath()->getPath();
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
      * @return UrlQuery
      */
     public function getQuery()
@@ -143,6 +121,34 @@ class Url
         $this->query = $query;
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @return string
+     */
+    public function getProtocolValue()
+    {
+        return $this->getProtocol()->getProtocol();
+    }
+
+
+    /**
+     * @return string
+     */
+    public function getDomainValue()
+    {
+        return $this->getDomain()->getName();
+    }
+
+
+    /**
+     * @return null|string
+     */
+    public function getPathValue()
+    {
+        return $this->getPath()->getPath();
+    }
+
     /**
      * @return string|null
      */
@@ -152,6 +158,51 @@ class Url
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $path = $this->getPath();
+        $pathValue = !empty($path) ? $path->getPath() : null;
+        $query = $this->getQuery();
+        $queryValue = !empty($query) ? $query->getString() : null;
+
+        $this->hash = md5(implode('-', [
+            $this->getProtocol()->getProtocol(),
+            $this->getDomain()->getName(),
+            $pathValue,
+            $queryValue,
+        ]));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    /**
+     * @param Url $data
+     */
+    public function setFromData($data)
+    {
+        $this->setProtocol($data['protocol']);
+        $this->setDomain($data['domain']);
+        if(!empty($data['path'])){
+            $this->setPath($data['path']);
+        }
+        if(!empty($data['query'])){
+            $this->setQuery($data['query']);
+        }
+    }
+
+    public function allValuesAreEmpty()
+    {
+        return
+            empty($this->getProtocol()) &&
+            empty($this->getDomain());
+    }
 
 
 }

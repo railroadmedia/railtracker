@@ -8,8 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity
  * @ORM\Table(name="railtracker_url_queries")
  */
-class UrlQuery
+class UrlQuery extends RailtrackerEntity implements RailtrackerEntityInterface
 {
+    public static $KEY = 'query';
+
     /**
      * @ORM\Id @ORM\GeneratedValue @ORM\Column(type="integer")
      * @var int
@@ -20,6 +22,13 @@ class UrlQuery
      * @ORM\Column(length=840, unique=true)
      */
     protected $string;
+
+    /**
+     * @ORM\Column(name="hash", length=128, unique=true)
+     */
+    protected $hash;
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @return integer
@@ -60,6 +69,35 @@ class UrlQuery
             $queryEntity->setString('');
         }
 
+        $queryEntity->setHash();
+
         return $queryEntity;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function setHash()
+    {
+        $this->hash = md5(implode('-', [
+            $this->getString(),
+        ]));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    public function setFromData($data)
+    {
+        $this->setString($data['string']);
+    }
+
+    public function allValuesAreEmpty()
+    {
+        return empty($this->getString());
     }
 }

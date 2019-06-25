@@ -9,6 +9,7 @@ use Doctrine\Common\Cache\PhpFileCache;
 use Doctrine\Common\Cache\RedisCache;
 use Doctrine\Common\EventManager;
 use Doctrine\Common\Persistence\Mapping\Driver\MappingDriverChain;
+use Doctrine\DBAL\Logging\EchoSQLLogger;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
@@ -30,6 +31,7 @@ use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\ConfigService;
+use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 use Redis;
 
 class RailtrackerServiceProvider extends ServiceProvider
@@ -210,6 +212,16 @@ class RailtrackerServiceProvider extends ServiceProvider
             $ormConfiguration,
             $eventManager
         );
+
+        if (config('railtracker.enable_query_log', false) == true) {
+            $logger = new RailtrackerQueryLogger();
+
+            app()->instance(RailtrackerQueryLogger::class, $logger);
+
+            $entityManager->getConnection()
+                ->getConfiguration()
+                ->setSQLLogger($logger);
+        }
 
         $this->commands([
             ProcessTrackings::class,
