@@ -18,19 +18,21 @@ class RailtrackerQueryLogger implements SQLLogger
     {
         $this->queries[] = $sql;
 
-//                echo $sql . PHP_EOL;
-//
-//                if ($params) {
-//                    var_dump($params);
-//                }
-//
-//                if (! $types) {
-//                    return;
-//                }
-//
-//                var_dump($types);
+        if (config('railtracker.enable_query_log_dumper', false) == true) {
+            echo "Query count: " . $this->count() . "\n";
 
-        echo "Query count: " . $this->count() . "\n";
+            echo $sql . PHP_EOL;
+
+            if ($params) {
+                var_dump($params);
+            }
+
+            if (!$types) {
+                return;
+            }
+
+            var_dump($types);
+        }
     }
 
     /**
