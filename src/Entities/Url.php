@@ -128,25 +128,26 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
      */
     public function getProtocolValue()
     {
-        return $this->getProtocol()->getProtocol();
+        return $this->getProtocol()
+            ->getProtocol();
     }
-
 
     /**
      * @return string
      */
     public function getDomainValue()
     {
-        return $this->getDomain()->getName();
+        return $this->getDomain()
+            ->getName();
     }
-
 
     /**
      * @return null|string
      */
     public function getPathValue()
     {
-        return $this->getPath()->getPath();
+        return $this->getPath()
+            ->getPath();
     }
 
     /**
@@ -154,24 +155,31 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
      */
     public function getQueryValue()
     {
-        return $this->getQuery()->getString();
+        return $this->getQuery()
+            ->getString();
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     public function setHash()
     {
-        $path = $this->getPath();
-        $pathValue = !empty($path) ? $path->getPath() : null;
-        $query = $this->getQuery();
-        $queryValue = !empty($query) ? $query->getString() : null;
-
-        $this->hash = md5(implode('-', [
-            $this->getProtocol()->getProtocol(),
-            $this->getDomain()->getName(),
-            $pathValue,
-            $queryValue,
-        ]));
+        $this->hash = md5(
+            implode(
+                '-',
+                [
+                    $this->getProtocol()
+                        ->getId(),
+                    $this->getDomain()
+                        ->getId(),
+                    !empty($this->getPath()) ?
+                        $this->getPath()
+                            ->getId() : null,
+                    !empty($this->getQuery()) ?
+                        $this->getQuery()
+                            ->getId() : null,
+                ]
+            )
+        );
     }
 
     /**
@@ -189,20 +197,17 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
     {
         $this->setProtocol($data['protocol']);
         $this->setDomain($data['domain']);
-        if(!empty($data['path'])){
+        if (!empty($data['path'])) {
             $this->setPath($data['path']);
         }
-        if(!empty($data['query'])){
+        if (!empty($data['query'])) {
             $this->setQuery($data['query']);
         }
     }
 
     public function allValuesAreEmpty()
     {
-        return
-            empty($this->getProtocol()) &&
-            empty($this->getDomain());
+        return empty($this->getProtocol()) && empty($this->getDomain());
     }
-
 
 }

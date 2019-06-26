@@ -25,10 +25,12 @@ use Railroad\Doctrine\Types\Domain\GenderType;
 use Railroad\Doctrine\Types\Domain\PhoneNumberType;
 use Railroad\Doctrine\Types\Domain\TimezoneType;
 use Railroad\Doctrine\Types\Domain\UrlType;
+use Railroad\Railtracker\Console\Commands\FixDuplicates;
 use Railroad\Railtracker\Console\Commands\RailtrackerTestingData;
 use Railroad\Railtracker\Console\Commands\EmptyLocalCache;
 use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
+use Railroad\Railtracker\Console\Commands\ReHashExistingData;
 use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\ConfigService;
@@ -227,7 +229,9 @@ class RailtrackerServiceProvider extends ServiceProvider
             ProcessTrackings::class,
             PrintKeyCount::class,
             RailtrackerTestingData::class,
-            EmptyLocalCache::class
+            EmptyLocalCache::class,
+            ReHashExistingData::class,
+            FixDuplicates::class,
         ]);
 
         // register the entity manager as a singleton
