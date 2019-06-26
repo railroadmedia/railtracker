@@ -54,6 +54,10 @@ class RailtrackerMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        if (config('railtracker.global_is_active') != true) {
+            return $next($request);
+        }
+
         $response = null;
         $requestId = null;
         $userId = $request->user();

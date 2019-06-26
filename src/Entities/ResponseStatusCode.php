@@ -59,7 +59,7 @@ class ResponseStatusCode extends RailtrackerEntity implements RailtrackerEntityI
 
     public function setHash()
     {
-        $this->hash = md5(implode([$this->getCode()]));
+        $this->hash = md5(implode(['-', $this->getCode()]));
     }
 
     /**

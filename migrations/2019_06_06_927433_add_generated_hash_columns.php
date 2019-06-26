@@ -202,11 +202,5 @@ class AddGeneratedHashColumns extends Migration
                 $table->dropColumn('hash');
             }
         );
-        Schema::table(
-            ConfigService::$tableRequestAgents,
-            function (Blueprint $table) {
-                $table->dropColumn('hash');
-            }
-        );
     }
 }
