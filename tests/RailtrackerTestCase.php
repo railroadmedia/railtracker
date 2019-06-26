@@ -25,7 +25,6 @@ use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
 use Railroad\Railtracker\Tests\Resources\Models\User;
-use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 
 class RailtrackerTestCase extends BaseTestCase
 {

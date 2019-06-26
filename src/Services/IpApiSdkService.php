@@ -2,7 +2,6 @@
 
 namespace Railroad\Railtracker\Services;
 
-
 /*
  * SDK for ip-api.com
  *

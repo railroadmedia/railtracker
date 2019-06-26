@@ -32,7 +32,6 @@ use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\ConfigService;
-use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 use Redis;
 
 class RailtrackerServiceProvider extends ServiceProvider
