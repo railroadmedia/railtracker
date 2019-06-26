@@ -55,4 +55,21 @@ return [
         'media_playback_types' => 'railtracker_media_playback_types',
         'media_playback_sessions' => 'railtracker_media_playback_sessions',
     ],
+
+    'ip-api' => [
+        'default-fields' => implode(',',[
+            'status',
+            'country', // country_name
+            'countryCode', // country_code
+            'region',
+            'regionName',
+            'city',
+            'zip', // 'postal_code',
+            'lat', // latitude
+            'lon', // longitude
+            'timezone',
+            'currency',
+            'query',// 'ip_address',
+        ])
+    ]
 ];

@@ -205,6 +205,8 @@ class RailtrackerTestCase extends BaseTestCase
 
         $app['config']->set('railtracker.batch-prefix', $batchPrefix);
 
+        config()->set('railtracker.ip-api.default-fields', $defaultConfig['ip-api']['default-fields']);
+
         $app->register(RailtrackerServiceProvider::class);
     }
 
