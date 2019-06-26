@@ -64,12 +64,12 @@ return [
             'region',
             'regionName',
             'city',
-            'zip', // 'postal_code',
+            'zip', // postal_code
             'lat', // latitude
             'lon', // longitude
             'timezone',
             'currency',
-            'query',// 'ip_address',
+            'query',// ip_address
         ])
     ]
 ];

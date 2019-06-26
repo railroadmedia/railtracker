@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\DB;
 use Railroad\Railtracker\Entities\Request as RequestEntity;
 use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Services\ConfigService;
+use Railroad\Railtracker\Services\IpApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
+use Railroad\Railtracker\Tests\Resources\IpApiStubDataProvider;
 use Railroad\Railtracker\Tests\Resources\Models\User;
 use Railroad\Railtracker\Trackers\RequestTracker;
 
@@ -742,7 +744,6 @@ class RequestTrackerTest extends RailtrackerTestCase
         }
     }
 
-
     public function test_track_request_with_not_excluded_paths()
     {
         $url = 'https://www.test.com/test1';
@@ -1051,5 +1052,33 @@ class RequestTrackerTest extends RailtrackerTestCase
             );
         }
         $this->assertEquals($limit, $i); // ensures above ran expected number of times
+    }
+
+    public function test_geoip_table_populated()
+    {
+        $dummyData = IpApiStubDataProvider::data();
+
+        $stub = $this->createMock(IpApiSdkService::class);
+        $stub->method('bulkRequest')
+            ->with($dummyData['input'])
+            ->willReturn($dummyData['output']);
+
+        foreach($dummyData['input'] as $ip){
+            $request = $this->randomRequest($ip);
+            $this->sendRequest($request);
+        }
+
+        try{
+            $this->processTrackings();
+        }catch(\Exception $exception){
+            $this->fail($exception->getMessage());
+        }
+
+        $expected = IpApiStubDataProvider::expectedInDatabase();
+
+        $this->assertDatabaseHas(
+            ConfigService::$tableGeoIP,
+            $expected
+        );
     }
 }

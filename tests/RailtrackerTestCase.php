@@ -343,9 +343,10 @@ class RailtrackerTestCase extends BaseTestCase
     }
 
     /**
+     * @param null $clientIp
      * @return Request
      */
-    public function randomRequest()
+    public function randomRequest($clientIp = null)
     {
         $method = $this->faker->randomElement(['GET', 'POST']);
 
@@ -376,7 +377,9 @@ class RailtrackerTestCase extends BaseTestCase
             ]
         );
 
-        $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+        if(!$clientIp){
+            $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+        }
 
         if ($this->faker->boolean()) {
             $routeName = $this->faker->word . '.' . $this->faker->word . '.' . $this->faker->word;
