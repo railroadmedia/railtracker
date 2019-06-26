@@ -29,6 +29,7 @@ use Railroad\Railtracker\Console\Commands\RailtrackerTestingData;
 use Railroad\Railtracker\Console\Commands\EmptyLocalCache;
 use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
+use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;

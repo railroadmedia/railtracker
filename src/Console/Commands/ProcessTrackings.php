@@ -135,7 +135,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $this->batchService->forget($keys);
 
-            $this->incrementCountersForOutputMessage($counts);
+            $counts = $this->incrementCountersForOutputMessage($counts);
         }
 
         $this->printTotalResultsInfo($counts);

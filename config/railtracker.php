@@ -12,6 +12,7 @@ return [
     'database_driver' => 'pdo_mysql',
     'database_in_memory' => false,
     'enable_query_log' => false,
+    'enable_query_log_dumper' => false,
 
     'data_mode' => 'host', // 'host' or 'client', hosts do the db migrations, clients do not
 
