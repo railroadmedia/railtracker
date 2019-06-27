@@ -55,4 +55,7 @@ return [
         'media_playback_types' => 'railtracker_media_playback_types',
         'media_playback_sessions' => 'railtracker_media_playback_sessions',
     ],
+    
+    // route middleware group
+    'route_middleware_logged_in_groups' => 'web',
 ];
