@@ -42,7 +42,7 @@ class MediaPlaybackTrackingJsonController extends Controller
                 $request,
                 [
                     'media_id' => 'required',
-                    'media_length_seconds' => 'required|numeric',
+                    'media_length_seconds' => 'numeric',
                     'media_type' => 'required|string',
                     'media_category' => 'required|string',
                     'current_second' => 'numeric',
