@@ -321,7 +321,20 @@ class ReHashExistingData extends \Illuminate\Console\Command
         );
 
         $this->databaseManager->table('railtracker_urls')
-            ->orderBy('id')
+            ->select(
+                [
+                    'railtracker_urls.id',
+                    'railtracker_url_domains.name',
+                    'railtracker_url_protocols.protocol',
+                    'railtracker_url_paths.path',
+                    'railtracker_url_queries.string'
+                ]
+            )
+            ->join('railtracker_url_domains', 'railtracker_url_domains.id', '=', 'railtracker_urls.domain_id')
+            ->join('railtracker_url_protocols', 'railtracker_url_protocols.id', '=', 'railtracker_urls.protocol_id')
+            ->leftJoin('railtracker_url_paths', 'railtracker_url_paths.id', '=', 'railtracker_urls.path_id')
+            ->leftJoin('railtracker_url_queries', 'railtracker_url_queries.id', '=', 'railtracker_urls.query_id')
+            ->orderBy('railtracker_urls.id')
             ->chunk(
                 10000,
                 function (Collection $rows) {
@@ -333,10 +346,10 @@ class ReHashExistingData extends \Illuminate\Console\Command
                                     implode(
                                         '-',
                                         [
-                                            $row->protocol_id,
-                                            $row->domain_id,
-                                            $row->path_id,
-                                            $row->query_id,
+                                            $row->protocol,
+                                            $row->name,
+                                            $row->path,
+                                            $row->string,
                                         ]
                                     )
                                 );

@@ -168,15 +168,15 @@ class Url extends RailtrackerEntity implements RailtrackerEntityInterface
                 '-',
                 [
                     $this->getProtocol()
-                        ->getId(),
+                        ->getProtocol(),
                     $this->getDomain()
-                        ->getId(),
+                        ->getName(),
                     !empty($this->getPath()) ?
                         $this->getPath()
-                            ->getId() : null,
+                            ->getPath() : null,
                     !empty($this->getQuery()) ?
                         $this->getQuery()
-                            ->getId() : null,
+                            ->getString() : null,
                 ]
             )
         );
