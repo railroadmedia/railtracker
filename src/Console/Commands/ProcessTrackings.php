@@ -452,7 +452,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $r->setLanguage($requestData['language']);
                 $r->setMethod($requestData['method']);
                 $r->setClientIp($requestData['clientIp']);
-                $r->setGeoip($geoIpEntitiesKeyedByIp[$requestData['clientIp']]);
+                $r->setGeoip($geoIpEntitiesKeyedByIp[$requestData['clientIp']] ?? null);
 
                 /*
                  * url_id, referer_url_id, and route_id columns of table are nullable, thus only set if entity available
