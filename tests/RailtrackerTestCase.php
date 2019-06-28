@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
@@ -466,7 +467,8 @@ class RailtrackerTestCase extends BaseTestCase
     public function processTrackings()
     {
         try {
-            Artisan::call('ProcessTrackings');
+            $processTrackings = app()->make(ProcessTrackings::class);
+            $processTrackings->handle();
         }catch(\Exception $exception){
             error_log($exception);
             
