@@ -187,9 +187,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
-        $geoIpEntities = $this->getGeoIpEntitiesCreateWhereNeeded($this->getGeoIpData($requests));
+        $geoIpEntitiesKeyedByIp = $this->getGeoIpEntitiesCreateWhereNeeded($this->getGeoIpData($requests));
 
-        $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntities);
+        $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntitiesKeyedByIp);
 
         $this->requestTracker->updateUsersAnonymousRequests($this->requestsThisChunk);
 
@@ -650,16 +650,19 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return $request['clientIp'];
         })->toArray();
 
-        return collect($this->ipApiSdkService->bulkRequest($ips));
+        $results = $this->ipApiSdkService->bulkRequest($ips);
+
+        return collect($results);
     }
 
     /**
-     * @param $requests
      * @param $geoIpData
      * @return array
      */
     private function getGeoIpEntitiesCreateWhereNeeded($geoIpData)
     {
+        $geoIpEntities = collect([]);
+
         $geoIpDataKeyedByHash = [];
 
         foreach($geoIpData as $datum){
@@ -673,15 +676,19 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         try{
-            $geoIpEntities = $this->getExistingBulkInsertNew(GeoIp::class, $geoIpDataKeyedByHash);
+            $geoIpEntities = collect($this->getExistingBulkInsertNew(GeoIp::class, $geoIpDataKeyedByHash));
             $this->entityManager->flush();
         }catch(Exception $e){
             error_log($e);
         }
 
-        // todo: key by IP
+        // key by IP
+        $geoIpEntities = $geoIpEntities->mapWithKeys(function($geoIpEntity){
+            /** @var $geoIpEntity GeoIp */
+            return [$geoIpEntity->getIpAddress() => $geoIpEntity];
+        });
 
-        return $geoIpEntities ?? [];
+        return $geoIpEntities;
     }
 
     // -----------------------------------------------------------------------------------------------------------------

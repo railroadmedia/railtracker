@@ -17,6 +17,22 @@ class RequestTrackerTest extends RailtrackerTestCase
 {
     // todo: new test case that makes multiple requests and asserts multiple results (heck, include responses and exceptions in there too maybe)?
 
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject $ipApiSdkServiceMock
+     */
+    public $ipApiSdkServiceMock;
+
+    protected function setup()
+    {
+//        $this->ipApiSdkServiceMock = $this
+//            ->getMockBuilder(IpApiSdkService::class)->setMethods(['bulkRequest'])
+//            ->getMock();
+//
+//        app()->instance(IpApiSdkService::class, $this->ipApiSdkServiceMock);
+
+        parent::setUp();
+    }
+
     public function test_track_protocol_http()
     {
         $url = 'http://test.com/';
@@ -1058,10 +1074,10 @@ class RequestTrackerTest extends RailtrackerTestCase
     {
         $dummyData = IpApiStubDataProvider::data();
 
-        $stub = $this->createMock(IpApiSdkService::class);
-        $stub->method('bulkRequest')
-            ->with($dummyData['input'])
-            ->willReturn($dummyData['output']);
+//        $this->ipApiSdkServiceMock->method('bulkRequest')
+//            //->with($dummyData['input'])
+//            //->willReturn($dummyData['output']);
+//            ->willReturn('foo');
 
         foreach($dummyData['input'] as $ip){
             $request = $this->randomRequest($ip);
@@ -1076,9 +1092,19 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         $expected = IpApiStubDataProvider::expectedInDatabase();
 
-        $this->assertDatabaseHas(
-            ConfigService::$tableGeoIP,
-            $expected
-        );
+        // remove status and regionName
+        foreach ($expected as $key => $subArr) {
+            unset($subArr['status']);
+            $subArr['region'] = $subArr['regionName'];
+            unset($subArr['regionName']);
+            $expected[$key] = $subArr;
+        }
+
+        foreach($expected as $expectedRow){
+            $this->assertDatabaseHas(
+                ConfigService::$tableGeoIP,
+                $expectedRow
+            );
+        }
     }
 }
