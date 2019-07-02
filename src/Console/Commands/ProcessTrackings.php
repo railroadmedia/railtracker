@@ -666,13 +666,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $geoIpDataKeyedByHash = [];
 
         foreach($geoIpData as $datum){
-
-            $success = ($datum['status'] === 'success') && ($datum['status'] !== 'fail');
-
-            if($success){
-                $hash = GeoIp::generateHash($datum);
-                $geoIpDataKeyedByHash[$hash] = $datum;
-            }
+            $geoIpDataKeyedByHash[GeoIp::generateHash($datum)] = $datum;
         }
 
         try{

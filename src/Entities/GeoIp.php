@@ -268,13 +268,16 @@ class GeoIp extends RailtrackerEntity implements RailtrackerEntityInterface
         $this->currency = $currency;
     }
 
-
     // -----------------------------------------------------------------------------------------------------------------
-
 
     public static function generateHash($data)
     {
+        if($data['status'] === 'fail') {
+            return md5($data['query']);
+        }
+
         return md5(implode('-', [
+            $data['query'],
             $data['lat'],
             $data['lon'],
             $data['countryCode'],
