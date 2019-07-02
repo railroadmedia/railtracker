@@ -265,7 +265,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $counts['reqExc'] . ' ' . ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') . ', and ' .
             $counts['responses'] . ' ' . ($counts['responses'] === 1 ? 'response' : 'responses') . '.';
 
-        $this->info($output);
+        if(getenv('APP_ENV') !== 'testing'){
+            $this->info($output);
+        }
     }
 
     /**
