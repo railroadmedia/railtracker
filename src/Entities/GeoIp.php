@@ -272,21 +272,17 @@ class GeoIp extends RailtrackerEntity implements RailtrackerEntityInterface
 
     public static function generateHash($data)
     {
-        if($data['status'] === 'fail') {
-            return md5($data['query']);
-        }
-
         return md5(implode('-', [
-            $data['query'],
-            $data['lat'],
-            $data['lon'],
-            $data['countryCode'],
-            $data['country'],
-            $data['regionName'],
-            $data['city'],
-            $data['zip'],
-            $data['timezone'],
-            $data['currency'],
+            $data['lat'] ?? null,
+            $data['lon'] ?? null,
+            $data['countryCode'] ?? null,
+            $data['country'] ?? null,
+            $data['regionName'] ?? null,
+            $data['city'] ?? null,
+            $data['zip'] ?? null,
+            $data['query'] ?? null,
+            $data['timezone'] ?? null,
+            $data['currency'] ?? null,
         ]));
     }
 

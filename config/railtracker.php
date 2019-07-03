@@ -70,6 +70,7 @@ return [
             'timezone',
             'currency',
             'query',// ip_address
-        ])
+        ]),
+        'test-ip' => null, // any ip address
     ]
 ];
