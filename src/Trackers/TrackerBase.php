@@ -137,6 +137,10 @@ class TrackerBase
      */
     protected function getClientIp(Request $request)
     {
+        if (!empty(config('railtracker.ip-api.test-ip'))) {
+            return config('railtracker.ip-api.test-ip');
+        }
+        
         if (!empty($request->server('HTTP_CLIENT_IP'))) {
             $ip = $request->server('HTTP_CLIENT_IP');
         } elseif (!empty($request->server('HTTP_X_FORWARDED_FOR'))) {

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Entities\Exception as ExceptionEntity;
+use Railroad\Railtracker\Entities\GeoIp;
 use Railroad\Railtracker\Entities\RailtrackerEntityInterface;
 use Railroad\Railtracker\Entities\Request;
 use Railroad\Railtracker\Entities\RequestAgent;
@@ -23,6 +24,7 @@ use Railroad\Railtracker\Entities\UrlProtocol;
 use Railroad\Railtracker\Entities\UrlQuery;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
+use Railroad\Railtracker\Services\IpApiSdkService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
@@ -85,19 +87,26 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $responsesThisChunk;
 
     /**
+     * @var IpApiSdkService
+     */
+    private $ipApiSdkService;
+
+    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
      * @param ExceptionTracker $exceptionTracker
      * @param ResponseTracker $responseTracker
      * @param RailtrackerEntityManager $entityManager
+     * @param IpApiSdkService $ipApiSdkService
      */
     public function __construct(
         BatchService $batchService,
         RequestTracker $requestTracker,
         ExceptionTracker $exceptionTracker,
         ResponseTracker $responseTracker,
-        RailtrackerEntityManager $entityManager
+        RailtrackerEntityManager $entityManager,
+        IpApiSdkService $ipApiSdkService
     ){
         parent::__construct();
 
@@ -106,6 +115,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->exceptionTracker = $exceptionTracker;
         $this->responseTracker = $responseTracker;
         $this->entityManager = $entityManager;
+        $this->ipApiSdkService = $ipApiSdkService;
     }
 
     /**
@@ -177,7 +187,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
-        $this->requestsThisChunk = collect($this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities));
+        $geoIpEntitiesKeyedByIp = $this->getGeoIpEntitiesCreateWhereNeeded($this->getGeoIpData($requests));
+
+        $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntitiesKeyedByIp);
 
         $this->requestTracker->updateUsersAnonymousRequests($this->requestsThisChunk);
 
@@ -253,7 +265,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $counts['reqExc'] . ' ' . ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') . ', and ' .
             $counts['responses'] . ' ' . ($counts['responses'] === 1 ? 'response' : 'responses') . '.';
 
-        $this->info($output);
+        if(getenv('APP_ENV') !== 'testing'){
+            $this->info($output);
+        }
     }
 
     /**
@@ -391,10 +405,17 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * @param Collection $requests
      * @param $entities
+     * @param $geoIpEntitiesKeyedByIp
      * @return array
      */
-    private function createRequestEntitiesAndAttachAssociatedEntities(Collection $requests, $entities)
+    private function createRequestEntitiesAndAttachAssociatedEntities(
+        Collection $requests,
+        $entities,
+        $geoIpEntitiesKeyedByIp
+    )
     {
+        $requestEntitiesByUuid = [];
+
         /*
          * every association of the request (everything that itself is an entity) should already have
          * something for it in the $entities. This method doesn't evaluate and fill for missing associations.
@@ -426,14 +447,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $r->setUuid($requestData['uuid']);
                 $r->setUserId($requestData['userId']);
                 $r->setCookieId($requestData['cookieId']);
-                $r->setGeoip($requestData['geoip']);
-                $r->setClientIp($requestData['clientIp']);
                 $r->setIsRobot($requestData['isRobot']);
                 $r->setRequestedOn(Carbon::parse($requestData['requestedOn']));
                 $r->setAgent($requestData['agent']);
                 $r->setDevice($requestData['device']);
                 $r->setLanguage($requestData['language']);
                 $r->setMethod($requestData['method']);
+                $r->setClientIp($requestData['clientIp']);
+                $r->setGeoip($geoIpEntitiesKeyedByIp[$requestData['clientIp']] ?? null);
 
                 /*
                  * url_id, referer_url_id, and route_id columns of table are nullable, thus only set if entity available
@@ -465,7 +486,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
-        return $requestEntitiesByUuid ?? [];
+        $this->requestsThisChunk = collect($requestEntitiesByUuid);
     }
 
     /**
@@ -621,6 +642,50 @@ class ProcessTrackings extends \Illuminate\Console\Command
         return $usersPreviousByRequestCookieId ?? [];
     }
 
+    /**
+     * @param Collection $requests
+     */
+    private function getGeoIpData(Collection $requests)
+    {
+        $ips = $requests->map(function($request){
+            /** @var Request $request */
+            return $request['clientIp'];
+        })->toArray();
+
+        $results = $this->ipApiSdkService->bulkRequest($ips);
+
+        return collect($results);
+    }
+
+    /**
+     * @param $geoIpData
+     * @return array
+     */
+    private function getGeoIpEntitiesCreateWhereNeeded($geoIpData)
+    {
+        $geoIpEntities = collect([]);
+
+        $geoIpDataKeyedByHash = [];
+
+        foreach($geoIpData as $datum){
+            $geoIpDataKeyedByHash[GeoIp::generateHash($datum)] = $datum;
+        }
+
+        try{
+            $geoIpEntities = collect($this->getExistingBulkInsertNew(GeoIp::class, $geoIpDataKeyedByHash));
+            $this->entityManager->flush();
+        }catch(Exception $e){
+            error_log($e);
+        }
+
+        // key by IP
+        $geoIpEntities = $geoIpEntities->mapWithKeys(function($geoIpEntity){
+            /** @var $geoIpEntity GeoIp */
+            return [$geoIpEntity->getIpAddress() => $geoIpEntity];
+        });
+
+        return $geoIpEntities;
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // helper methods for processing request exceptions ----------------------------------------------------------------

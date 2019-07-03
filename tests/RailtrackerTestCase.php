@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
@@ -204,6 +205,8 @@ class RailtrackerTestCase extends BaseTestCase
 
         $app['config']->set('railtracker.batch-prefix', $batchPrefix);
 
+        config()->set('railtracker.ip-api.default-fields', $defaultConfig['ip-api']['default-fields']);
+
         $app->register(RailtrackerServiceProvider::class);
     }
 
@@ -341,9 +344,10 @@ class RailtrackerTestCase extends BaseTestCase
     }
 
     /**
+     * @param null $clientIp
      * @return Request
      */
-    public function randomRequest()
+    public function randomRequest($clientIp = null)
     {
         $method = $this->faker->randomElement(['GET', 'POST']);
 
@@ -374,7 +378,9 @@ class RailtrackerTestCase extends BaseTestCase
             ]
         );
 
-        $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+        if(!$clientIp){
+            $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+        }
 
         if ($this->faker->boolean()) {
             $routeName = $this->faker->word . '.' . $this->faker->word . '.' . $this->faker->word;
@@ -461,7 +467,8 @@ class RailtrackerTestCase extends BaseTestCase
     public function processTrackings()
     {
         try {
-            Artisan::call('ProcessTrackings');
+            $processTrackings = app()->make(ProcessTrackings::class);
+            $processTrackings->handle();
         }catch(\Exception $exception){
             error_log($exception);
             
