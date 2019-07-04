@@ -17,7 +17,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableRequestMethods,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -26,7 +26,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableRequestAgents,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -35,7 +35,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableRequestDevices,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -44,7 +44,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableRequestLanguages,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -53,7 +53,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableRoutes,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -62,7 +62,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableUrls,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -71,7 +71,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableUrlProtocols,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -80,7 +80,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableUrlDomains,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -89,7 +89,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableUrlPaths,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -98,7 +98,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableUrlQueries,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -107,7 +107,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableResponseStatusCodes,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }
@@ -116,7 +116,7 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableExceptions,
             function (Blueprint $table) {
-                $table->string('hash')
+                $table->string('hash', 128)
                     ->nullable()
                     ->unique();
             }

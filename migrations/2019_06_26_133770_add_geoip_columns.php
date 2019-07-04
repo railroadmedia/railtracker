@@ -17,10 +17,10 @@ class AddGeoIPColumns extends Migration
         Schema::table(
             ConfigService::$tableGeoIP,
             function (Blueprint $table) {
-                $table->string('ip_address')->nullable();
-                $table->string('timezone')->nullable();
-                $table->string('currency')->nullable();
-                $table->string('hash')->nullable()->unique();
+                $table->string('ip_address', 191)->nullable();
+                $table->string('timezone', 128)->nullable();
+                $table->string('currency', 3)->nullable();
+                $table->string('hash', 128)->nullable()->unique();
             }
         );
     }
