@@ -34,7 +34,6 @@ class MediaPlaybackTrackingJsonControllerTest extends RailtrackerTestCase
         $response->assertJsonValidationErrors(
             [
                 'media_id',
-                'media_length_seconds',
                 'media_type',
                 'media_category',
             ]
@@ -57,7 +56,6 @@ class MediaPlaybackTrackingJsonControllerTest extends RailtrackerTestCase
         $response->assertJsonValidationErrors(
             [
                 'media_id',
-                'media_length_seconds',
                 'media_type',
                 'media_category',
                 'current_second',
@@ -104,10 +102,87 @@ class MediaPlaybackTrackingJsonControllerTest extends RailtrackerTestCase
         $this->assertEquals(201, $response->getStatusCode());
     }
 
-    public function test_update_validation()
+    public function test_store_logged_in_user_by_session_id()
     {
         $userId = $this->createAndLogInNewUser();
 
+        $attributes = [
+            'media_id' => $this->faker->word . rand(),
+            'media_length_seconds' => rand(),
+            'media_type' => $this->faker->word,
+            'media_category' => $this->faker->word,
+            'session_id' => railtracker_session_token(),
+        ];
+
+        session()->flush();
+
+        $response = $this->call(
+            'put',
+            '/railtracker/media-playback-session/store',
+            $attributes
+        );
+
+        $this->assertArraySubset(
+            [
+                'type' => 'media-playback-session',
+                'id' => 1,
+                'media_id' => $attributes['media_id'],
+                'media_length_seconds' => $attributes['media_length_seconds'],
+                'user_id' => $userId,
+                'type_id' => 1,
+                'current_second' => 0,
+                'seconds_played' => 0,
+                'started_on' => Carbon::now()
+                    ->toDateTimeString(),
+                'last_updated_on' => Carbon::now()
+                    ->toDateTimeString()
+            ],
+            $response->json()
+        );
+
+        $this->assertEquals(201, $response->getStatusCode());
+    }
+
+    public function test_store_logged_in_user_by_auth()
+    {
+        $userId = $this->createAndLogInNewUser();
+
+        $attributes = [
+            'media_id' => $this->faker->word . rand(),
+            'media_length_seconds' => rand(),
+            'media_type' => $this->faker->word,
+            'media_category' => $this->faker->word,
+        ];
+
+        $response = $this->call(
+            'put',
+            '/railtracker/media-playback-session/store',
+            $attributes
+        );
+
+        $this->assertArraySubset(
+            [
+                'type' => 'media-playback-session',
+                'id' => 1,
+                'media_id' => $attributes['media_id'],
+                'media_length_seconds' => $attributes['media_length_seconds'],
+                'user_id' => $userId,
+                'type_id' => 1,
+                'current_second' => 0,
+                'seconds_played' => 0,
+                'started_on' => Carbon::now()
+                    ->toDateTimeString(),
+                'last_updated_on' => Carbon::now()
+                    ->toDateTimeString()
+            ],
+            $response->json()
+        );
+
+        $this->assertEquals(201, $response->getStatusCode());
+    }
+
+    public function test_update_validation()
+    {
         $attributes = [
             'media_id' => $this->faker->word . rand(),
             'media_length_seconds' => rand(),

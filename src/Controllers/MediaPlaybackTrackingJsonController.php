@@ -60,6 +60,15 @@ class MediaPlaybackTrackingJsonController extends Controller
             );
         }
 
+        if (!empty($request->get('session_id'))) {
+            $sessionId = decrypt($request->get('session_id'));
+
+            session()->setId($sessionId);
+            session()->start();
+
+            $userId = session()->get(auth()->guard()->getName());
+        }
+
         $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType(
             $request->input('media_type'),
             $request->input('media_category')

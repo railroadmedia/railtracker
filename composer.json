@@ -39,7 +39,10 @@
   "autoload": {
     "psr-4": {
       "Railroad\\Railtracker\\": "src"
-    }
+    },
+    "files": [
+      "src/Helpers/railtracker_helpers.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {
