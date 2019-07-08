@@ -56,6 +56,8 @@ class FixDuplicates extends \Illuminate\Console\Command
         // exceptions
         $duplicatesGrouped =
             $this->databaseManager->table('railtracker_exceptions')
+                ->select(['code', 'line', 'exception_class', 'file', 'message', 'trace'])
+                ->addSelect($this->databaseManager->raw('MIN(id) as id'))
                 ->groupBy(['code', 'line', 'exception_class', 'file', 'message', 'trace'])
                 ->having($this->databaseManager->raw('COUNT(*)'), '>', 1)
                 ->get();
@@ -104,6 +106,8 @@ class FixDuplicates extends \Illuminate\Console\Command
         // response status codes
         $duplicatesGrouped =
             $this->databaseManager->table('railtracker_response_status_codes')
+                ->select(['code',])
+                ->addSelect($this->databaseManager->raw('MIN(id) as id'))
                 ->groupBy(['code',])
                 ->having($this->databaseManager->raw('COUNT(*)'), '>', 1)
                 ->get();
@@ -153,6 +157,8 @@ class FixDuplicates extends \Illuminate\Console\Command
 
         $duplicatesGrouped =
             $this->databaseManager->table('railtracker_url_queries')
+                ->select(['string',])
+                ->addSelect($this->databaseManager->raw('MIN(id) as id'))
                 ->groupBy(['string',])
                 ->having($this->databaseManager->raw('COUNT(*)'), '>', 1)
                 ->get();
@@ -193,6 +199,8 @@ class FixDuplicates extends \Illuminate\Console\Command
         // urls
         $duplicatesGrouped =
             $this->databaseManager->table('railtracker_urls')
+                ->select(['protocol_id', 'domain_id', 'path_id', 'query_id'])
+                ->addSelect($this->databaseManager->raw('MIN(id) as id'))
                 ->groupBy(['protocol_id', 'domain_id', 'path_id', 'query_id'])
                 ->having($this->databaseManager->raw('COUNT(*)'), '>', 1)
                 ->get();
