@@ -488,13 +488,18 @@ class ReHashExistingData extends \Illuminate\Console\Command
         //
         //                }
         //            );
-        //
-        //        // url paths
-        //        $this->info(
-        //            'Starting railtracker_url_paths, total rows: ' .
-        //            ($this->databaseManager->table('railtracker_url_paths')
-        //                ->count())
-        //        );
+
+        // url paths
+        $this->info(
+            'Starting railtracker_url_paths, total rows: ' .
+            ($this->databaseManager->table('railtracker_url_paths')
+                ->count())
+        );
+
+        $this->databaseManager->statement(
+            "UPDATE railtracker_url_paths " . "SET hash = MD5(CONCAT(" . "railtracker_url_paths.path))"
+        );
+
         //
         //        $this->databaseManager->table('railtracker_url_paths')
         //            ->orderBy('id')
