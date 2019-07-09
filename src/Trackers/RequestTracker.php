@@ -568,7 +568,7 @@ class RequestTracker extends TrackerBase
             $userId = $request->getUserId();
             $cookieId = $request->getCookieId();
 
-            if ($userId && $cookieId) {
+            if (!empty($userId) && !empty($cookieId)) {
                 $this->databaseManager->table(ConfigService::$tableRequests)
                     ->where(['cookie_id' => $cookieId])
                     ->whereNull('user_id')
