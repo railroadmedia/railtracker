@@ -38,8 +38,10 @@ class IpApiSdkService
 
         $response = json_decode($response);
 
-        foreach($response as $r){
-            $responseAllArrays[] = (array) $r;
+        if (is_array($response)) {
+            foreach($response as $r){
+                $responseAllArrays[] = (array) $r;
+            }
         }
 
         return $responseAllArrays ?? [];
