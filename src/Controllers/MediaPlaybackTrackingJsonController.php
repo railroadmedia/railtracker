@@ -60,7 +60,7 @@ class MediaPlaybackTrackingJsonController extends Controller
             );
         }
 
-        if (!empty($request->get('session_id'))) {
+        if (!empty($request->get('session_id')) && empty($userId)) {
             $sessionId = decrypt($request->get('session_id'));
 
             session()->setId($sessionId);
