@@ -128,34 +128,41 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         while ($redisIterator !== 0) {
 
-            $scanResult = $this->batchService->cache()->scan(
-                $redisIterator,
-                ['MATCH' => $this->batchService->batchKeyPrefix . '*', 'COUNT' => config('railtracker.scan-size', 1000)]
-            );
-            $redisIterator = (integer) $scanResult[0];
-            $keys = $scanResult[1];
+            try {
+                $scanResult =
+                    $this->batchService->cache()
+                        ->scan(
+                            $redisIterator,
+                            [
+                                'MATCH' => $this->batchService->batchKeyPrefix . '*',
+                                'COUNT' => config('railtracker.scan-size', 1000)
+                            ]
+                        );
+                $redisIterator = (integer)$scanResult[0];
+                $keys = $scanResult[1];
 
-            if(empty($keys)) continue;
+                if (empty($keys)) {
+                    continue;
+                }
 
-            $this->determineValuesThisChunk($keys);
+                $this->determineValuesThisChunk($keys);
 
-            $this->processRequests();
-            $this->processRequestExceptions();
-            $this->processResponses();
+                $this->batchService->forget($keys);
 
-            $this->batchService->forget($keys);
+                $this->processRequests();
+                $this->processRequestExceptions();
+                $this->processResponses();
 
-            $counts = $this->incrementCountersForOutputMessage($counts);
+                $this->entityManager->clear();
+
+                $counts = $this->incrementCountersForOutputMessage($counts);
+
+            } catch (Exception $exception) {
+                error_log($exception);
+            }
         }
 
         $this->printTotalResultsInfo($counts);
-
-        // todo: try this *inside* the while-loop?
-        try {
-            $this->entityManager->clear();
-        } catch (Exception $e) {
-            error_log($e);
-        }
 
         return true;
     }
