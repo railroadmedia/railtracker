@@ -145,6 +145,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     continue;
                 }
 
+                // todo: search requests table for all UUIDs in this redis chunk,
+                // if any already exist delete those keys from the keys array and from redis
+
                 $this->determineValuesThisChunk($keys);
 
                 $this->batchService->forget($keys);
