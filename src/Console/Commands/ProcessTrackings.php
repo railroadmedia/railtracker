@@ -24,7 +24,7 @@ use Railroad\Railtracker\Entities\UrlProtocol;
 use Railroad\Railtracker\Entities\UrlQuery;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
-use Railroad\Railtracker\Services\IpApiSdkService;
+use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
@@ -87,9 +87,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $responsesThisChunk;
 
     /**
-     * @var IpApiSdkService
+     * @var IpDataApiSdkService
      */
-    private $ipApiSdkService;
+    private $ipDataApiSdkService;
 
     /**
      * ProcessTrackings constructor.
@@ -98,7 +98,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param ExceptionTracker $exceptionTracker
      * @param ResponseTracker $responseTracker
      * @param RailtrackerEntityManager $entityManager
-     * @param IpApiSdkService $ipApiSdkService
+     * @param IpDataApiSdkService $ipDataApiSdkService
      */
     public function __construct(
         BatchService $batchService,
@@ -106,7 +106,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         ExceptionTracker $exceptionTracker,
         ResponseTracker $responseTracker,
         RailtrackerEntityManager $entityManager,
-        IpApiSdkService $ipApiSdkService
+        IpDataApiSdkService $ipDataApiSdkService
     ){
         parent::__construct();
 
@@ -115,7 +115,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->exceptionTracker = $exceptionTracker;
         $this->responseTracker = $responseTracker;
         $this->entityManager = $entityManager;
-        $this->ipApiSdkService = $ipApiSdkService;
+        $this->ipDataApiSdkService = $ipDataApiSdkService;
     }
 
     /**
@@ -654,6 +654,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
     /**
      * @param Collection $requests
+     * @return Collection $requests
      */
     private function getGeoIpData(Collection $requests)
     {
@@ -662,7 +663,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return $request['clientIp'];
         })->toArray();
 
-        $results = $this->ipApiSdkService->bulkRequest($ips);
+        $results = $this->ipDataApiSdkService->bulkRequest($ips);
 
         return collect($results);
     }

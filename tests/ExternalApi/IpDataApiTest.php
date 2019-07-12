@@ -2,25 +2,25 @@
 
 namespace Railroad\Railtracker\Tests\ExternalApi;
 
-use Railroad\Railtracker\Services\IpApiSdkService;
+use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 
 class IpDataApiTest extends RailtrackerTestCase
 {
-    /** @var IpApiSdkService */
-    private $ipApiSdkService;
+    /** @var IpDataApiSdkService */
+    private $ipDataApiSdkService;
 
     protected function setup()
     {
         parent::setup();
 
-        $this->ipApiSdkService = app(IpApiSdkService::class);
+        $this->ipDataApiSdkService = app(IpDataApiSdkService::class);
     }
 
     public function test_connection_made_response_received()
     {
         $data = ['foo' => 'bar'];
-        $output = $this->ipApiSdkService->bulkRequest($data);
+        $output = $this->ipDataApiSdkService->bulkRequest($data);
         $this->assertNotEmpty($output);
     }
 
@@ -34,7 +34,7 @@ class IpDataApiTest extends RailtrackerTestCase
             $ips[] = $this->faker->ipv4;
         }
 
-        $output = $this->ipApiSdkService->bulkRequest($ips);
+        $output = $this->ipDataApiSdkService->bulkRequest($ips);
 
         $fields = explode(',', config('railtracker.ip-api.default-fields'));
 

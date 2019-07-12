@@ -535,48 +535,33 @@ class IpDataApiStubDataProvider
         $expectedInDatabase = [];
 
         foreach(self::$OUTPUT as $request){
+
             if(empty($request['country_name'])) continue;
 
             $requestForExpectedInDatabase = [];
 
             foreach($request as $key => $value){
-
-                $continue = false;
-
                 switch($key){
                     case 'country_name';
                         $requestForExpectedInDatabase['country_name'] = $value;
-                        $continue = true;
                         break;
                     case 'country_code';
                         $requestForExpectedInDatabase['country_code'] = $value;
-                        $continue = true;
                         break;
                     case 'postal';
                         $requestForExpectedInDatabase['postal_code'] = $value;
-                        $continue = true;
                         break;
                     case 'latitude';
                         $requestForExpectedInDatabase['latitude'] = $value;
-                        $continue = true;
                         break;
                     case 'longitude';
                         $requestForExpectedInDatabase['longitude'] = $value;
-                        $continue = true;
                         break;
                     case 'ip';
                         $requestForExpectedInDatabase['ip_address'] = $value;
-                        $continue = true;
                         break;
                 }
-
-                if($continue){
-                    continue;
-                }
-
-                $requestForExpectedInDatabase[$key] = $value;
             }
-
             $expectedInDatabase[] = $requestForExpectedInDatabase;
         }
 
