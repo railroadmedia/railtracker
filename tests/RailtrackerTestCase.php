@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Tests;
 
 use Carbon\Carbon;
 use Doctrine\ORM\EntityManager;
+use Dotenv\Dotenv;
 use Exception;
 use Faker\Generator;
 use Illuminate\Auth\AuthManager;
@@ -11,20 +12,17 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
-use Illuminate\Redis\Connections\PredisConnection;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use Railroad\Railtracker\Console\Commands\ProcessTrackings;
+use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
 use Railroad\Railtracker\Tests\Resources\Models\User;
-use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 
 class RailtrackerTestCase extends BaseTestCase
 {
@@ -111,18 +109,24 @@ class RailtrackerTestCase extends BaseTestCase
         $this->queryLogger = app(RailtrackerQueryLogger::class);
 
         // clear everything *first*
-        $toDelete = $this->batchService->cache()->keys('*');
-        if(!empty($toDelete)){
-            $this->batchService->cache()->del($toDelete);
+        $toDelete =
+            $this->batchService->cache()
+                ->keys('*');
+        if (!empty($toDelete)) {
+            $this->batchService->cache()
+                ->del($toDelete);
         }
     }
 
     public function tearDown()
     {
-        $toDelete = $this->batchService->cache()->keys('*');
+        $toDelete =
+            $this->batchService->cache()
+                ->keys('*');
 
-        if(!empty($toDelete)){
-            $this->batchService->cache()->del($toDelete);
+        if (!empty($toDelete)) {
+            $this->batchService->cache()
+                ->del($toDelete);
         }
 
         parent::tearDown();
@@ -131,13 +135,20 @@ class RailtrackerTestCase extends BaseTestCase
     /**
      * Define environment setup. (This runs *before* "setUp" method above)
      *
-     * @param  \Illuminate\Foundation\Application $app
+     * @param \Illuminate\Foundation\Application $app
      * @return void
      */
     protected function getEnvironmentSetUp($app)
     {
+        $dotenv = new Dotenv(__DIR__ . '/../', '.env.testing');
+        $dotenv->load();
+
         // Setup package config for testing
         $defaultConfig = require(__DIR__ . '/../config/railtracker.php');
+
+        config()->set('app.key', 'base64:191XeCIUtk74j6+7Qi4mpPoWjEPUNHurWYt/S08qH1k=');
+        config()->set('session.driver', 'database');
+        config()->set('session.connection', 'sqlite');
 
         config()->set('railtracker.global_is_active', true);
         config()->set('railtracker.tables', $defaultConfig['tables']);
@@ -180,6 +191,27 @@ class RailtrackerTestCase extends BaseTestCase
                 function (Blueprint $table) {
                     $table->increments('id');
                     $table->string('email');
+                    $table->string('remember_token')
+                        ->nullable();
+                }
+            );
+
+        // create session table
+        $app['db']->connection()
+            ->getSchemaBuilder()
+            ->create(
+                'sessions',
+                function (Blueprint $table) {
+                    $table->string('id')
+                        ->unique();
+                    $table->integer('user_id')
+                        ->nullable();
+                    $table->string('ip_address', 45)
+                        ->nullable();
+                    $table->text('user_agent')
+                        ->nullable();
+                    $table->text('payload');
+                    $table->integer('last_activity');
                 }
             );
 
@@ -189,7 +221,7 @@ class RailtrackerTestCase extends BaseTestCase
                 'client' => 'predis',
                 'default' => [
                     'host' => env('REDIS_HOST', $defaultConfig['redis_host']),
-//                    'password' => env('REDIS_PASSWORD', $defaultConfig['redis_port']),
+                    //                    'password' => env('REDIS_PASSWORD', $defaultConfig['redis_port']),
                     'port' => env('REDIS_PORT', $defaultConfig['redis_port']),
                     'database' => 0,
                 ]
@@ -204,13 +236,15 @@ class RailtrackerTestCase extends BaseTestCase
 
         $app['config']->set('railtracker.batch-prefix', $batchPrefix);
 
+        config()->set('railtracker.ip_api_key', env('IP_DATA_API_KEY'));
+
         $app->register(RailtrackerServiceProvider::class);
     }
 
     /**
      * We don't want to use mockery so this is a reimplementation of the mockery version.
      *
-     * @param  array|string $events
+     * @param array|string $events
      * @return $this
      */
     public function expectsEvents($events)
@@ -266,7 +300,7 @@ class RailtrackerTestCase extends BaseTestCase
                 );
 
         $this->authManager->guard()
-            ->onceUsingId($userId);
+            ->loginUsingId($userId);
 
         return $userId;
     }
@@ -296,7 +330,8 @@ class RailtrackerTestCase extends BaseTestCase
         $clientIp = '183.22.98.51',
         $method = 'GET',
         $cookies = []
-    ) {
+    )
+    {
         return Request::create(
             $url,
             $method,
@@ -341,9 +376,10 @@ class RailtrackerTestCase extends BaseTestCase
     }
 
     /**
+     * @param null $clientIp
      * @return Request
      */
-    public function randomRequest()
+    public function randomRequest($clientIp = null)
     {
         $method = $this->faker->randomElement(['GET', 'POST']);
 
@@ -374,7 +410,9 @@ class RailtrackerTestCase extends BaseTestCase
             ]
         );
 
-        $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+        if (!$clientIp) {
+            $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+        }
 
         if ($this->faker->boolean()) {
             $routeName = $this->faker->word . '.' . $this->faker->word . '.' . $this->faker->word;
@@ -461,10 +499,11 @@ class RailtrackerTestCase extends BaseTestCase
     public function processTrackings()
     {
         try {
-            Artisan::call('ProcessTrackings');
-        }catch(\Exception $exception){
+            $processTrackings = app()->make(ProcessTrackings::class);
+            $processTrackings->handle();
+        } catch (\Exception $exception) {
             error_log($exception);
-            
+
             $this->fail(
                 'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
             );
@@ -480,7 +519,7 @@ class RailtrackerTestCase extends BaseTestCase
         /** @var RailtrackerMiddleware $middleware */
         $middleware = resolve(RailtrackerMiddleware::class);
 
-        if(!$response){
+        if (!$response) {
             $response = $this->createResponse(200);
         }
 
@@ -501,7 +540,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         try {
             $this->processTrackings();
-        }catch(\Exception $exception){
+        } catch (\Exception $exception) {
             $this->fail(
                 'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
             );
@@ -522,27 +561,38 @@ class RailtrackerTestCase extends BaseTestCase
         $skip = 0,
         $orderByProperty = 'requestedOn',
         $orderByDirection = 'desc'
-    ) {
-        $results = $this->entityManager->createQueryBuilder()
-            ->select('r')
-            ->from('\Railroad\Railtracker\Entities\Request', 'r')
-            ->where('r.userId = ' . $userId)
-            ->orderBy('r.' . $orderByProperty, $orderByDirection)
-            ->setFirstResult($skip)
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+    )
+    {
+        $results =
+            $this->entityManager->createQueryBuilder()
+                ->select('r')
+                ->from('\Railroad\Railtracker\Entities\Request', 'r')
+                ->where('r.userId = ' . $userId)
+                ->orderBy('r.' . $orderByProperty, $orderByDirection)
+                ->setFirstResult($skip)
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult();
 
         return $results;
     }
 
     protected function seeDbWhileDebugging()
     {
-        $tables = \Illuminate\Support\Facades\DB::connection()->getDoctrineSchemaManager()->listTableNames(); // stackoverflow.com/a/40632654
+        $tables =
+            \Illuminate\Support\Facades\DB::connection()
+                ->getDoctrineSchemaManager()
+                ->listTableNames(); // stackoverflow.com/a/40632654
 
-        foreach($tables as $table){
-            $result = \Illuminate\Support\Facades\DB::connection()->table($table)->select('*')->get()->all();
-            foreach($result as &$r){ // this changes contents from "stdClass::__set_state(array(...))" to "array (...)"
+        foreach ($tables as $table) {
+            $result =
+                \Illuminate\Support\Facades\DB::connection()
+                    ->table($table)
+                    ->select('*')
+                    ->get()
+                    ->all();
+            foreach ($result as &$r)
+            { // this changes contents from "stdClass::__set_state(array(...))" to "array (...)"
                 $r = json_decode(json_encode($r), true);
             }
             $results[$table] = $result;
@@ -569,13 +619,14 @@ class RailtrackerTestCase extends BaseTestCase
     {
         $response = $this->createResponse($responseStatus);
 
-        if(!$exception){
-//            $exception = new \Exception($exceptionMessage);
+        if (!$exception) {
+            //            $exception = new \Exception($exceptionMessage);
             $exception = new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException($exceptionMessage);
         }
 
         $next = function ($request) use ($response, $exception) {
             app(Handler::class)->render($request, $exception);
+
             return $response;
         };
 

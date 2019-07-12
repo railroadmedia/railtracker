@@ -12,6 +12,7 @@ return [
     'database_driver' => 'pdo_mysql',
     'database_in_memory' => false,
     'enable_query_log' => false,
+    'enable_query_log_dumper' => false,
 
     'data_mode' => 'host', // 'host' or 'client', hosts do the db migrations, clients do not
 
@@ -54,4 +55,28 @@ return [
         'media_playback_types' => 'railtracker_media_playback_types',
         'media_playback_sessions' => 'railtracker_media_playback_sessions',
     ],
+    
+    // route middleware group
+    'route_middleware_logged_in_groups' => 'web',
+
+    // todo: replace with "IP-API"
+//    'ip-api' => [
+//        'default-fields' => implode(',',[
+//            'status',
+//            'country', // country_name
+//            'countryCode', // country_code
+//            'region',
+//            'regionName',
+//            'city',
+//            'zip', // postal_code
+//            'lat', // latitude
+//            'lon', // longitude
+//            'timezone',
+//            'currency',
+//            'query',// ip_address
+//        ]),
+//        'test-ip' => null, // any ip address
+//    ],
+
+    'ip_api_key' => env('IP_DATA_API_KEY')
 ];

@@ -14,3 +14,5 @@ vendor
 !.idea/railtracker.iml
 !.idea/vcs.xml
 !.idea/webServers.xml
+/.env
+/.env.testing
