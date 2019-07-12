@@ -78,5 +78,5 @@ return [
 //        'test-ip' => null, // any ip address
 //    ],
 
-    'ip_api_key' => env('IP_DATA_API_KEY')
+    'ip_data_api_key' => env('IP_DATA_API_KEY')
 ];

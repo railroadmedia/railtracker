@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Tests;
 
 use Carbon\Carbon;
 use Doctrine\ORM\EntityManager;
+use Dotenv\Dotenv;
 use Exception;
 use Faker\Generator;
 use Illuminate\Auth\AuthManager;
@@ -139,6 +140,9 @@ class RailtrackerTestCase extends BaseTestCase
         // Setup package config for testing
         $defaultConfig = require(__DIR__ . '/../config/railtracker.php');
 
+        $dotenv = new Dotenv(__DIR__ . '/../', '.env.testing');
+        $dotenv->load();
+
         config()->set('railtracker.global_is_active', true);
         config()->set('railtracker.tables', $defaultConfig['tables']);
         config()->set('railtracker.cache_duration', 60);
@@ -203,6 +207,8 @@ class RailtrackerTestCase extends BaseTestCase
         $batchPrefix = 'railtracker_testing_' . $time . '_';
 
         $app['config']->set('railtracker.batch-prefix', $batchPrefix);
+
+        config()->set('railtracker.ip_data_api_key', env('IP_DATA_API_KEY'));
 
         $app->register(RailtrackerServiceProvider::class);
     }

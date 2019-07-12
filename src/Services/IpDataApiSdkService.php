@@ -38,7 +38,7 @@ class IpDataApiSdkService
 
     private function curl($postFields)
     {
-        $apiKey = config('railtracker.ip_api_key');
+        $apiKey = config('railtracker.ip_data_api_key');
 
         $url = 'https://api.ipdata.co/bulk?api-key=' . $apiKey;
 
