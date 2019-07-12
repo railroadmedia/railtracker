@@ -42,7 +42,7 @@ class MediaPlaybackTrackingJsonController extends Controller
                 $request,
                 [
                     'media_id' => 'required',
-                    'media_length_seconds' => 'required|numeric',
+                    'media_length_seconds' => 'numeric',
                     'media_type' => 'required|string',
                     'media_category' => 'required|string',
                     'current_second' => 'numeric',
@@ -58,6 +58,15 @@ class MediaPlaybackTrackingJsonController extends Controller
                     422
                 )
             );
+        }
+
+        if (!empty($request->get('session_id')) && empty($userId)) {
+            $sessionId = decrypt($request->get('session_id'));
+
+            session()->setId($sessionId);
+            session()->start();
+
+            $userId = session()->get(auth()->guard()->getName());
         }
 
         $mediaTypeId = $this->mediaPlaybackTracker->trackMediaType(

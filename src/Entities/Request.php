@@ -68,7 +68,7 @@ class Request
     private $refererUrl;
 
     /**
-     * @ORM\Column(type="bigint", name="geoip_id", nullable=true)
+     * @ORM\ManyToOne(targetEntity="GeoIp")
      */
     private $geoip;
 

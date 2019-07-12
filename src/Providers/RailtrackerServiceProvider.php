@@ -9,6 +9,7 @@ use Doctrine\Common\Cache\PhpFileCache;
 use Doctrine\Common\Cache\RedisCache;
 use Doctrine\Common\EventManager;
 use Doctrine\Common\Persistence\Mapping\Driver\MappingDriverChain;
+use Doctrine\Common\Proxy\AbstractProxyFactory;
 use Doctrine\DBAL\Logging\EchoSQLLogger;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\Configuration;
@@ -25,13 +26,15 @@ use Railroad\Doctrine\Types\Domain\GenderType;
 use Railroad\Doctrine\Types\Domain\PhoneNumberType;
 use Railroad\Doctrine\Types\Domain\TimezoneType;
 use Railroad\Doctrine\Types\Domain\UrlType;
+use Railroad\Railtracker\Console\Commands\FixDuplicates;
 use Railroad\Railtracker\Console\Commands\RailtrackerTestingData;
 use Railroad\Railtracker\Console\Commands\EmptyLocalCache;
 use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
+use Railroad\Railtracker\Console\Commands\ReHashExistingData;
+use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\ConfigService;
-use Railroad\Railtracker\Tests\Resources\RailtrackerQueryLogger;
 use Redis;
 
 class RailtrackerServiceProvider extends ServiceProvider
@@ -179,7 +182,8 @@ class RailtrackerServiceProvider extends ServiceProvider
         $ormConfiguration->setProxyDir($proxyDir);
         $ormConfiguration->setProxyNamespace('DoctrineProxies');
         $ormConfiguration->setAutoGenerateProxyClasses(
-            config('railtracker.development_mode')
+            config('railtracker.development_mode') ? AbstractProxyFactory::AUTOGENERATE_ALWAYS :
+                AbstractProxyFactory::AUTOGENERATE_FILE_NOT_EXISTS
         );
         $ormConfiguration->setMetadataDriverImpl($driverChain);
         $ormConfiguration->setNamingStrategy(
@@ -227,7 +231,9 @@ class RailtrackerServiceProvider extends ServiceProvider
             ProcessTrackings::class,
             PrintKeyCount::class,
             RailtrackerTestingData::class,
-            EmptyLocalCache::class
+            EmptyLocalCache::class,
+            ReHashExistingData::class,
+            FixDuplicates::class,
         ]);
 
         // register the entity manager as a singleton

@@ -81,7 +81,6 @@ class Route extends RailtrackerEntity implements RailtrackerEntityInterface
     public function setHash()
     {
         $this->hash = md5(implode('-', [
-            $this->getId(),
             $this->getName(),
             $this->getAction(),
         ]));

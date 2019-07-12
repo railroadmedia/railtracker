@@ -17,84 +17,108 @@ class AddGeneratedHashColumns extends Migration
         Schema::table(
             ConfigService::$tableRequestMethods,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableRequestAgents,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableRequestDevices,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableRequestLanguages,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableRoutes,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableUrls,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableUrlProtocols,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableUrlDomains,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableUrlPaths,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableUrlQueries,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableResponseStatusCodes,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
 
         Schema::table(
             ConfigService::$tableExceptions,
             function (Blueprint $table) {
-                $table->string('hash')->nullable();
+                $table->string('hash', 128)
+                    ->nullable()
+                    ->unique();
             }
         );
     }
@@ -107,7 +131,73 @@ class AddGeneratedHashColumns extends Migration
     public function down()
     {
         Schema::table(
+            ConfigService::$tableRequestMethods,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
             ConfigService::$tableRequestAgents,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableRequestDevices,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableRequestLanguages,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableRoutes,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableUrls,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableUrlProtocols,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableUrlDomains,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableUrlPaths,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableUrlQueries,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableResponseStatusCodes,
+            function (Blueprint $table) {
+                $table->dropColumn('hash');
+            }
+        );
+        Schema::table(
+            ConfigService::$tableExceptions,
             function (Blueprint $table) {
                 $table->dropColumn('hash');
             }

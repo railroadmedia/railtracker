@@ -143,12 +143,13 @@ class RequestDevice extends RailtrackerEntity implements RailtrackerEntityInterf
 
     public function setHash()
     {
+        // for some reason implode ignores booleans so we must cast it to int
         $this->hash = md5(implode('-', [
             $this->getKind(),
             $this->getModel(),
             $this->getPlatform(),
             $this->getPlatformVersion(),
-            $this->getIsMobile()
+            (integer) $this->getIsMobile()
         ]));
     }
 

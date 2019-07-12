@@ -2,7 +2,6 @@
 
 namespace Railroad\Railtracker\Trackers;
 
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\ORMException;
 use Illuminate\Cache\Repository;
 use Illuminate\Cookie\CookieJar;
@@ -137,11 +136,20 @@ class TrackerBase
      */
     protected function getClientIp(Request $request)
     {
-        if (!empty($request->server('HTTP_CLIENT_IP'))) {
-            $ip = $request->server('HTTP_CLIENT_IP');
-        } elseif (!empty($request->server('HTTP_X_FORWARDED_FOR'))) {
+        if (!empty(config('railtracker.ip-api.test-ip'))) {
+            return config('railtracker.ip-api.test-ip');
+        }
+
+        if (!empty($request->server('HTTP_X_ORIGINAL_FORWARDED_FOR'))) {
+            $ip = $request->server('HTTP_X_ORIGINAL_FORWARDED_FOR');
+        }
+        elseif (!empty($request->server('HTTP_X_FORWARDED_FOR'))) {
             $ip = $request->server('HTTP_X_FORWARDED_FOR');
-        } else {
+        }
+        elseif (!empty($request->server('HTTP_CLIENT_IP'))) {
+            $ip = $request->server('HTTP_CLIENT_IP');
+        }
+        else {
             $ip = $request->server('REMOTE_ADDR');
         }
 
