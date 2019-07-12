@@ -236,7 +236,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         $app['config']->set('railtracker.batch-prefix', $batchPrefix);
 
-        config()->set('railtracker.ip_api_key', env('IP_DATA_API_KEY'));
+        config()->set('railtracker.ip_data_api_key', env('IP_DATA_API_KEY'));
 
         $app->register(RailtrackerServiceProvider::class);
     }

@@ -61,4 +61,36 @@ class IpDataApiTest extends RailtrackerTestCase
 
         $this->expectNotToPerformAssertions();
     }
+
+    public function test_response_for_hardcoded_ip()
+    {
+        $ips = ['108.172.176.221'];
+
+        $output = $this->ipDataApiSdkService->bulkRequest($ips);
+
+        $fields = explode(',', config('railtracker.ip-api.default-fields'));
+
+        foreach($output as $single){
+            if(empty($single['status'])){
+                $failsNoStatus[] = $single;
+                continue;
+            }
+
+            if($single['status'] === 'fail'){
+                continue;
+            }
+
+            if(count($single) !== count($fields)){
+                $fieldCountDoesNotMatchExpected[] = $single;
+            }
+        }
+
+        if(!empty($fails)){
+            $this->fail(
+                '$fieldCountDoesNotMatchExpected not empty: ' . var_export($fieldCountDoesNotMatchExpected ?? [], true)
+            );
+        }
+
+        $this->expectNotToPerformAssertions();
+    }
 }
