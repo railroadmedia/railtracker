@@ -197,7 +197,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             error_log($e);
         }
 
-        $geoIpEntitiesKeyedByIp = $this->getGeoIpEntitiesCreateWhereNeeded($this->getGeoIpData($requests));
+        $geoIpEntitiesKeyedByIp = $this->getGeoIpEntitiesCreateWhereNeeded($requests);
 
         $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntitiesKeyedByIp);
 
@@ -653,49 +653,69 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @param Collection $requests
-     * @return Collection $requests
-     */
-    private function getGeoIpData(Collection $requests)
-    {
-        $ips = $requests->map(function($request){
-            /** @var Request $request */
-            return $request['clientIp'];
-        })->toArray();
-
-        $results = $this->ipDataApiSdkService->bulkRequest($ips);
-
-        return collect($results);
-    }
-
-    /**
-     * @param $geoIpData
+     * @param $requests
      * @return array
      */
-    private function getGeoIpEntitiesCreateWhereNeeded($geoIpData)
+    private function getGeoIpEntitiesCreateWhereNeeded($requests)
     {
-        $geoIpEntities = collect([]);
+        $requestsKeyedByIp = [];
+        $existingEntitiesByIp = [];
+        $geoIpEntities = new Collection;
 
-        $geoIpDataKeyedByHash = [];
-
-        foreach($geoIpData as $datum){
-            $geoIpDataKeyedByHash[GeoIp::generateHash($datum)] = $datum;
+        foreach($requests as $request){
+            $requestsKeyedByIp[$request['clientIp']] = $request;
         }
 
         try{
-            $geoIpEntities = collect($this->getExistingBulkInsertNew(GeoIp::class, $geoIpDataKeyedByHash));
-            $this->entityManager->flush();
+            $qb = $this->entityManager->createQueryBuilder();
+
+            /** @var GeoIp[] $existingGeoIpEntities */
+            $existingGeoIpEntities =
+                $qb->select('a')
+                    ->from(GeoIp::class, 'a')
+                    ->where('a.ipAddress IN (:whereValues)')
+                    ->setParameter('whereValues', array_keys($requestsKeyedByIp))
+                    ->getQuery()
+                    ->getResult();
+
+            // key by hash
+            foreach ($existingGeoIpEntities as $existingEntity) {
+                $existingEntitiesByIp[$existingEntity->getIpAddress()] = $existingEntity;
+            }
         }catch(Exception $e){
             error_log($e);
         }
 
-        // key by IP
-        $geoIpEntities = $geoIpEntities->mapWithKeys(function($geoIpEntity){
+        $ipsNewResults = $this->ipDataApiSdkService->bulkRequest(
+            array_diff(array_keys($requestsKeyedByIp), array_keys($existingEntitiesByIp))
+        );
+
+        try{
+            foreach ($ipsNewResults as $data) {
+                try{
+                    /** @var GeoIp $entity */
+                    $entity = $this->processForType(GeoIp::class, $data);
+
+                    if($entity->allValuesAreEmpty()){
+                        continue;
+                    }
+                    $entities[$entity->getIpAddress()] = $entity;
+
+                    $this->entityManager->persist($entity);
+                }catch(Exception $exception){
+                    error_log($exception);
+                }
+            }
+            $this->entityManager->flush();
+
+        }catch(Exception $e){
+            error_log($e);
+        }
+
+        return $geoIpEntities->mapWithKeys(function($geoIpEntity){
             /** @var $geoIpEntity GeoIp */
             return [$geoIpEntity->getIpAddress() => $geoIpEntity];
-        });
-
-        return $geoIpEntities;
+        })->toArray();
     }
 
     // -----------------------------------------------------------------------------------------------------------------

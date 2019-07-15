@@ -270,39 +270,12 @@ class GeoIp extends RailtrackerEntity implements RailtrackerEntityInterface
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    public static function generateHash($data)
-    {
-        return md5(implode('-', [
-            $data['latitude'] ?? null,
-            $data['longitude'] ?? null,
-            $data['country_code'] ?? null,
-            $data['country_name'] ?? null,
-            $data['region'] ?? null,
-            $data['city'] ?? null,
-            $data['postal'] ?? null,
-            $data['ip'] ?? null,
-            $data['time_zone']['name'] ?? null,
-            $data['currency']['name'] ?? null,
-        ]));
-    }
-
     /**
      *
      */
     public function setHash()
     {
-        $this->hash = md5(implode('-', [
-            $this->getLatitude(),
-            $this->getLongitude(),
-            $this->getCountryCode(),
-            $this->getCountryName(),
-            $this->getRegion(),
-            $this->getCity(),
-            $this->getPostalCode(),
-            $this->getIpAddress(),
-            $this->getTimezone(),
-            $this->getCurrency(),
-        ]));
+        $this->hash = $this->getIpAddress();
     }
 
     /**
@@ -327,8 +300,8 @@ class GeoIp extends RailtrackerEntity implements RailtrackerEntityInterface
             $this->setRegion($data['region']);
             $this->setCity($data['city']);
             $this->setPostalCode($data['postal']);
-            $this->setTimezone($data['time_zone']['name']);
-            $this->setCurrency($data['currency']['name']);
+            $this->setTimezone($data['time_zone']->name);
+            $this->setCurrency($data['currency']->name);
         }
     }
 
