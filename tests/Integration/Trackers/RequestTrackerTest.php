@@ -1099,4 +1099,6 @@ class RequestTrackerTest extends RailtrackerTestCase
             );
         }
     }
+
+    // todo: test that geoip rows connected to requests
 }

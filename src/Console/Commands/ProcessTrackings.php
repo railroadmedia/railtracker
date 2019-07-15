@@ -667,13 +667,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         try{
-            $qb = $this->entityManager->createQueryBuilder();
-
             /** @var GeoIp[] $existingGeoIpEntities */
             $existingGeoIpEntities =
-                $qb->select('a')
-                    ->from(GeoIp::class, 'a')
-                    ->where('a.ipAddress IN (:whereValues)')
+                $this->entityManager->createQueryBuilder()
+                    ->select('g')
+                    ->from(GeoIp::class, 'g')
+                    ->where('g.ipAddress IN (:whereValues)')
                     ->setParameter('whereValues', array_keys($requestsKeyedByIp))
                     ->getQuery()
                     ->getResult();
@@ -687,12 +686,17 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         $ipsNewResults = $this->ipDataApiSdkService->bulkRequest(
-            array_diff(array_keys($requestsKeyedByIp), array_keys($existingEntitiesByIp))
+            $newIps = array_diff(array_keys($requestsKeyedByIp), array_keys($existingEntitiesByIp))
         );
 
         try{
             foreach ($ipsNewResults as $data) {
-                try{
+                // try{
+
+                    /*
+                     * todo: have try-catch here? Make a test case for failure here?
+                     */
+
                     /** @var GeoIp $entity */
                     $entity = $this->processForType(GeoIp::class, $data);
 
@@ -702,9 +706,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     $entities[$entity->getIpAddress()] = $entity;
 
                     $this->entityManager->persist($entity);
-                }catch(Exception $exception){
-                    error_log($exception);
-                }
+                // }catch(Exception $exception){
+                //     error_log($exception);
+                // }
             }
             $this->entityManager->flush();
 
