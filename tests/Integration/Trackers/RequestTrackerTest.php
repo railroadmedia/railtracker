@@ -1073,14 +1073,15 @@ class RequestTrackerTest extends RailtrackerTestCase
 
     public function test_geoip_table_populated()
     {
-        $OUTPUT = IpDataApiStubDataProvider::$OUTPUT;
-        $INPUT = IpDataApiStubDataProvider::$INPUT;
+        $input = IpDataApiStubDataProvider::$INPUT;
+        $output = collect(IpDataApiStubDataProvider::output());
+        $expected = IpDataApiStubDataProvider::expectedInDatabase();
 
         $this->ipDataApiSdkServiceMock
             ->method('bulkRequest')
-            ->willReturn($OUTPUT);
+            ->willReturn($output);
 
-        foreach($INPUT as $ip){
+        foreach($input as $ip){
             $request = $this->randomRequest($ip);
             $this->sendRequest($request);
         }
@@ -1090,8 +1091,6 @@ class RequestTrackerTest extends RailtrackerTestCase
         }catch(\Exception $exception){
             $this->fail($exception->getMessage());
         }
-
-        $expected = IpDataApiStubDataProvider::expectedInDatabase();
 
         foreach($expected as $expectedRow){
             $this->assertDatabaseHas(
