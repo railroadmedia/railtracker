@@ -36,8 +36,6 @@ class IpDataApiTest extends RailtrackerTestCase
 
         $output = $this->ipDataApiSdkService->bulkRequest($ips);
 
-        $fields = explode(',', config('railtracker.ip-api.default-fields'));
-
         foreach($output as $single){
             if(empty($single['status'])){
                 $failsNoStatus[] = $single;
@@ -46,10 +44,6 @@ class IpDataApiTest extends RailtrackerTestCase
 
             if($single['status'] === 'fail'){
                 continue;
-            }
-
-            if(count($single) !== count($fields)){
-                $fieldCountDoesNotMatchExpected[] = $single;
             }
         }
 
