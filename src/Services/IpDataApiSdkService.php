@@ -16,6 +16,10 @@ class IpDataApiSdkService
      */
     public function bulkRequest($ips)
     {
+        if(empty($ips)){
+            return [];
+        }
+
         try{
             $response = $this->curl(json_encode($ips));
         }catch(\Exception $exception){

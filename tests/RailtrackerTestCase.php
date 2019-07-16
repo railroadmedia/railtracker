@@ -411,7 +411,7 @@ class RailtrackerTestCase extends BaseTestCase
         );
 
         if (!$clientIp) {
-            $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+            $clientIp = $this->faker->ipv4;
         }
 
         if ($this->faker->boolean()) {

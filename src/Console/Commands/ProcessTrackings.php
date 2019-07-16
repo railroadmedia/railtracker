@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Console\Commands;
 
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Entities\Exception as ExceptionEntity;
 use Railroad\Railtracker\Entities\GeoIp;
@@ -24,6 +25,7 @@ use Railroad\Railtracker\Entities\UrlProtocol;
 use Railroad\Railtracker\Entities\UrlQuery;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
+use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
@@ -92,6 +94,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $ipDataApiSdkService;
 
     /**
+     * @var DatabaseManager
+     */
+    private $databaseManager;
+
+    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
@@ -106,7 +113,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
         ExceptionTracker $exceptionTracker,
         ResponseTracker $responseTracker,
         RailtrackerEntityManager $entityManager,
-        IpDataApiSdkService $ipDataApiSdkService
+        IpDataApiSdkService $ipDataApiSdkService,
+        DatabaseManager $databaseManager
     ){
         parent::__construct();
 
@@ -116,6 +124,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->responseTracker = $responseTracker;
         $this->entityManager = $entityManager;
         $this->ipDataApiSdkService = $ipDataApiSdkService;
+        $this->databaseManager = $databaseManager;
     }
 
     /**
@@ -141,12 +150,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $redisIterator = (integer)$scanResult[0];
                 $keys = $scanResult[1];
 
-                if (empty($keys)) {
+                $keys = $this->detectAndRemoveAccidentallyRemainingKeys($keys);
+
+                if(empty($keys)){
                     continue;
                 }
-
-                // todo: search requests table for all UUIDs in this redis chunk,
-                // if any already exist delete those keys from the keys array and from redis
 
                 $this->determineValuesThisChunk($keys);
 
@@ -254,8 +262,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * @param array $counts
      * @return array
+     *
+     * Note: this method is public only for the purpose of mocking it in a test
+     * todo: rewrite that test so that this method can be private (#codesmell)
      */
-    private function incrementCountersForOutputMessage($counts)
+    public function incrementCountersForOutputMessage($counts)
     {
         $counts['requests'] = ($counts['requests'] ?? 0) + $this->requestsThisChunk->count();
         $counts['reqExc'] = ($counts['reqExc'] ?? 0) + $this->requestExceptionsThisChunk->count();
@@ -295,6 +306,44 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
     }
 
+    /**
+     * @param $keys
+     * @return mixed
+     *
+     * search requests table for all UUIDs in this redis chunk, if any already exist delete those keys from the keys
+     * array and forget from redis
+     *
+     * Note: this method is public only for the purpose of mocking it in a test
+     * todo: rewrite that test so that this method can be private (#codesmell)
+     */
+    public function detectAndRemoveAccidentallyRemainingKeys($keys)
+    {
+        $uuids = [];
+
+        foreach($keys as $keyString){
+            $uuids[] = $this->batchService->getUuidFromCacheKey($keyString);
+        }
+
+        $existing = $this->databaseManager->table(ConfigService::$tableRequests)
+            ->whereIn('uuid', $uuids)
+            ->get(['uuid']);
+
+        foreach($existing as $uuidOfExisting){
+            $keyOfSet = $this->batchService->prefixForSet . $uuidOfExisting->uuid;
+
+            $locationInArray = array_search($keyOfSet, $keys);
+
+            $keysToNotProcess[] = $keyOfSet;
+
+            if ($locationInArray !== false) {
+                unset($keys[$locationInArray]);
+            }
+
+            $this->batchService->forget($keysToNotProcess ?? []);
+        }
+
+        return $keys;
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // helper methods for processing responses -------------------------------------------------------------------------
@@ -691,11 +740,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         try{
             foreach ($ipsNewResults as $data) {
-                // try{
-
-                    /*
-                     * todo: have try-catch here? Make a test case for failure here?
-                     */
+                try{
+                    // todo: consider removing this nested try-catch. Maybe make a test case for failure here?
 
                     /** @var GeoIp $entity */
                     $entity = $this->processForType(GeoIp::class, $data);
@@ -706,9 +752,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     $entities[$entity->getIpAddress()] = $entity;
 
                     $this->entityManager->persist($entity);
-                // }catch(Exception $exception){
-                //     error_log($exception);
-                // }
+                }catch(Exception $exception){
+                    error_log($exception);
+                }
             }
             $this->entityManager->flush();
 
