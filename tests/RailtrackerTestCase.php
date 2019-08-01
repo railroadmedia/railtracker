@@ -147,7 +147,7 @@ class RailtrackerTestCase extends BaseTestCase
         config()->set('session.connection', 'sqlite');
 
         config()->set('railtracker.global_is_active', true);
-        config()->set('railtracker.tables', $defaultConfig['tables']);
+        config()->set('railtracker.table_prefix', $defaultConfig['table_prefix']);
         config()->set('railtracker.cache_duration', 60);
         config()->set('railtracker.exclusion_regex_paths', $defaultConfig['exclusion_regex_paths']);
 
@@ -230,7 +230,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         $batchPrefix = 'railtracker_testing_' . $time . '_';
 
-        $app['config']->set('railtracker.batch-prefix', $batchPrefix);
+        $app['config']->set('railtracker.batch_prefix', $batchPrefix);
 
         config()->set('railtracker.ip-api.default-fields', $defaultConfig['ip-api']['default-fields']);
 

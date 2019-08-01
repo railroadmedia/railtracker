@@ -23,11 +23,14 @@ use Railroad\Railtracker\Entities\UrlPath;
 use Railroad\Railtracker\Entities\UrlProtocol;
 use Railroad\Railtracker\Entities\UrlQuery;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
+use Railroad\Railtracker\Repositories\RequestRepository;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Services\IpApiSdkService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
+use Railroad\Railtracker\ValueObjects\RequestVO;
+use Throwable;
 
 class ProcessTrackings extends \Illuminate\Console\Command
 {
@@ -92,6 +95,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $ipApiSdkService;
 
     /**
+     * @var RequestRepository
+     */
+    private $requestRepository;
+
+    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
@@ -99,6 +107,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param ResponseTracker $responseTracker
      * @param RailtrackerEntityManager $entityManager
      * @param IpApiSdkService $ipApiSdkService
+     * @param RequestRepository $requestRepository
      */
     public function __construct(
         BatchService $batchService,
@@ -106,8 +115,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
         ExceptionTracker $exceptionTracker,
         ResponseTracker $responseTracker,
         RailtrackerEntityManager $entityManager,
-        IpApiSdkService $ipApiSdkService
-    ){
+        IpApiSdkService $ipApiSdkService,
+        RequestRepository $requestRepository
+    )
+    {
         parent::__construct();
 
         $this->batchService = $batchService;
@@ -116,6 +127,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->responseTracker = $responseTracker;
         $this->entityManager = $entityManager;
         $this->ipApiSdkService = $ipApiSdkService;
+        $this->requestRepository = $requestRepository;
     }
 
     /**
@@ -129,15 +141,13 @@ class ProcessTrackings extends \Illuminate\Console\Command
         while ($redisIterator !== 0) {
 
             try {
-                $scanResult =
-                    $this->batchService->cache()
-                        ->scan(
-                            $redisIterator,
-                            [
-                                'MATCH' => $this->batchService->batchKeyPrefix . '*',
-                                'COUNT' => config('railtracker.scan-size', 1000)
-                            ]
-                        );
+                $scanResult = $this->batchService->cache()->scan(
+                        $redisIterator,
+                        [
+                            'MATCH' => $this->batchService->batchKeyPrefix . '*',
+                            'COUNT' => config('railtracker.scan-size', 1000)
+                        ]
+                    );
                 $redisIterator = (integer)$scanResult[0];
                 $keys = $scanResult[1];
 
@@ -145,14 +155,19 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     continue;
                 }
 
-                // todo: search requests table for all UUIDs in this redis chunk,
-                // if any already exist delete those keys from the keys array and from redis
+                $valuesThisChunk = new Collection();
 
-                $this->determineValuesThisChunk($keys);
+                foreach ($keys as $keyThisChunk) {
+                    $values = $this->batchService->cache()->smembers($keyThisChunk);
+
+                    foreach ($values as $value) {
+                        $valuesThisChunk->push(unserialize($value));
+                    }
+                }
 
                 $this->batchService->forget($keys);
 
-                $this->processRequests();
+                $this->processRequests($valuesThisChunk);
                 $this->processRequestExceptions();
                 $this->processResponses();
 
@@ -162,6 +177,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             } catch (Exception $exception) {
                 error_log($exception);
+
             }
         }
 
@@ -171,32 +187,27 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
+     * @param Collection $objectsFromCache
      * @return void
+     * @throws Throwable
      */
-    private function processRequests()
+    private function processRequests(Collection $objectsFromCache)
     {
-        $requests = $this->valuesThisChunk->filter(function($candidate){
-            return $candidate['type'] === 'request';
-        });
+        $requestVOs = $objectsFromCache->filter(
+            function ($candidate) {
+                return $candidate instanceof RequestVO;
+            }
+        );
 
-        if($requests->isEmpty()) {
-            $this->requestsThisChunk = collect([]);
+        if ($requestVOs->isEmpty()) {
             return;
         }
 
-        $entities = $this->simpleAssociationsForRequests($requests);
+        $this->requestRepository->storeRequests($requestVOs);
 
-        $mappedUrls = $this->getAndMapUrlsFromRequests($requests);
-        $entities = $this->urlAssociationsForRequests($entities, $mappedUrls);
-        $mappedUrls = $this->mapChildrenToUrls($mappedUrls, $entities);
+        return;
 
-        try{
-            $entities[Url::class] = $this->getExistingBulkInsertNew(Url::class, $mappedUrls);
-            $this->entityManager->flush();
-        } catch (Exception $e) {
-            error_log($e);
-        }
-
+        // todo: geoip data
         $geoIpEntitiesKeyedByIp = $this->getGeoIpEntitiesCreateWhereNeeded($this->getGeoIpData($requests));
 
         $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntitiesKeyedByIp);
@@ -217,10 +228,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->requestExceptionsThisChunk = collect([]);
 
         $requestExceptionsData = $this->valuesThisChunk->filter(
-            function($candidate){ return $candidate['type'] === 'request-exception';}
+            function ($candidate) {
+                return $candidate['type'] === 'request-exception';
+            }
         );
 
-        if($requestExceptionsData->isEmpty()) return;
+        if ($requestExceptionsData->isEmpty()) {
+            return;
+        }
 
         $requestExceptionsData = $this->getExceptionsAndMapToExceptionRequests($requestExceptionsData);
 
@@ -236,8 +251,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
     {
         $responses = $this->getResponses($this->valuesThisChunk);
 
-        if(empty($responses)){
+        if (empty($responses)) {
             $this->responsesThisChunk = collect([]);
+
             return;
         }
 
@@ -270,12 +286,22 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function printTotalResultsInfo($counts)
     {
-        $output = 'Processed ' .
-            $counts['requests'] . ' ' . ($counts['requests'] === 1 ? 'request' : 'requests') . ', ' .
-            $counts['reqExc'] . ' ' . ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') . ', and ' .
-            $counts['responses'] . ' ' . ($counts['responses'] === 1 ? 'response' : 'responses') . '.';
+        $output =
+            'Processed ' .
+            $counts['requests'] .
+            ' ' .
+            ($counts['requests'] === 1 ? 'request' : 'requests') .
+            ', ' .
+            $counts['reqExc'] .
+            ' ' .
+            ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') .
+            ', and ' .
+            $counts['responses'] .
+            ' ' .
+            ($counts['responses'] === 1 ? 'response' : 'responses') .
+            '.';
 
-        if(getenv('APP_ENV') !== 'testing'){
+        if (getenv('APP_ENV') !== 'testing') {
             $this->info($output);
         }
     }
@@ -289,7 +315,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         foreach ($keysThisChunk as $keyThisChunk) {
             $values = $this->batchService->cache()->smembers($keyThisChunk);
-            foreach($values as $value){
+            foreach ($values as $value) {
                 $this->valuesThisChunk->push(unserialize($value));
             }
         }
@@ -306,9 +332,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function getResponses($valuesThisChunk)
     {
-        return $valuesThisChunk->filter(function($candidate){
-            return $candidate['type'] === 'response';
-        });
+        return $valuesThisChunk->filter(
+            function ($candidate) {
+                return $candidate['type'] === 'response';
+            }
+        );
     }
 
     /**
@@ -318,7 +346,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function hydrateAndPersistResponses($responses, $statusCodes)
     {
-        foreach($responses as $responseData) {
+        foreach ($responses as $responseData) {
 
             $responseEntity = new Response();
 
@@ -366,9 +394,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $responseEntities[] = $responseEntity;
         }
 
-        try{
+        try {
             $this->entityManager->flush();
-        }catch(Exception $e){
+        } catch (Exception $e) {
             error_log($e);
         }
 
@@ -404,10 +432,20 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function getAndMapUrlsFromRequests(Collection $requests)
     {
-        $urlsNotKeyed = collect(array_merge(
-            $requests->map(function($request){return $request[Url::$KEY];})->all(),
-            $requests->map(function($request){return $request[Url::$REFERER_URL_KEY];})->all()
-        ));
+        $urlsNotKeyed = collect(
+            array_merge(
+                $requests->map(
+                    function ($request) {
+                        return $request[Url::$KEY];
+                    }
+                )->all(),
+                $requests->map(
+                    function ($request) {
+                        return $request[Url::$REFERER_URL_KEY];
+                    }
+                )->all()
+            )
+        );
 
         return collect($this->keyByHash($urlsNotKeyed));
     }
@@ -441,13 +479,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
             Url::$REFERER_URL_KEY => Url::class,
         ];
 
-        foreach($requests as &$requestData){
-            foreach($associationsClassesAndKeys as $key => $class)
-            {
+        foreach ($requests as &$requestData) {
+            foreach ($associationsClassesAndKeys as $key => $class) {
                 $hashRequired = $requestData[$key]['hash'];
                 $candidates = $entities[$class];
 
-                if(isset($candidates[$hashRequired])) {
+                if (isset($candidates[$hashRequired])) {
                     $requestData[$key] = $candidates[$hashRequired];
                 }
             }
@@ -471,26 +508,27 @@ class ProcessTrackings extends \Illuminate\Console\Command
                  * here. We have to check for object of type because if object is not set an array will be, but trying
                  * to set this will cause an error.
                  */
-                if(is_a($requestData['url'], Url::class)){
+                if (is_a($requestData['url'], Url::class)) {
                     $r->setUrl($requestData['url']);
                 }
-                if(is_a($requestData['refererUrl'], Url::class)){
+                if (is_a($requestData['refererUrl'], Url::class)) {
                     $r->setRefererUrl($requestData['refererUrl']);
                 }
-                if(is_a($requestData['route'], Route::class)){
+                if (is_a($requestData['route'], Route::class)) {
                     $r->setRoute($requestData['route']);
                 }
 
                 $this->entityManager->persist($r);
 
-                $requestEntitiesByUuid[$r->getUuid()] = $r ?? null; // todo: why this ?? operator? Delete if shouldn't be here
+                $requestEntitiesByUuid[$r->getUuid()] =
+                    $r ?? null; // todo: why this ?? operator? Delete if shouldn't be here
 
             } catch (Exception $e) {
                 error_log($e);
             }
         }
 
-        try{
+        try {
             $this->entityManager->flush();
         } catch (Exception $e) {
             error_log($e);
@@ -514,20 +552,16 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $mappedRoutes = $this->getForTypeAndKeyByHash($requests, Route::$KEY);
 
         try {
-            $entities[RequestAgent::class] =
-                $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
+            $entities[RequestAgent::class] = $this->getExistingBulkInsertNew(RequestAgent::class, $mappedAgents);
 
-            $entities[RequestDevice::class] =
-                $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
+            $entities[RequestDevice::class] = $this->getExistingBulkInsertNew(RequestDevice::class, $mappedDevices);
 
             $entities[RequestLanguage::class] =
                 $this->getExistingBulkInsertNew(RequestLanguage::class, $mappedLanguages);
 
-            $entities[RequestMethod::class] =
-                $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
+            $entities[RequestMethod::class] = $this->getExistingBulkInsertNew(RequestMethod::class, $mappedMethods);
 
-            $entities[Route::class] =
-                $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
+            $entities[Route::class] = $this->getExistingBulkInsertNew(Route::class, $mappedRoutes);
 
             $this->entityManager->flush();
         } catch (Exception $e) {
@@ -566,18 +600,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
         // ---------- 3. get existing bulk insert new ------------------------------------------------------------------
         // -------------------------------------------------------------------------------------------------------------
 
-        try{
-            $entities[UrlProtocol::class] =
-                $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
+        try {
+            $entities[UrlProtocol::class] = $this->getExistingBulkInsertNew(UrlProtocol::class, $mappedUrlProtocols);
 
-            $entities[UrlDomain::class] =
-                $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
+            $entities[UrlDomain::class] = $this->getExistingBulkInsertNew(UrlDomain::class, $mappedUrlDomains);
 
-            $entities[UrlPath::class] =
-                $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
+            $entities[UrlPath::class] = $this->getExistingBulkInsertNew(UrlPath::class, $mappedUrlPaths);
 
-            $entities[UrlQuery::class] =
-                $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
+            $entities[UrlQuery::class] = $this->getExistingBulkInsertNew(UrlQuery::class, $mappedUrlQueries);
 
             $this->entityManager->flush();
 
@@ -595,39 +625,41 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function mapChildrenToUrls(Collection $mappedUrls, $entities)
     {
-        return $mappedUrls->map(function($url) use ($entities)
-        {
-            $typesToSearch = [
-                UrlProtocol::class,
-                UrlDomain::class,
-                UrlPath::class,
-                UrlQuery::class
-            ];
+        return $mappedUrls->map(
+            function ($url) use ($entities) {
+                $typesToSearch = [
+                    UrlProtocol::class,
+                    UrlDomain::class,
+                    UrlPath::class,
+                    UrlQuery::class
+                ];
 
-            $keys = [
-                'protocol',
-                'domain',
-                'path',
-                'query'
-            ];
+                $keys = [
+                    'protocol',
+                    'domain',
+                    'path',
+                    'query'
+                ];
 
-            /** @var $url Url */
-            foreach($keys as $key){
+                /** @var $url Url */
+                foreach ($keys as $key) {
 
-                if(empty($url[$key])) {
-                    continue;
-                }
-                $hash = $url[$key]['hash'];
+                    if (empty($url[$key])) {
+                        continue;
+                    }
+                    $hash = $url[$key]['hash'];
 
-                foreach ($entities as $type => $data) {
-                    if (in_array($type, $typesToSearch) && isset($data[$hash])) {
-                        $entityToAttach = $data[$hash];
-                        $url[$key] = $entityToAttach;
+                    foreach ($entities as $type => $data) {
+                        if (in_array($type, $typesToSearch) && isset($data[$hash])) {
+                            $entityToAttach = $data[$hash];
+                            $url[$key] = $entityToAttach;
+                        }
                     }
                 }
+
+                return $url;
             }
-            return $url;
-        })->all();
+        )->all();
     }
 
     /**
@@ -636,11 +668,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function findUsersPreviousByRequestCookieId($requests)
     {
-        foreach($requests as $request){
+        foreach ($requests as $request) {
             if ($request['userId'] !== null) {
                 $previousRequests = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
                 $enough = count($previousRequests) >= 2;
-                if(!$enough){
+                if (!$enough) {
                     continue;
                 }
                 end($previousRequests);
@@ -657,10 +689,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function getGeoIpData(Collection $requests)
     {
-        $ips = $requests->map(function($request){
-            /** @var Request $request */
-            return $request['clientIp'];
-        })->toArray();
+        $ips = $requests->map(
+            function ($request) {
+                /** @var Request $request */
+                return $request['clientIp'];
+            }
+        )->toArray();
 
         $results = $this->ipApiSdkService->bulkRequest($ips);
 
@@ -677,22 +711,24 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $geoIpDataKeyedByHash = [];
 
-        foreach($geoIpData as $datum){
+        foreach ($geoIpData as $datum) {
             $geoIpDataKeyedByHash[GeoIp::generateHash($datum)] = $datum;
         }
 
-        try{
+        try {
             $geoIpEntities = collect($this->getExistingBulkInsertNew(GeoIp::class, $geoIpDataKeyedByHash));
             $this->entityManager->flush();
-        }catch(Exception $e){
+        } catch (Exception $e) {
             error_log($e);
         }
 
         // key by IP
-        $geoIpEntities = $geoIpEntities->mapWithKeys(function($geoIpEntity){
-            /** @var $geoIpEntity GeoIp */
-            return [$geoIpEntity->getIpAddress() => $geoIpEntity];
-        });
+        $geoIpEntities = $geoIpEntities->mapWithKeys(
+            function ($geoIpEntity) {
+                /** @var $geoIpEntity GeoIp */
+                return [$geoIpEntity->getIpAddress() => $geoIpEntity];
+            }
+        );
 
         return $geoIpEntities;
     }
@@ -712,7 +748,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $exceptions = $this->getForTypeAndKeyByHash($requestExceptionsData, 'exception');
 
-        try{
+        try {
             $entities[ExceptionEntity::class] = $this->getExistingBulkInsertNew(ExceptionEntity::class, $exceptions);
             $this->entityManager->flush();
         } catch (Exception $e) {
@@ -720,15 +756,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         return $requestExceptionsData->map(
-            function($singleRequestException) use ($entities)
-            {
+            function ($singleRequestException) use ($entities) {
                 $targetHash = $singleRequestException['exception']['hash'];
 
                 $exceptionsToMapToRequestExceptions = $entities[ExceptionEntity::class];
 
                 $exceptionToAttach = $exceptionsToMapToRequestExceptions[$targetHash] ?? null;
 
-                if($exceptionToAttach) {
+                if ($exceptionToAttach) {
                     $singleRequestException['exception'] = $exceptionToAttach;
                 }
 
@@ -742,7 +777,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function createRequestExceptions($exceptionsMatchedWithRequests)
     {
-        foreach($exceptionsMatchedWithRequests as $set){
+        foreach ($exceptionsMatchedWithRequests as $set) {
 
             $requestExceptionData = $set['request-exception'];
 
@@ -755,16 +790,16 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $requestExceptions[] = $requestException;
 
-            try{
+            try {
                 $this->entityManager->persist($requestException);
-            }catch(Exception $exception){
+            } catch (Exception $exception) {
                 error_log($exception);
             }
         }
 
-        try{
+        try {
             $this->entityManager->flush();
-        }catch(Exception $exception){
+        } catch (Exception $exception) {
             error_log($exception);
         }
 
@@ -778,15 +813,18 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function matchWithRequest(Collection $requestExceptions, Collection $requests)
     {
-        foreach($requestExceptions as $requestException){
+        foreach ($requestExceptions as $requestException) {
 
             $requestExceptionUuid = $requestException['uuid'];
 
-            $matchingRequest = $requests->filter(function($request) use ($requestExceptionUuid){
-                /** @var Request $request */
-                $requestUuid = $request->getUuid();
-                return $requestUuid === $requestExceptionUuid;
-            })->first();
+            $matchingRequest = $requests->filter(
+                function ($request) use ($requestExceptionUuid) {
+                    /** @var Request $request */
+                    $requestUuid = $request->getUuid();
+
+                    return $requestUuid === $requestExceptionUuid;
+                }
+            )->first();
 
             $matched[$requestExceptionUuid] = [
                 'request' => $matchingRequest,
@@ -823,9 +861,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function filterForSetEntitiesOfAType(Collection $urls, $keyForRequired)
     {
-        $existant = $urls->filter(function($url) use ($keyForRequired){
-            return !empty($url[$keyForRequired]);
-        })->all();
+        $existant = $urls->filter(
+            function ($url) use ($keyForRequired) {
+                return !empty($url[$keyForRequired]);
+            }
+        )->all();
 
         return collect($existant);
     }
@@ -838,10 +878,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private function getForTypeAndKeyByHash(Collection $items, $keyToMap)
     {
         $mappedEntities = $items->map(
-            function($item) use ($keyToMap){
+            function ($item) use ($keyToMap) {
                 return $item[$keyToMap];
             }
         )->all();
+
         return $this->keyByHash($mappedEntities);
     }
 
@@ -851,8 +892,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function keyByHash($data)
     {
-        foreach($data as $datum){
-            if(isset($datum['hash'])){
+        foreach ($data as $datum) {
+            if (isset($datum['hash'])) {
                 $arraysByHash[$datum['hash']] = $datum;
             }
         }
@@ -876,12 +917,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         /** @var RailtrackerEntityInterface[] $existingEntities */
         $existingEntities =
-            $qb->select('a')
-                ->from($class, 'a')
-                ->where('a.hash IN (:whereValues)')
-                ->setParameter('whereValues', array_keys($arraysByHash))
-                ->getQuery()
-                ->getResult();
+            $qb->select('a')->from($class, 'a')->where('a.hash IN (:whereValues)')->setParameter(
+                    'whereValues',
+                    array_keys($arraysByHash)
+                )->getQuery()->getResult();
 
         $existingEntitiesByHash = [];
 
@@ -907,22 +946,24 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             if (isset($existingEntitiesByHash[$hash])) {
                 $entities[$hash] = $existingEntitiesByHash[$hash];
-            }else{
-                try{
+            }
+            else {
+                try {
                     $entity = $this->processForType($class, $entity);
 
-                    if($entity->allValuesAreEmpty()){
+                    if ($entity->allValuesAreEmpty()) {
                         continue;
                     }
 
                     $entities[$entity->getHash()] = $entity;
 
                     $this->entityManager->persist($entity);
-                }catch(Exception $exception){
+                } catch (Exception $exception) {
                     error_log($exception);
                 }
             }
         }
+
         return $entities;
     }
 
@@ -938,6 +979,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $entity = new $class;
         $entity->setFromData($data);
         $entity->setHash();
+
         return $entity;
     }
 }

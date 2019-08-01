@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Railroad\Railtracker\Entities\Request as RequestEntity;
 use Railroad\Railtracker\Events\RequestTracked;
@@ -39,12 +40,14 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'http://test.com/';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
+        $this->sendRequest($request);
+        
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlProtocols,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
-                'protocol' => 'http',
+                'url_protocol' => 'http',
             ]
         );
     }
@@ -57,9 +60,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlProtocols,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
-                'protocol' => 'https',
+                'url_protocol' => 'https',
             ]
         );
     }
@@ -72,9 +75,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlDomains,
+            config('railtracker.table_prefix') . 'url_domains',
             [
-                'name' => 'test.com',
+                'url_domain' => 'test.com',
             ]
         );
     }
@@ -87,7 +90,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlDomains,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'name' => 'www.test.com',
             ]
@@ -102,7 +105,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlPaths,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'path' => '/test-path/test/test2/file.php',
             ]
@@ -117,7 +120,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlPaths,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'path' => '/test-path/test/test2',
             ]
@@ -132,7 +135,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlPaths,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'path' => '/test-path/test/test2',
             ]
@@ -147,7 +150,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlQueries,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'string' => 'test=1&test2=as7da98dsda3-23f23',
             ]
@@ -162,7 +165,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrls,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -180,7 +183,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrls,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -198,7 +201,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrls,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'protocol_id' => 1,
                 'domain_id' => 1,
@@ -217,7 +220,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrls,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'protocol_id' => 1,
                 'domain_id' => 2,
@@ -257,7 +260,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRoutes,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'name' => $routeName,
                 'action' => $routeAction,
@@ -272,7 +275,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseMissing(
-            ConfigService::$tableRoutes,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'id' => 1,
             ]
@@ -286,7 +289,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequestMethods,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'method' => 'GET',
             ]
@@ -300,7 +303,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequestAgents,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'name' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
                 'browser' => 'Chrome',
@@ -316,7 +319,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequestDevices,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'platform' => 'Windows',
                 'platform_version' => '10.0',
@@ -334,7 +337,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequestLanguages,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'preference' => 'en-gb',
                 'language_range' => 'en-gb,en-us,en',
@@ -366,7 +369,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequests,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'id' => '1',
                 'uuid' => RequestTracker::$uuid,
@@ -430,7 +433,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequests,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'id' => '1',
                 'uuid' => RequestTracker::$uuid,
@@ -459,7 +462,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->sendRequestAndCallProcessCommand($request);
 
             $this->assertDatabaseHas(
-                ConfigService::$tableRequests,
+                config('railtracker.table_prefix') . 'url_protocols',
                 [
                     'id' => $i + 1,
                 ]
@@ -480,7 +483,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequests,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'user_id' => null,
                 'cookie_id' => 'kmn234',
@@ -508,7 +511,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableRequests,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'user_id' => $userId,
                 'cookie_id' => 'kmn234',
@@ -526,15 +529,15 @@ class RequestTrackerTest extends RailtrackerTestCase
         $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
         $this->sendRequestAndCallProcessCommand($request);
-        $this->assertDatabaseHas(ConfigService::$tableRequests,['user_id' => null,'cookie_id' => 'kmn234',]);
+        $this->assertDatabaseHas(config('railtracker.table_prefix') . 'url_protocols',['user_id' => null,'cookie_id' => 'kmn234',]);
 
         $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
         $userId = $this->createAndLogInNewUser();
         $request->setUserResolver(function () use ($userId) { return User::query()->find($userId); });
 
         $this->sendRequestAndCallProcessCommand($request);
-        $this->assertDatabaseHas(ConfigService::$tableRequests,['user_id' => $userId,'cookie_id' => 'kmn234',]);
-        $this->assertEquals($userId, DB::table(ConfigService::$tableRequests)->first()->user_id);
+        $this->assertDatabaseHas(config('railtracker.table_prefix') . 'url_protocols',['user_id' => $userId,'cookie_id' => 'kmn234',]);
+        $this->assertEquals($userId, DB::table(config('railtracker.table_prefix') . 'url_protocols')->first()->user_id);
     }
 
     public function test_user_id_set_on_old_requests_after_authentication_multiple_users()
@@ -558,7 +561,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
             $this->sendRequest($request);
             $this->assertDatabaseMissing(
-                ConfigService::$tableRequests,
+                config('railtracker.table_prefix') . 'url_protocols',
                 ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
             );
         }
@@ -577,7 +580,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         for ($i = 0; $i < $numberToRun; $i++) {
             $this->assertDatabaseHas(
-                ConfigService::$tableRequests,
+                config('railtracker.table_prefix') . 'url_protocols',
                 ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
             );
         }
@@ -609,7 +612,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         // ============================ second set of assertions =======================================================
 
-        $requests = collect(DB::table(ConfigService::$tableRequests)->get()->all());
+        $requests = collect(DB::table(config('railtracker.table_prefix') . 'url_protocols')->get()->all());
 
         $requestsKeyedByCookieId = [];
 
@@ -620,7 +623,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         for ($i = 0; $i < $numberToRun; $i++) {
             $this->assertDatabaseHas(
-                ConfigService::$tableRequests,
+                config('railtracker.table_prefix') . 'url_protocols',
                 ['user_id' => $userIds[$i], 'cookie_id' => $cookieKeys[$i]]
             );
 
@@ -655,7 +658,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
             $this->sendRequest($request);
             $this->assertDatabaseMissing(
-                ConfigService::$tableRequests,
+                config('railtracker.table_prefix') . 'url_protocols',
                 ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
             );
         }
@@ -672,7 +675,7 @@ class RequestTrackerTest extends RailtrackerTestCase
                 $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
                 $this->sendRequest($request);
                 $this->assertDatabaseMissing(
-                    ConfigService::$tableRequests,
+                    config('railtracker.table_prefix') . 'url_protocols',
                     ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
                 );
             }
@@ -696,7 +699,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         for ($i = 0; $i < $numberOrUsers; $i++) {
             $this->assertDatabaseHas(
-                ConfigService::$tableRequests,
+                config('railtracker.table_prefix') . 'url_protocols',
                 ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
             );
         }
@@ -740,7 +743,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         // ============================ secondary set of assertions ====================================================
 
-        $requests = collect(DB::table(ConfigService::$tableRequests)->get()->all());
+        $requests = collect(DB::table(config('railtracker.table_prefix') . 'url_protocols')->get()->all());
 
         $requestsKeyedByCookieId = [];
 
@@ -751,7 +754,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         for ($i = 0; $i < $numberOrUsers; $i++) {
             $this->assertDatabaseHas(
-                ConfigService::$tableRequests,
+                config('railtracker.table_prefix') . 'url_protocols',
                 ['user_id' => $userIds[$i], 'cookie_id' => $cookieKeys[$i]]
             );
 
@@ -769,7 +772,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableUrlPaths,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'path' => '/test1',
             ]
@@ -784,7 +787,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseMissing(
-            ConfigService::$tableUrlPaths,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'path' => '/media-playback-tracking/media-playback-session',
             ]
@@ -799,7 +802,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseMissing(
-            ConfigService::$tableUrlPaths,
+            config('railtracker.table_prefix') . 'url_protocols',
             [
                 'path' => '/media-playback-tracking/media-playback-session',
             ]
@@ -1102,7 +1105,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         foreach($expected as $expectedRow){
             $this->assertDatabaseHas(
-                ConfigService::$tableGeoIP,
+                config('railtracker.table_prefix') . 'url_protocols',
                 $expectedRow
             );
         }

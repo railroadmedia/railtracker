@@ -7,9 +7,9 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Railroad\Railtracker\Services\BatchService;
-use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
+use Railroad\Railtracker\ValueObjects\RequestVO;
 use Ramsey\Uuid\Uuid;
 
 class RailtrackerMiddleware
@@ -39,7 +39,8 @@ class RailtrackerMiddleware
         RequestTracker $requestTracker,
         ResponseTracker $responseTracker,
         BatchService $batchService
-    ) {
+    )
+    {
         $this->requestTracker = $requestTracker;
         $this->responseTracker = $responseTracker;
         $this->batchService = $batchService;
@@ -48,64 +49,61 @@ class RailtrackerMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  Request $request
-     * @param  Closure $next
+     * @param Request $request
+     * @param Closure $next
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
     {
+        // skip if disabled in the config
         if (config('railtracker.global_is_active') != true) {
             return $next($request);
         }
 
-        $response = null;
-        $requestId = null;
-        $userId = $request->user();
-        $exclude = false;
-        $cookie = null;
-
-        foreach (ConfigService::$exclusionRegexPaths as $exclusionRegexPath) {
+        // if the path is in the exclusions skip the request
+        foreach (config('railtracker.exclusion_regex_paths') as $exclusionRegexPath) {
             if (preg_match($exclusionRegexPath, $request->path())) {
-                $exclude = true;
+                return $next($request);
             }
         }
 
-        if (!$exclude) {
-            
-            RequestTracker::$uuid = Uuid::uuid4()->toString();
+        // set visitor cookie if there isn't one already and there is no authenticated user
+        if (empty($request->user()) && !$request->cookies->has(RequestVO::$visitorCookieKey)) {
+            $cookieId = Uuid::uuid4()->toString();
+            $cookie = cookie()->forever(RequestVO::$visitorCookieKey, $cookieId);
 
-            if (is_null($userId) && !$request->cookies->has(RequestTracker::$cookieKey)) {
-                $cookieId = Uuid::uuid4()->toString();
-                $cookie = cookie()->forever(RequestTracker::$cookieKey, $cookieId);
+            $request->cookies->set(RequestVO::$visitorCookieKey, $cookieId);
+        }
 
-                $request->cookies->set(RequestTracker::$cookieKey, $cookieId);
-            }
+        // send request to cache
+        try {
+            $requestVO = new RequestVO($request);
+
+            $this->batchService->storeRequest($requestVO);
+        } catch (Exception $exception) {
+            error_log($exception);
+        }
+
+        // send response to app
+        /** @var Response $response */
+        $response = $next($request);
+
+        // add response data and resend request to cache
+        if (!empty($requestVO)) {
 
             try {
-                $serializedRequestEntity = $this->requestTracker->serializedFromHttpRequest($request);
-                $this->batchService->addToBatch($serializedRequestEntity, $serializedRequestEntity['uuid']);
+                $requestVO->setResponseData($response);
+
+                $this->batchService->storeRequest($requestVO);
             } catch (Exception $exception) {
                 error_log($exception);
             }
 
-            /** @var Response $response */
-            $response = $next($request);
+        }
 
-            try {
-                $responseData = $this->responseTracker->serializedFromHttpResponse($response);
-                $this->batchService->addToBatch($responseData, RequestTracker::$uuid);
-
-            } catch (Exception $exception) {
-                error_log($exception);
-            }
-
-            // set tracking cookie on response
-            if (!empty($cookie) && !empty($response)) {
-                $response->withCookie($cookie);
-            }
-
-        } else {
-            $response = $next($request);
+        // set tracking cookie on response
+        if (!empty($cookie) && !empty($response)) {
+            $response->withCookie($cookie);
         }
 
         return $response;

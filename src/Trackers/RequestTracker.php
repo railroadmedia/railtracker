@@ -30,6 +30,7 @@ use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Services\ConfigService;
+use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class RequestTracker extends TrackerBase
 {
@@ -93,29 +94,9 @@ class RequestTracker extends TrackerBase
         $request = new RequestEntity();
         $userAgent = new Agent($httpRequest->server->all());
 
-        $request->setUuid(self::$uuid);
-        $request->setUserId(auth()->id());
-        $request->setCookieId($httpRequest->cookie(self::$cookieKey));
-        $request->setGeoip(null);
-        $request->setClientIp(substr($this->getClientIp($httpRequest), 0, 64));
-        $request->setIsRobot($userAgent->isRobot());
-        $request->setRequestedOn(
-            Carbon::now()
-                ->toDateTimeString()
-        );
+        $request = new RequestVO($httpRequest);
 
-        $request = $this->serialize($request);
-
-        // Because these have nested|associated objects we can't use $this->serialize()
-        $request['url'] = $this->fillUrl($httpRequest->fullUrl(), true);
-        $request['refererUrl'] = $this->fillUrl($httpRequest->headers->get('referer'), true);
-
-        $request['agent'] = $this->serialize($this->fillRequestAgent($userAgent));
-        $request['device'] = $this->serialize($this->fillRequestDevice($userAgent));
-        $request['language'] = $this->serialize($this->fillLanguage($userAgent));
-        $request['method'] = $this->serialize($this->fillMethod($httpRequest->method()));
-        $request['route'] = $this->serialize($this->fillRoute($httpRequest));
-        $request['type'] = 'request';
+        dd(unserialize(serialize($request)));
 
         return $request;
     }
