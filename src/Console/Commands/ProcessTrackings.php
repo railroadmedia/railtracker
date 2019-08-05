@@ -168,6 +168,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $this->batchService->forget($keys);
 
                 $this->processRequests($valuesThisChunk);
+
+                continue;
+
+                // todo: exceptions!
                 $this->processRequestExceptions();
                 $this->processResponses();
 

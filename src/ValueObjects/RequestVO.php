@@ -4,7 +4,6 @@ namespace Railroad\Railtracker\ValueObjects;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Jenssegers\Agent\Agent;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
@@ -80,8 +79,8 @@ class RequestVO
 
         $this->urlProtocol = substr(parse_url($fullUrl)['scheme'], 0, 32);
         $this->urlDomain = substr(parse_url($fullUrl)['host'], 0, 128);
-        $this->urlPath = substr(parse_url($fullUrl)['path'] ?? null, 0, 512);
-        $this->urlQuery = substr(parse_url($fullUrl)['query'] ?? null, 0, 1280);
+        $this->urlPath = !empty(parse_url($fullUrl)['path']) ? substr(parse_url($fullUrl)['path'], 0, 512) : null;
+        $this->urlQuery = !empty(parse_url($fullUrl)['query']) ? substr(parse_url($fullUrl)['query'], 0, 1280) : null;
 
         // method
         $this->method = substr($httpRequest->method(), 0, 10);
@@ -110,8 +109,10 @@ class RequestVO
 
         $this->refererUrlProtocol = substr(parse_url($fullRefererUrl)['scheme'], 0, 32);
         $this->refererUrlDomain = substr(parse_url($fullRefererUrl)['host'], 0, 128);
-        $this->refererUrlPath = substr(parse_url($fullRefererUrl)['path'] ?? null, 0, 512);
-        $this->refererUrlQuery = substr(parse_url($fullRefererUrl)['query'] ?? null, 0, 1280);
+        $this->refererUrlPath = !empty(parse_url($fullRefererUrl)['path']) ?
+            substr(parse_url($fullRefererUrl)['path'], 0, 512) : null;
+        $this->refererUrlQuery = !empty(parse_url($fullRefererUrl)['query']) ?
+            substr(parse_url($fullRefererUrl)['query'], 0, 1280) : null;
 
         // language
         $this->languagePreference = substr($userAgentObject->languages()[0] ?? 'en', 0, 10);

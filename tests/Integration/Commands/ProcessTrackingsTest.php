@@ -48,13 +48,16 @@ class ProcessTrackingsTest extends RailtrackerTestCase
         $this->go(100,60, false);
         $this->go(100,40, false);
         $this->go(100,20, false);
+        
 
+        dd($this->seeDbWhileDebugging());
+        
         $time = round(microtime(true) - $tStart, 2);
         $mRaw = floor($time);
         $sRaw = $time - ($mRaw * 60);
         $timePretty = $mRaw . ':' . $sRaw;
         echo "\n";
-        echo 'test_track_response_status_code_to_get_data ran in: ' . $timePretty . "\n";
+        echo 'test_track_response_status_code_to_get_data ran in: ' . $time . "\n";
     }
 
     private function go($testSize, $scanSize, $verbose = true, $throwExceptionsOn = [], $includeMemoryDiff = false)

@@ -89,20 +89,20 @@ class RequestRepository extends TrackerRepositoryBase
             'column' => 'is_robot',
         ],
         'refererUrlProtocol' => [
-            'table' => 'referer_url_protocols',
-            'column' => 'referer_url_protocol',
+            'table' => 'url_protocols',
+            'column' => 'url_protocol',
         ],
         'refererUrlDomain' => [
-            'table' => 'referer_url_domains',
-            'column' => 'referer_url_domain',
+            'table' => 'url_domains',
+            'column' => 'url_domain',
         ],
         'refererUrlPath' => [
-            'table' => 'referer_url_paths',
-            'column' => 'referer_url_path',
+            'table' => 'url_paths',
+            'column' => 'url_path',
         ],
         'refererUrlQuery' => [
-            'table' => 'referer_url_queries',
-            'column' => 'referer_url_query',
+            'table' => 'url_queries',
+            'column' => 'url_query',
         ],
         'languagePreference' => [
             'table' => 'language_preferences',
@@ -227,9 +227,12 @@ class RequestRepository extends TrackerRepositoryBase
                             function () use ($tableAndColumn, $dataToInsert) {
 
                                 foreach ($dataToInsert as $columnValues) {
-                                    $this->databaseManager->connection(config('railtracker.database_connection_name'))
-                                        ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
-                                        ->updateOrInsert($columnValues);
+                                    try {
+                                        $this->databaseManager->connection(config('railtracker.database_connection_name'))
+                                            ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
+                                            ->insert($columnValues);
+                                    } catch (\Exception $exception) {
+                                    }
                                 }
 
                             }
@@ -237,6 +240,17 @@ class RequestRepository extends TrackerRepositoryBase
                 }
             }
         }
+
+        // filter out the requests without response data if one exists with response data
+        $requestVOs = $requestVOs->filter(
+            function (RequestVO $candidate) use ($requestVOs, $existingRequests) {
+                if (!empty($candidate->respondedOn)) {
+                    return true;
+                }
+
+                return $requestVOs->where('respondedOn', '!=', null)->where('uuid', $candidate->uuid)->count() == 0;
+            }
+        );
 
         $bulkInsertData = [];
 

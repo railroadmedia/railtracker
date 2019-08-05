@@ -90,9 +90,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
+            config('railtracker.table_prefix') . 'url_domains',
             [
-                'name' => 'www.test.com',
+                'url_domain' => 'www.test.com',
             ]
         );
     }
@@ -105,9 +105,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
+            config('railtracker.table_prefix') . 'url_paths',
             [
-                'path' => '/test-path/test/test2/file.php',
+                'url_path' => '/test-path/test/test2/file.php',
             ]
         );
     }
@@ -120,9 +120,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
+            config('railtracker.table_prefix') . 'url_paths',
             [
-                'path' => '/test-path/test/test2',
+                'url_path' => '/test-path/test/test2',
             ]
         );
     }
@@ -135,9 +135,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
+            config('railtracker.table_prefix') . 'url_paths',
             [
-                'path' => '/test-path/test/test2',
+                'url_path' => '/test-path/test/test2',
             ]
         );
     }
@@ -150,27 +150,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
+            config('railtracker.table_prefix') . 'url_queries',
             [
-                'string' => 'test=1&test2=as7da98dsda3-23f23',
-            ]
-        );
-    }
-
-    public function test_track_url()
-    {
-        $url = 'https://www.test.com/test-path/test/test2?test=1&test2=as7da98dsda3-23f23';
-        $request = $this->createRequest($this->faker->userAgent, $url);
-
-        $this->sendRequestAndCallProcessCommand($request);
-
-        $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
-            [
-                'protocol_id' => 1,
-                'domain_id' => 1,
-                'path_id' => 1,
-                'query_id' => 1,
+                'url_query' => 'test=1&test2=as7da98dsda3-23f23',
             ]
         );
     }
@@ -183,12 +165,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
+            config('railtracker.table_prefix') . 'requests',
             [
-                'protocol_id' => 1,
-                'domain_id' => 1,
-                'path_id' => 1,
-                'query_id' => null,
+                'url_query' => null,
             ]
         );
     }
@@ -201,12 +180,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->sendRequestAndCallProcessCommand($request);
 
         $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'url_protocols',
+            config('railtracker.table_prefix') . 'requests',
             [
-                'protocol_id' => 1,
-                'domain_id' => 1,
-                'path_id' => null,
-                'query_id' => null,
+                'url_path' => null,
             ]
         );
     }
