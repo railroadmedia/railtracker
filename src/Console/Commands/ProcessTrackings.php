@@ -172,8 +172,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 continue;
 
                 // todo: exceptions!
-                $this->processRequestExceptions();
-                $this->processResponses();
+                //$this->processRequestExceptions();
 
                 $this->entityManager->clear();
 
@@ -185,7 +184,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
         }
 
-        $this->printTotalResultsInfo($counts);
+       $this->printTotalResultsInfo($counts);
 
         return true;
     }
@@ -207,7 +206,16 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return;
         }
 
-        $this->requestRepository->storeRequests($requestVOs);
+        $created = $this->requestRepository->storeRequests($requestVOs);
+
+        $this->requestTracker->updateUsersAnonymousRequests($created);
+
+        $usersPreviousRequestsByCookieId = $this->findUsersPreviousByRequestCookieId($requestVOs);
+
+        $this->requestTracker->fireRequestTrackedEvents(
+            $created,
+            $usersPreviousRequestsByCookieId
+        );
 
         return;
 
@@ -215,13 +223,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $geoIpEntitiesKeyedByIp = $this->getGeoIpEntitiesCreateWhereNeeded($this->getGeoIpData($requests));
 
         $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntitiesKeyedByIp);
-
-        $this->requestTracker->updateUsersAnonymousRequests($this->requestsThisChunk);
-
-        $this->requestTracker->fireRequestTrackedEvents(
-            $this->requestsThisChunk,
-            $this->findUsersPreviousByRequestCookieId($requests)
-        );
     }
 
     /**
@@ -673,7 +674,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private function findUsersPreviousByRequestCookieId($requests)
     {
         foreach ($requests as $request) {
-            if ($request['userId'] !== null) {
+            if ($request->userId !== null) {
                 $previousRequests = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
                 $enough = count($previousRequests) >= 2;
                 if (!$enough) {

@@ -241,7 +241,13 @@ class RequestRepository extends TrackerRepositoryBase
             }
         }
 
-        // filter out the requests without response data if one exists with response data
+        /*
+         * Filter out the requests without response data if one exists with response data
+         *
+         * Why: successful requests will have two RequestVOs; the one from before the response was generated, and one
+         * from after. If response generation was successful (app didn't crash let's say), then we want to use the
+         * RequestVO that has the response data in it, not the earlier version that is now obsolete.
+         */
         $requestVOs = $requestVOs->filter(
             function (RequestVO $candidate) use ($requestVOs, $existingRequests) {
                 if (!empty($candidate->respondedOn)) {
@@ -301,10 +307,23 @@ class RequestRepository extends TrackerRepositoryBase
             ];
         }
 
-        // then populate the requests table
-        if (!empty($bulkInsertData)) {
-            $builder->from(config('railtracker.table_prefix') . 'requests')
-                ->insert($bulkInsertData);
+        foreach(array_chunk($bulkInsertData, 50) as $chunkOfBulkInsertData){
+            // then populate the requests table
+            if (!empty($chunkOfBulkInsertData)) {
+                $builder->from(config('railtracker.table_prefix') . 'requests')
+                    ->insert($chunkOfBulkInsertData);
+            }
         }
+
+        $uuids = array_column($chunkOfBulkInsertData ?? [], 'uuid');
+
+        /* is this ok? */
+        $presumablyCreatedRows = $builder
+                ->from(config('railtracker.table_prefix') . 'requests')
+                ->select()
+                ->whereIn('uuid', $uuids)
+                ->get();
+
+        return $presumablyCreatedRows ?? new Collection();
     }
 }

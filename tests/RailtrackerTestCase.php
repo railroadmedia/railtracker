@@ -554,21 +554,15 @@ class RailtrackerTestCase extends BaseTestCase
     protected function getRequestsForUser(
         $userId,
         $limit = 25,
-        $skip = 0,
-        $orderByProperty = 'requestedOn',
-        $orderByDirection = 'desc'
+        $skip = 0
     )
     {
-        $results =
-            $this->entityManager->createQueryBuilder()
-                ->select('r')
-                ->from('\Railroad\Railtracker\Entities\Request', 'r')
-                ->where('r.userId = ' . $userId)
-                ->orderBy('r.' . $orderByProperty, $orderByDirection)
-                ->setFirstResult($skip)
-                ->setMaxResults($limit)
-                ->getQuery()
-                ->getResult();
+        $results = $this->databaseManager
+            ->table(config('railtracker.table_prefix') . 'requests')
+            ->where('user_id', $userId)
+            ->limit($limit)
+            ->skip($skip)
+            ->get();
 
         return $results;
     }

@@ -14,6 +14,10 @@ use Illuminate\Support\Arr;
  */
 class BulkInsertOrUpdateBuilder extends Builder
 {
+    /**
+     * @param array $values
+     * @return bool
+     */
     public function insertOrUpdate(array $values)
     {
         if (empty($values)) {

@@ -55,6 +55,8 @@ class RequestVO
 
     public $tStart;
 
+    public static $TIME_FORMAT = 'Y-m-d H:i:s.u';
+
     /**
      * RequestVO constructor.
      */
@@ -122,7 +124,7 @@ class RequestVO
         $this->ipAddress = $this->getClientIp($httpRequest);
 
         // requested on
-        $this->requestedOn = Carbon::now()->format('Y-m-d H:i:s.u');
+        $this->requestedOn = Carbon::now()->format(self::$TIME_FORMAT);
 
     }
 

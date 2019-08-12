@@ -540,17 +540,19 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param Collection|Request[] $requests
+     * @param Collection|RequestVO[] $requests
      * @return void
      */
     public function updateUsersAnonymousRequests(Collection $requests)
     {
         foreach($requests as $request){
-            $userId = $request->getUserId();
-            $cookieId = $request->getCookieId();
+            $userId = $request->user_id;
+            $cookieId = $request->cookie_id;
+
+            $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
 
             if (!empty($userId) && !empty($cookieId)) {
-                $this->databaseManager->table(ConfigService::$tableRequests)
+                $this->databaseManager->table($table)
                     ->where(['cookie_id' => $cookieId])
                     ->whereNull('user_id')
                     ->update(['user_id' => $userId]);
@@ -561,25 +563,28 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param Collection $requestEntities
+     * @param Collection|RequestVO[] $requestEntities
      * @param array $usersPreviousRequestsByCookieId
      */
     public function fireRequestTrackedEvents(Collection $requestEntities, $usersPreviousRequestsByCookieId = [])
     {
-        /** @var Request $requestEntity */
         foreach($requestEntities as $requestEntity){
 
-            $timeOfPreviousRequest =
-                $usersPreviousRequestsByCookieId[$requestEntity->getCookieId()]->requested_on ?? null;
+            $userHasPreviousRequest = !empty($usersPreviousRequestsByCookieId[$requestEntity->cookie_id]);
+
+            if($userHasPreviousRequest){
+                $previousRequest = $usersPreviousRequestsByCookieId[$requestEntity->cookie_id];
+                $timeOfPreviousRequest = $previousRequest->requested_on;
+            }
 
             event(
                 new RequestTracked(
-                    $requestEntity->getId(),
-                    $requestEntity->getUserId(),
-                    $requestEntity->getClientIp(),
-                    $requestEntity->getAgent()->getName(),
-                    $requestEntity->getRequestedOn(),
-                    $timeOfPreviousRequest
+                    $requestEntity->id,
+                    $requestEntity->user_id,
+                    $requestEntity->ip_address,
+                    $requestEntity->agent_string,
+                    $requestEntity->requested_on,
+                    $timeOfPreviousRequest ?? null
                 )
             );
         }
@@ -591,8 +596,10 @@ class RequestTracker extends TrackerBase
      */
     public function getPreviousRequestsDatabaseRows($requestEntity)
     {
-        $results = $this->databaseManager->table(ConfigService::$tableRequests)
-            ->where(['user_id' => $requestEntity['userId']])
+        $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
+
+        $results = $this->databaseManager->table($table)
+            ->where(['user_id' => $requestEntity->userId])
             ->get()
             ->all();
 
