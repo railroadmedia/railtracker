@@ -37,22 +37,6 @@ return [
     // route middleware group
     'route_middleware_logged_in_groups' => 'web',
 
-    // ip tracking api info
-    'ip-api' => [
-        'default-fields' => implode(',',[
-            'status',
-            'country', // country_name
-            'countryCode', // country_code
-            'region',
-            'regionName',
-            'city',
-            'zip', // postal_code
-            'lat', // latitude
-            'lon', // longitude
-            'timezone',
-            'currency',
-            'query',// ip_address
-        ]),
-        'test-ip' => null, // any ip address
-    ],
+    // ip_data_api
+    'ip_data_api_key' => env('IP_DATA_API_KEY')
 ];

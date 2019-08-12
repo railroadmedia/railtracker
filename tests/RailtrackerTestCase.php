@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Tests;
 
 use Carbon\Carbon;
 use Doctrine\ORM\EntityManager;
+use Dotenv\Dotenv;
 use Exception;
 use Faker\Generator;
 use Illuminate\Auth\AuthManager;
@@ -139,6 +140,9 @@ class RailtrackerTestCase extends BaseTestCase
      */
     protected function getEnvironmentSetUp($app)
     {
+        $dotenv = new Dotenv(__DIR__ . '/../', '.env.testing');
+        $dotenv->load();
+
         // Setup package config for testing
         $defaultConfig = require(__DIR__ . '/../config/railtracker.php');
 
@@ -232,7 +236,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         $app['config']->set('railtracker.batch_prefix', $batchPrefix);
 
-        config()->set('railtracker.ip-api.default-fields', $defaultConfig['ip-api']['default-fields']);
+        config()->set('railtracker.ip_data_api_key', env('IP_DATA_API_KEY'));
 
         $app->register(RailtrackerServiceProvider::class);
     }
@@ -407,7 +411,7 @@ class RailtrackerTestCase extends BaseTestCase
         );
 
         if (!$clientIp) {
-            $clientIp = $this->faker->randomElement([$this->faker->ipv4, $this->faker->ipv6]);
+            $clientIp = $this->faker->ipv4;
         }
 
         if ($this->faker->boolean()) {

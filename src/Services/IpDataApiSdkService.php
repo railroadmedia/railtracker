@@ -3,12 +3,12 @@
 namespace Railroad\Railtracker\Services;
 
 /*
- * SDK for ip-api.com
+ * SDK for ipdata.co
  *
  * See their docs:
- * http://ip-api.com/docs/api:batch
+ * https://docs.ipdata.co/api-reference/bulk-lookup
  */
-class IpApiSdkService
+class IpDataApiSdkService
 {
     /**
      * @param array $ips
@@ -16,21 +16,12 @@ class IpApiSdkService
      */
     public function bulkRequest($ips)
     {
-        $requests = [];
-
-        $fields = config('railtracker.ip-api.default-fields');
-
-        foreach($ips as $ip){
-            $requests[] = [
-                'query' => $ip,
-                'fields' => $fields,
-            ];
+        if(empty($ips)){
+            return [];
         }
 
-        $postFields = json_encode($requests);
-
         try{
-            $response = $this->curl($postFields);
+            $response = $this->curl(json_encode($ips));
         }catch(\Exception $exception){
             error_log($exception);
             return false;
@@ -51,8 +42,12 @@ class IpApiSdkService
 
     private function curl($postFields)
     {
+        $apiKey = config('railtracker.ip_data_api_key');
+
+        $url = 'https://api.ipdata.co/bulk?api-key=' . $apiKey;
+
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'http://ip-api.com/batch');
+        curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

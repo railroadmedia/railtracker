@@ -5,7 +5,7 @@ namespace Railroad\Railtracker\Tests\ExternalApi;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 
-class IpApiTest extends RailtrackerTestCase
+class IpDataApiTest extends RailtrackerTestCase
 {
     /** @var IpDataApiSdkService */
     private $ipDataApiSdkService;
@@ -28,15 +28,13 @@ class IpApiTest extends RailtrackerTestCase
     {
         $ips = [];
 
-        $amount = 100;
+        $amount = 1;
 
         for($i = 0; $i < $amount; $i++){
             $ips[] = $this->faker->ipv4;
         }
 
         $output = $this->ipDataApiSdkService->bulkRequest($ips);
-
-        $fields = explode(',', config('railtracker.ip-api.default-fields'));
 
         foreach($output as $single){
             if(empty($single['status'])){
@@ -46,10 +44,6 @@ class IpApiTest extends RailtrackerTestCase
 
             if($single['status'] === 'fail'){
                 continue;
-            }
-
-            if(count($single) !== count($fields)){
-                $fieldCountDoesNotMatchExpected[] = $single;
             }
         }
 
@@ -61,4 +55,17 @@ class IpApiTest extends RailtrackerTestCase
 
         $this->expectNotToPerformAssertions();
     }
+
+    // --------------- uncomment to test a specific ip ---------------
+
+//    public function test_dump_response_for_hardcoded_ip()
+//    {
+//        $ips = ['108.172.176.221'];
+//
+//        $output = $this->ipDataApiSdkService->bulkRequest($ips);
+//
+//        dump($output);
+//
+//        $this->expectNotToPerformAssertions();
+//    }
 }

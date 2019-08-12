@@ -270,39 +270,12 @@ class GeoIp extends RailtrackerEntity implements RailtrackerEntityInterface
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    public static function generateHash($data)
-    {
-        return md5(implode('-', [
-            $data['lat'] ?? null,
-            $data['lon'] ?? null,
-            $data['countryCode'] ?? null,
-            $data['country'] ?? null,
-            $data['regionName'] ?? null,
-            $data['city'] ?? null,
-            $data['zip'] ?? null,
-            $data['query'] ?? null,
-            $data['timezone'] ?? null,
-            $data['currency'] ?? null,
-        ]));
-    }
-
     /**
      *
      */
     public function setHash()
     {
-        $this->hash = md5(implode('-', [
-            $this->getLatitude(),
-            $this->getLongitude(),
-            $this->getCountryCode(),
-            $this->getCountryName(),
-            $this->getRegion(),
-            $this->getCity(),
-            $this->getPostalCode(),
-            $this->getIpAddress(),
-            $this->getTimezone(),
-            $this->getCurrency(),
-        ]));
+        $this->hash = $this->getIpAddress();
     }
 
     /**
@@ -315,20 +288,20 @@ class GeoIp extends RailtrackerEntity implements RailtrackerEntityInterface
 
     public function setFromData($data)
     {
-        $success = $data['status'] === 'success' && $data['status'] !== 'fail';
+        $success = !empty($data['latitude']) && !empty($data['longitude']);
 
-        $this->setIpAddress($data['query']);
+        $this->setIpAddress($data['ip']);
 
         if($success){
-            $this->setLatitude($data['lat']);
-            $this->setLongitude($data['lon']);
-            $this->setCountryCode($data['countryCode']);
-            $this->setCountryName($data['country']);
-            $this->setRegion($data['regionName']);
+            $this->setLatitude($data['latitude']);
+            $this->setLongitude($data['longitude']);
+            $this->setCountryCode($data['country_code']);
+            $this->setCountryName($data['country_name']);
+            $this->setRegion($data['region']);
             $this->setCity($data['city']);
-            $this->setPostalCode($data['zip']);
-            $this->setTimezone($data['timezone']);
-            $this->setCurrency($data['currency']);
+            $this->setPostalCode($data['postal']);
+            $this->setTimezone($data['time_zone']->name);
+            $this->setCurrency($data['currency']->name);
         }
     }
 
