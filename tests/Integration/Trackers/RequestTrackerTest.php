@@ -1676,7 +1676,7 @@ class RequestTrackerTest extends RailtrackerTestCase
     public function test_geoip_table_populated()
     {
         $input = IpDataApiStubDataProvider::$INPUT;
-        $output = collect(IpDataApiStubDataProvider::output());
+        $output = IpDataApiStubDataProvider::output();
         $expected = IpDataApiStubDataProvider::expectedInDatabase();
 
         $this->ipDataApiSdkServiceMock

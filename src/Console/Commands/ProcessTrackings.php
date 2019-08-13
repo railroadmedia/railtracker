@@ -6,7 +6,6 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Entities\Exception as ExceptionEntity;
-use Railroad\Railtracker\Entities\GeoIp;
 use Railroad\Railtracker\Entities\RailtrackerEntityInterface;
 use Railroad\Railtracker\Entities\Request;
 use Railroad\Railtracker\Entities\RequestAgent;
@@ -25,7 +24,7 @@ use Railroad\Railtracker\Entities\UrlQuery;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Repositories\RequestRepository;
 use Railroad\Railtracker\Services\BatchService;
-use Railroad\Railtracker\Services\IpApiSdkService;
+use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
@@ -90,9 +89,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $responsesThisChunk;
 
     /**
-     * @var IpApiSdkService
+     * @var IpDataApiSdkService
      */
-    private $ipApiSdkService;
+    private $ipDataApiSdkService;
 
     /**
      * @var RequestRepository
@@ -106,7 +105,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @param ExceptionTracker $exceptionTracker
      * @param ResponseTracker $responseTracker
      * @param RailtrackerEntityManager $entityManager
-     * @param IpApiSdkService $ipApiSdkService
+     * @param IpDataApiSdkService $ipDataApiSdkService
      * @param RequestRepository $requestRepository
      */
     public function __construct(
@@ -115,7 +114,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         ExceptionTracker $exceptionTracker,
         ResponseTracker $responseTracker,
         RailtrackerEntityManager $entityManager,
-        IpApiSdkService $ipApiSdkService,
+        IpDataApiSdkService $ipDataApiSdkService,
         RequestRepository $requestRepository
     )
     {
@@ -126,7 +125,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->exceptionTracker = $exceptionTracker;
         $this->responseTracker = $responseTracker;
         $this->entityManager = $entityManager;
-        $this->ipApiSdkService = $ipApiSdkService;
+        $this->ipDataApiSdkService = $ipDataApiSdkService;
         $this->requestRepository = $requestRepository;
     }
 
@@ -167,6 +166,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 $this->batchService->forget($keys);
 
+                // this here?
+//                // todo: change?
+//                $this->getGeoIpEntitiesCreateWhereNeeded()
+
+
+
                 $this->processRequests($valuesThisChunk);
 
                 continue;
@@ -206,6 +211,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return;
         }
 
+
+        $this->getAndAttachGeoIpData($requestVOs);
+
         $created = $this->requestRepository->storeRequests($requestVOs);
 
         $this->requestTracker->updateUsersAnonymousRequests($created);
@@ -218,9 +226,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         );
 
         return;
-
-        // todo: geoip data
-        $geoIpEntitiesKeyedByIp = $this->getGeoIpEntitiesCreateWhereNeeded($this->getGeoIpData($requests));
 
         $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntitiesKeyedByIp);
     }
@@ -690,52 +695,54 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @param Collection $requests
+     * @param Collection|RequestVO $requests
+     * @return Collection
      */
     private function getGeoIpData(Collection $requests)
     {
         $ips = $requests->map(
             function ($request) {
-                /** @var Request $request */
-                return $request['clientIp'];
+                /** @var RequestVO $request */
+                return $request->ipAddress;
             }
         )->toArray();
 
-        $results = $this->ipApiSdkService->bulkRequest($ips);
+        $results = $this->ipDataApiSdkService->bulkRequest($ips);
 
         return collect($results);
     }
 
     /**
-     * @param $geoIpData
-     * @return array
+     * @param Collection|RequestVO[] $requestVOs
      */
-    private function getGeoIpEntitiesCreateWhereNeeded($geoIpData)
+    private function getAndAttachGeoIpData(Collection &$requestVOs)
     {
-        $geoIpEntities = collect([]);
+        // todo: Don't query the API for data we already have in DB. Instead, get most recent request row with ip_address
+        // todo: ... matching ips in our RequestVOs, then split those RequestVOs out and fill in the ip fields. *Then*
+        // todo: ... with the remaining RequestVOs query the API, using the results to fill in fields.
 
-        $geoIpDataKeyedByHash = [];
+        $geoIpData = $this->getGeoIpData($requestVOs);
 
-        foreach ($geoIpData as $datum) {
-            $geoIpDataKeyedByHash[GeoIp::generateHash($datum)] = $datum;
-        }
+        $requestVOs->map(function($requestVO) use ($geoIpData){
+            /** @var RequestVO $requestVO */
+            $ipAddress = $requestVO->ipAddress;
 
-        try {
-            $geoIpEntities = collect($this->getExistingBulkInsertNew(GeoIp::class, $geoIpDataKeyedByHash));
-            $this->entityManager->flush();
-        } catch (Exception $e) {
-            error_log($e);
-        }
+            $ipDataForRequestVO = $geoIpData->filter(
+                function($candidate) use ($ipAddress){
+                    return $ipAddress === $candidate['ip'];
+                }
+            )->first();
 
-        // key by IP
-        $geoIpEntities = $geoIpEntities->mapWithKeys(
-            function ($geoIpEntity) {
-                /** @var $geoIpEntity GeoIp */
-                return [$geoIpEntity->getIpAddress() => $geoIpEntity];
-            }
-        );
-
-        return $geoIpEntities;
+            $requestVO->ipLatitude = $ipDataForRequestVO['latitude'];
+            $requestVO->ipLongitude = $ipDataForRequestVO['longitude'];
+            $requestVO->ipCountryCode = $ipDataForRequestVO['country_code'];
+            $requestVO->ipCountryName = $ipDataForRequestVO['country_name'];
+            $requestVO->ipRegion = $ipDataForRequestVO['region_code'];
+            $requestVO->ipCity = $ipDataForRequestVO['city'];
+            $requestVO->ipPostalZipCode = $ipDataForRequestVO['postal'];
+            $requestVO->ipTimezone = $ipDataForRequestVO['time_zone']->name;
+            $requestVO->ipCurrency = $ipDataForRequestVO['currency']->code;
+        });
     }
 
     // -----------------------------------------------------------------------------------------------------------------
