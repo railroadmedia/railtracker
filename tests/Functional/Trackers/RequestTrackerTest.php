@@ -22,29 +22,28 @@ class RequestTrackerTest extends RailtrackerTestCase
             ->setMethods(['bulkRequest'])
             ->getMock();
 
-        $arrayNotEmpty = $this->callback(function($array){
-            return !empty($array);
-        });
+        /*
+         * That the first is not empty but the second *is*... is the key point of this test.
+         *
+         * We're asserting that's the API isn't called because we don't need to because we got the data from our DB
+         */
 
-        $arrayEmpty = $this->callback(function($array){
-            return empty($array);
-        });
-
+        // first *not* empty
         $ipDataApiSdkServiceMock
             ->expects($this->at(0))
             ->method('bulkRequest')
-            ->with($arrayNotEmpty)
+            ->with($this->callback(function($array){
+                return !empty($array);
+            }))
             ->willReturn($output);
 
-        /*
-         * The "->with($arrayEmpty)" is the key point of this test—asserting that's there's no diff between ips in
-         * second set of requests processed and ips recorded in first set of processing and then retrieved from table
-         * when checking for existing.
-         */
+        // second *is* empty
         $ipDataApiSdkServiceMock
             ->expects($this->at(1))
             ->method('bulkRequest')
-            ->with($arrayEmpty)
+            ->with($this->callback(function($array){
+                return empty($array);
+            }))
             ->willReturn([]);
 
         app()->instance(IpDataApiSdkService::class, $ipDataApiSdkServiceMock);
