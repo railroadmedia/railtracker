@@ -3,6 +3,9 @@
 namespace Railroad\Railtracker\Tests\Resources;
 
 
+use Illuminate\Support\Collection;
+use Railroad\Railtracker\ValueObjects\RequestVO;
+
 class IpDataApiStubDataProvider
 {
     public static $INPUT = [
@@ -533,39 +536,26 @@ class IpDataApiStubDataProvider
         );
     }
 
-    public static function expectedInDatabase()
+    /**
+     * @param Collection|RequestVO[] $expected
+     * @return array
+     */
+    public static function expectedInDatabase(Collection $expected)
     {
         $expectedInDatabase = [];
 
-        foreach(self::output() as $request){
+        foreach($expected as $requestVO){
+//            $arrayOfExpected = $requestVO->returnArrayForDatabaseInteraction(false);
+            $arrayOfExpected = $requestVO->returnArrayForDatabaseInteraction();
 
-            if(empty($request['country_name'])) continue;
+            unset($arrayOfExpected['uuid']);
+            unset($arrayOfExpected['cookie_id']);
+            unset($arrayOfExpected['user_id']);
+            unset($arrayOfExpected['response_status_code']);
+            unset($arrayOfExpected['response_duration_ms']);
+            unset($arrayOfExpected['responded_on']);
 
-            $requestForExpectedInDatabase = [];
-
-            foreach($request as $key => $value){
-                switch($key){
-                    case 'country_name';
-                        $requestForExpectedInDatabase['country_name'] = $value;
-                        break;
-                    case 'country_code';
-                        $requestForExpectedInDatabase['country_code'] = $value;
-                        break;
-                    case 'postal';
-                        $requestForExpectedInDatabase['postal_code'] = $value;
-                        break;
-                    case 'latitude';
-                        $requestForExpectedInDatabase['latitude'] = $value;
-                        break;
-                    case 'longitude';
-                        $requestForExpectedInDatabase['longitude'] = $value;
-                        break;
-                    case 'ip';
-                        $requestForExpectedInDatabase['ip_address'] = $value;
-                        break;
-                }
-            }
-            $expectedInDatabase[] = $requestForExpectedInDatabase;
+            $expectedInDatabase[] = $arrayOfExpected;
         }
 
         return $expectedInDatabase;

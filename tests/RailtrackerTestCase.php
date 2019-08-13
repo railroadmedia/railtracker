@@ -461,7 +461,7 @@ class RailtrackerTestCase extends BaseTestCase
                 'HTTP_ACCEPT_ENCODING' => 'gzip, deflate, sdch',
                 'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'HTTP_USER_AGENT' => $this->faker->userAgent,
-                'HTTP_REFERER' => $this->faker->randomElement([$this->faker->url, '']),
+                'HTTP_REFERER' => $this->faker->url,
                 'HTTP_UPGRADE_INSECURE_REQUESTS' => '1',
                 'HTTP_CONNECTION' => 'keep-alive',
                 'HTTP_HOST' => $domain,

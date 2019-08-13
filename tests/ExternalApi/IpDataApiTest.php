@@ -62,9 +62,9 @@ class IpDataApiTest extends RailtrackerTestCase
 //    {
 //        $ips = ['108.172.176.221'];
 //
-//        $output = $this->ipDataApiSdkService->bulkRequest($ips);
+//        $outputMappedByIp = $this->ipDataApiSdkService->bulkRequest($ips);
 //
-//        dump($output);
+//        dump($outputMappedByIp);
 //
 //        $this->expectNotToPerformAssertions();
 //    }

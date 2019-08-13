@@ -264,47 +264,7 @@ class RequestRepository extends TrackerRepositoryBase
          * @var $requestVOs RequestVO[]
          */
         foreach ($requestVOs as $requestVO) {
-            $bulkInsertData[] = [
-                'uuid' => $requestVO->uuid,
-                'cookie_id' => $requestVO->cookieId,
-                'user_id' => $requestVO->userId,
-                'url_protocol' => $requestVO->urlProtocol,
-                'url_domain' => $requestVO->urlDomain,
-                'url_path' => $requestVO->urlPath,
-                'url_query' => $requestVO->urlQuery,
-                'method' => $requestVO->method,
-                'route_name' => $requestVO->routeName,
-                'route_action' => $requestVO->routeAction,
-                'device_kind' => $requestVO->deviceKind,
-                'device_model' => $requestVO->deviceModel,
-                'device_platform' => $requestVO->devicePlatform,
-                'device_version' => $requestVO->deviceVersion,
-                'device_is_mobile' => $requestVO->deviceIsMobile,
-                'agent_string' => $requestVO->agentString,
-                'agent_browser' => $requestVO->agentBrowser,
-                'agent_browser_version' => $requestVO->agentBrowserVersion,
-                'referer_url_protocol' => $requestVO->refererUrlProtocol,
-                'referer_url_domain' => $requestVO->refererUrlDomain,
-                'referer_url_path' => $requestVO->refererUrlPath,
-                'referer_url_query' => $requestVO->refererUrlQuery,
-                'language_preference' => $requestVO->languagePreference,
-                'language_range' => $requestVO->languageRange,
-                'ip_address' => $requestVO->ipAddress,
-                'ip_latitude' => $requestVO->ipLatitude,
-                'ip_longitude' => $requestVO->ipLongitude,
-                'ip_country_code' => $requestVO->ipCountryCode,
-                'ip_country_name' => $requestVO->ipCountryName,
-                'ip_region' => $requestVO->ipRegion,
-                'ip_city' => $requestVO->ipCity,
-                'ip_postal_zip_code' => $requestVO->ipPostalZipCode,
-                'ip_timezone' => $requestVO->ipTimezone,
-                'ip_currency' => $requestVO->ipCurrency,
-                'is_robot' => $requestVO->isRobot,
-                'response_status_code' => $requestVO->responseStatusCode,
-                'response_duration_ms' => $requestVO->responseDurationMs,
-                'requested_on' => $requestVO->requestedOn,
-                'responded_on' => $requestVO->respondedOn,
-            ];
+            $bulkInsertData[] = $requestVO->returnArrayForDatabaseInteraction();
         }
 
         foreach(array_chunk($bulkInsertData, 50) as $chunkOfBulkInsertData){

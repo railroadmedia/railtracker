@@ -181,4 +181,74 @@ class RequestVO
 
         return explode(',', $ip)[0] ?? null;
     }
+
+    /**
+     * @param array $ipDataForRequestVO
+     */
+    public function setIpDataFromApiResult($ipDataForRequestVO)
+    {
+        $this->ipLatitude = $ipDataForRequestVO['latitude'] ?? null;
+        $this->ipLongitude = $ipDataForRequestVO['longitude'] ?? null;
+        $this->ipCountryCode = $ipDataForRequestVO['country_code'] ?? null;
+        $this->ipCountryName = $ipDataForRequestVO['country_name'] ?? null;
+        $this->ipRegion = $ipDataForRequestVO['region_code'] ?? null;
+        $this->ipCity = $ipDataForRequestVO['city'] ?? null;
+        $this->ipPostalZipCode = $ipDataForRequestVO['postal'] ?? null;
+
+        $this->ipTimezone = $ipDataForRequestVO['time_zone'] ? $ipDataForRequestVO['time_zone']->name : null;
+        $this->ipCurrency = $ipDataForRequestVO['currency'] ? $ipDataForRequestVO['currency']->code : null;
+    }
+
+    /**
+     * @return array
+     */
+    public function returnArrayForDatabaseInteraction($selectedOmissionsForTesting = true)
+    {
+        $array = [
+            'uuid' => $this->uuid,
+            'cookie_id' => $this->cookieId,
+            'user_id' => $this->userId,
+            'url_protocol' => $this->urlProtocol,
+            'url_domain' => $this->urlDomain,
+            'url_path' => $this->urlPath,
+            'url_query' => $this->urlQuery,
+            'method' => $this->method,
+            'route_name' => $this->routeName,
+            'route_action' => $this->routeAction,
+            'device_kind' => $this->deviceKind,
+            'device_model' => $this->deviceModel,
+            'device_platform' => $this->devicePlatform,
+            'device_version' => $this->deviceVersion,
+            'device_is_mobile' => (string) $this->deviceIsMobile,
+            'agent_string' => $this->agentString,
+            'agent_browser' => $this->agentBrowser,
+            'agent_browser_version' => $this->agentBrowserVersion,
+            'referer_url_protocol' => $this->refererUrlProtocol,
+            'referer_url_domain' => $this->refererUrlDomain,
+            'referer_url_path' => $this->refererUrlPath,
+            'referer_url_query' => $this->refererUrlQuery,
+            'language_preference' => $this->languagePreference,
+            'language_range' => $this->languageRange,
+            'ip_address' => $this->ipAddress,
+            'ip_latitude' => (string) $this->ipLatitude,
+            'ip_longitude' => (string) $this->ipLongitude,
+            'ip_country_code' => $this->ipCountryCode,
+            'ip_country_name' => $this->ipCountryName,
+            'ip_region' => $this->ipRegion,
+            'ip_city' => $this->ipCity,
+            'ip_postal_zip_code' => $this->ipPostalZipCode,
+            'ip_timezone' => $this->ipTimezone,
+            'ip_currency' => $this->ipCurrency,
+            'is_robot' => (string) $this->isRobot,
+            'requested_on' => $this->requestedOn,
+        ];
+
+        if($selectedOmissionsForTesting){
+            $array['response_status_code'] = $this->responseStatusCode;
+            $array['response_duration_ms'] = $this->responseDurationMs;
+            $array['responded_on'] = $this->respondedOn;
+        }
+
+        return $array;
+    }
 }
