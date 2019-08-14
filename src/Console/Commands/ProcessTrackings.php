@@ -211,6 +211,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
             return;
         }
 
+        $this->requestRepository->removeDuplicateVOs($requestVOs);
 
         $this->getAndAttachGeoIpData($requestVOs);
 
@@ -721,9 +722,60 @@ class ProcessTrackings extends \Illuminate\Console\Command
         // todo: ... matching ips in our RequestVOs, then split those RequestVOs out and fill in the ip fields. *Then*
         // todo: ... with the remaining RequestVOs query the API, using the results to fill in fields.
 
-        $geoIpData = $this->getGeoIpData($requestVOs);
+        foreach($requestVOs as $requestVO){
+            $ipAddresses[] = $requestVO->ipAddress;
+        }
 
-        $requestVOs->map(function($requestVO) use ($geoIpData){
+        $matchingRequests = $this->requestRepository->getMostRecentRequestForEachIpAddress($ipAddresses ?? []);
+
+        // split VOs into those with ipData available from previous requests and those for which we have to query the API
+
+        $requestVOsWithApiData = collect();
+        $requestVOsRequiringApiQuery = collect();
+
+        // if return true, value will be passed to param 1, if false then passed to param 2
+        list($requestVOsWithApiData, $requestVOsRequiringApiQuery) = $requestVOs->partition(
+            function($requestVO) use ($matchingRequests){
+
+                $ipAddress = $requestVO->ipAddress;
+                $matchingRequestsForIpAddress = $matchingRequests->where('ip_address', $ipAddress);
+
+                if($matchingRequestsForIpAddress->count() > 1){
+                    error_log('There should only be one.');
+                }
+
+                $match = $matchingRequestsForIpAddress->count() > 0;
+
+                return $match;
+            }
+        );
+
+        // todo: ===================================================================================
+        // todo:
+        // todo: for those RequestVOs that can get their geo-ip data from existing records, do that.
+        // todo:
+
+
+
+
+
+
+
+                                    // todo: pick up here
+
+
+
+
+
+
+
+        // todo:
+        // todo:
+        // todo: ===================================================================================
+
+        $geoIpData = $this->getGeoIpData($requestVOsRequiringApiQuery);
+
+        $requestVOsRequiringApiQuery->map(function($requestVO) use ($geoIpData){
             /** @var RequestVO $requestVO */
             $ipAddress = $requestVO->ipAddress;
 

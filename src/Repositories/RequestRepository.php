@@ -176,18 +176,6 @@ class RequestRepository extends TrackerRepositoryBase
      */
     public function storeRequests(Collection $requestVOs)
     {
-        $existingRequests = $this->databaseManager->connection(config('railtracker.database_connection_name'))
-            ->table(config('railtracker.table_prefix') . 'requests')
-            ->whereIn('uuid', $requestVOs->pluck('uuid')->toArray())
-            ->get(['uuid'])
-            ->keyBy('uuid');
-
-        $requestVOs = $requestVOs->filter(
-            function (RequestVO $candidate) use ($existingRequests) {
-                return !isset($existingRequests[$candidate->uuid]);
-            }
-        );
-
         // first do all the linked data
         $isSqlLite = $this->databaseManager
                 ->connection(config('railtracker.database_connection_name'))
@@ -241,23 +229,6 @@ class RequestRepository extends TrackerRepositoryBase
             }
         }
 
-        /*
-         * Filter out the requests without response data if one exists with response data
-         *
-         * Why: successful requests will have two RequestVOs; the one from before the response was generated, and one
-         * from after. If response generation was successful (app didn't crash let's say), then we want to use the
-         * RequestVO that has the response data in it, not the earlier version that is now obsolete.
-         */
-        $requestVOs = $requestVOs->filter(
-            function (RequestVO $candidate) use ($requestVOs, $existingRequests) {
-                if (!empty($candidate->respondedOn)) {
-                    return true;
-                }
-
-                return $requestVOs->where('respondedOn', '!=', null)->where('uuid', $candidate->uuid)->count() == 0;
-            }
-        );
-
         $bulkInsertData = [];
 
         /**
@@ -285,5 +256,75 @@ class RequestRepository extends TrackerRepositoryBase
                 ->get();
 
         return $presumablyCreatedRows ?? new Collection();
+    }
+
+    /**
+     * @param Collection|RequestVO[] $requestVOs
+     * @return Collection|RequestVO[] $requestVOs
+     */
+    public function removeDuplicateVOs(Collection &$requestVOs)
+    {
+        $existingRequests = $this->databaseManager->connection(config('railtracker.database_connection_name'))
+            ->table(config('railtracker.table_prefix') . 'requests')
+            ->whereIn('uuid', $requestVOs->pluck('uuid')->toArray())
+            ->get(['uuid'])
+            ->keyBy('uuid');
+
+        $requestVOs = $requestVOs->filter(
+            function (RequestVO $candidate) use ($existingRequests) {
+                return !isset($existingRequests[$candidate->uuid]);
+            }
+        );
+
+        /*
+         * Filter out the requests without response data if one exists with response data
+         *
+         * Why: successful requests will have two RequestVOs; the one from before the response was generated, and one
+         * from after. If response generation was successful (app didn't crash let's say), then we want to use the
+         * RequestVO that has the response data in it, not the earlier version that is now obsolete.
+         */
+        $requestVOs = $requestVOs->filter(
+            function (RequestVO $candidate) use ($requestVOs) {
+
+                $respondedOnIsSetOnCandidate = !empty($candidate->respondedOn);
+
+                if ($respondedOnIsSetOnCandidate) {
+                    return true;
+                }
+
+                $respondedOnSetAndUuidMatchesCandidate =
+                    $requestVOs->where('respondedOn', '!=', null)->where('uuid', $candidate->uuid);
+
+                $noMatchThusUseCurrent = $respondedOnSetAndUuidMatchesCandidate->count() == 0;
+
+                /*
+                 * If there is no match, then the one we're currently looking at the is the only one with this uuid, and
+                 * thus we want to use it.
+                 *
+                 * If there *is* a match then we return false because we want to discard this one and use the one with
+                 * the respondedOn set on it.
+                 */
+
+                return $noMatchThusUseCurrent;
+            }
+        );
+
+        return $requestVOs;
+    }
+
+    /**
+     * @param array $ipAddresses
+     * @return Collection
+     */
+    public function getMostRecentRequestForEachIpAddress($ipAddresses)
+    {
+        $matchingRequests = $this->databaseManager->connection(config('railtracker.database_connection_name'))
+            ->table(config('railtracker.table_prefix') . 'requests')
+            ->whereIn('ip_address', $ipAddresses)
+            ->orderBy('requested_on', 'desc')
+            ->groupBy('ip_address')
+            ->get();
+
+        return $matchingRequests;
     }
 }
