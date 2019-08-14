@@ -213,7 +213,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $this->requestRepository->removeDuplicateVOs($requestVOs);
 
-        $this->getAndAttachGeoIpData($requestVOs);
+        $requestVOs = $this->getAndAttachGeoIpData($requestVOs);
 
         $created = $this->requestRepository->storeRequests($requestVOs);
 
@@ -715,63 +715,61 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
     /**
      * @param Collection|RequestVO[] $requestVOs
+     * @return Collection
      */
-    private function getAndAttachGeoIpData(Collection &$requestVOs)
+    private function getAndAttachGeoIpData(Collection $requestVOs)
     {
-        // todo: Don't query the API for data we already have in DB. Instead, get most recent request row with ip_address
-        // todo: ... matching ips in our RequestVOs, then split those RequestVOs out and fill in the ip fields. *Then*
-        // todo: ... with the remaining RequestVOs query the API, using the results to fill in fields.
+        /*
+         * Don't query the API for data we already have in DB. Instead, get most recent request row with ip_address
+         * matching ips in our RequestVOs, then split those RequestVOs out and fill in the ip fields. *Then*
+         * with the remaining RequestVOs query the API, using the results to fill in fields.
+         */
 
-        foreach($requestVOs as $requestVO){
-            $ipAddresses[] = $requestVO->ipAddress;
-        }
-
-        $matchingRequests = $this->requestRepository->getMostRecentRequestForEachIpAddress($ipAddresses ?? []);
+        $matchingRequests = $this->requestRepository->getMostRecentRequestForEachIpAddress($requestVOs ?? []);
 
         // split VOs into those with ipData available from previous requests and those for which we have to query the API
 
-        $requestVOsWithApiData = collect();
-        $requestVOsRequiringApiQuery = collect();
-
-        // if return true, value will be passed to param 1, if false then passed to param 2
-        list($requestVOsWithApiData, $requestVOsRequiringApiQuery) = $requestVOs->partition(
+        list($requestVOsNotRequiringApiCall, $requestVOsRequiringApiQuery) = $requestVOs->partition(
+            // if return true, value will be passed to param 1, if false then passed to param 2
             function($requestVO) use ($matchingRequests){
 
-                $ipAddress = $requestVO->ipAddress;
-                $matchingRequestsForIpAddress = $matchingRequests->where('ip_address', $ipAddress);
+                $matchingRequestsForIpAddress = $this->requestRecordMatchingIp($requestVO, $matchingRequests);
 
-                if($matchingRequestsForIpAddress->count() > 1){
-                    error_log('There should only be one.');
-                }
+                $matchExists = $matchingRequestsForIpAddress->count() > 0;
 
-                $match = $matchingRequestsForIpAddress->count() > 0;
-
-                return $match;
+                return $matchExists;
             }
         );
 
-        // todo: ===================================================================================
-        // todo:
-        // todo: for those RequestVOs that can get their geo-ip data from existing records, do that.
-        // todo:
+        $requestVOsNotRequiringApiCall = collect($requestVOsNotRequiringApiCall ?? []);
+        $requestVOsRequiringApiQuery = collect($requestVOsRequiringApiQuery ?? []);
 
+        // for those RequestVOs that can get their geo-ip data from existing records, do that.
 
+        $requestVOsNotRequiringApiCall->map(
+            function($requestVO) use($matchingRequests){
 
+                $matchingRequestsForIpAddress = $this->requestRecordMatchingIp($requestVO, $matchingRequests);
 
+                if($matchingRequestsForIpAddress->isEmpty()){
+                    error_log('There shouldn\' be any empty results here');
+                }
 
+                $matchingRequestForIpAddress = $matchingRequestsForIpAddress->first();
 
+                $requestVO->ipLatitude = $matchingRequestForIpAddress->ip_latitude;
+                $requestVO->ipLongitude = $matchingRequestForIpAddress->ip_longitude;
+                $requestVO->ipCountryCode = $matchingRequestForIpAddress->ip_country_code;
+                $requestVO->ipCountryName = $matchingRequestForIpAddress->ip_country_name;
+                $requestVO->ipRegion = $matchingRequestForIpAddress->ip_region;
+                $requestVO->ipCity = $matchingRequestForIpAddress->ip_city;
+                $requestVO->ipPostalZipCode = $matchingRequestForIpAddress->ip_postal_zip_code;
+                $requestVO->ipTimezone = $matchingRequestForIpAddress->ip_timezone;
+                $requestVO->ipCurrency = $matchingRequestForIpAddress->ip_currency;
+            }
+        );
 
-                                    // todo: pick up here
-
-
-
-
-
-
-
-        // todo:
-        // todo:
-        // todo: ===================================================================================
+        // for those RequestVOs that get geo-ip data from API, do that.
 
         $geoIpData = $this->getGeoIpData($requestVOsRequiringApiQuery);
 
@@ -795,11 +793,40 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $requestVO->ipTimezone = $ipDataForRequestVO['time_zone']->name;
             $requestVO->ipCurrency = $ipDataForRequestVO['currency']->code;
         });
+
+        // merge and return
+
+//        $requestVOsNotRequiringApiCall->merge($requestVOsRequiringApiQuery);
+        $requestVOs = $requestVOsRequiringApiQuery->merge($requestVOsNotRequiringApiCall);
+
+        // todo: pick up here? why isn't this changing?
+        // todo: pick up here? why isn't this changing?
+        // todo: pick up here? why isn't this changing?
+        // todo: pick up here? why isn't this changing?
+
+        return $requestVOs;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // helper methods for processing request exceptions ----------------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @param RequestVO $requestVO
+     * @param Collection $matchingRequests
+     * @return Collection
+     */
+    private function requestRecordMatchingIp(RequestVO $requestVO, Collection $matchingRequests)
+    {
+        $ipAddress = $requestVO->ipAddress;
+        $matchingRequestsForIpAddress = $matchingRequests->where('ip_address', $ipAddress);
+
+        if($matchingRequestsForIpAddress->count() > 1){
+            error_log('There should only be one.');
+        }
+
+        return $matchingRequestsForIpAddress;
+    }
 
     /**
      * @param Collection $requestExceptionsData

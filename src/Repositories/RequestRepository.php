@@ -313,11 +313,15 @@ class RequestRepository extends TrackerRepositoryBase
     }
 
     /**
-     * @param array $ipAddresses
+     * @param Collection $requestVOs
      * @return Collection
      */
-    public function getMostRecentRequestForEachIpAddress($ipAddresses)
+    public function getMostRecentRequestForEachIpAddress($requestVOs)
     {
+        foreach($requestVOs as $requestVO){
+            $ipAddresses[] = $requestVO->ipAddress;
+        }
+
         $matchingRequests = $this->databaseManager->connection(config('railtracker.database_connection_name'))
             ->table(config('railtracker.table_prefix') . 'requests')
             ->whereIn('ip_address', $ipAddresses)
