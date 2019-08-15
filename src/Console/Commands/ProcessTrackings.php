@@ -796,15 +796,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         // merge and return
 
-//        $requestVOsNotRequiringApiCall->merge($requestVOsRequiringApiQuery);
-        $requestVOs = $requestVOsRequiringApiQuery->merge($requestVOsNotRequiringApiCall);
+        $requestVOsWithGeoIpData = $requestVOsRequiringApiQuery->merge($requestVOsNotRequiringApiCall);
 
-        // todo: pick up here? why isn't this changing?
-        // todo: pick up here? why isn't this changing?
-        // todo: pick up here? why isn't this changing?
-        // todo: pick up here? why isn't this changing?
-
-        return $requestVOs;
+        return $requestVOsWithGeoIpData;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
