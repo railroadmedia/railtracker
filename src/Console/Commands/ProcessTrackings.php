@@ -317,22 +317,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
     }
 
-    /**
-     * @param $keysThisChunk
-     */
-    private function determineValuesThisChunk($keysThisChunk)
-    {
-        $this->valuesThisChunk = new Collection();
-
-        foreach ($keysThisChunk as $keyThisChunk) {
-            $values = $this->batchService->cache()->smembers($keyThisChunk);
-            foreach ($values as $value) {
-                $this->valuesThisChunk->push(unserialize($value));
-            }
-        }
-    }
-
-
     // -----------------------------------------------------------------------------------------------------------------
     // helper methods for processing responses -------------------------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
