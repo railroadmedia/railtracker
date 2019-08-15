@@ -172,7 +172,7 @@ class RequestRepository extends TrackerRepositoryBase
 
     /**
      * @param Collection|RequestVO[] $requestVOs
-     * @throws Throwable
+     * @return Collection
      */
     public function storeRequests(Collection $requestVOs)
     {

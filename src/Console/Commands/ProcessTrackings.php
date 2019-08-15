@@ -171,7 +171,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 //                $this->getGeoIpEntitiesCreateWhereNeeded()
 
 
-
                 $this->processRequests($valuesThisChunk);
 
                 continue;
@@ -197,7 +196,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * @param Collection $objectsFromCache
      * @return void
-     * @throws Throwable
      */
     private function processRequests(Collection $objectsFromCache)
     {
@@ -215,20 +213,18 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $requestVOs = $this->getAndAttachGeoIpData($requestVOs);
 
-        $created = $this->requestRepository->storeRequests($requestVOs);
+        $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
 
-        $this->requestTracker->updateUsersAnonymousRequests($created);
+        $this->requestTracker->updateUsersAnonymousRequests($recordsInDatabase);
 
         $usersPreviousRequestsByCookieId = $this->findUsersPreviousByRequestCookieId($requestVOs);
 
         $this->requestTracker->fireRequestTrackedEvents(
-            $created,
+            $recordsInDatabase,
             $usersPreviousRequestsByCookieId
         );
 
         return;
-
-        $this->createRequestEntitiesAndAttachAssociatedEntities($requests, $entities, $geoIpEntitiesKeyedByIp);
     }
 
     /**

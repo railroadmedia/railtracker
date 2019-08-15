@@ -563,27 +563,27 @@ class RequestTracker extends TrackerBase
     }
 
     /**
-     * @param Collection|RequestVO[] $requestEntities
+     * @param Collection|array[] $requestRecords
      * @param array $usersPreviousRequestsByCookieId
      */
-    public function fireRequestTrackedEvents(Collection $requestEntities, $usersPreviousRequestsByCookieId = [])
+    public function fireRequestTrackedEvents($requestRecords, $usersPreviousRequestsByCookieId = [])
     {
-        foreach($requestEntities as $requestEntity){
+        foreach($requestRecords as $requestRecord){
 
-            $userHasPreviousRequest = !empty($usersPreviousRequestsByCookieId[$requestEntity->cookie_id]);
+            $userHasPreviousRequest = !empty($usersPreviousRequestsByCookieId[$requestRecord->cookie_id]);
 
             if($userHasPreviousRequest){
-                $previousRequest = $usersPreviousRequestsByCookieId[$requestEntity->cookie_id];
+                $previousRequest = $usersPreviousRequestsByCookieId[$requestRecord->cookie_id];
                 $timeOfPreviousRequest = $previousRequest->requested_on;
             }
 
             event(
                 new RequestTracked(
-                    $requestEntity->id,
-                    $requestEntity->user_id,
-                    $requestEntity->ip_address,
-                    $requestEntity->agent_string,
-                    $requestEntity->requested_on,
+                    $requestRecord->id,
+                    $requestRecord->user_id,
+                    $requestRecord->ip_address,
+                    $requestRecord->agent_string,
+                    $requestRecord->requested_on,
                     $timeOfPreviousRequest ?? null
                 )
             );
