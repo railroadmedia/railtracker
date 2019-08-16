@@ -20,6 +20,8 @@ class IpDataApiSdkService
             return [];
         }
 
+        $ips = array_values($ips);
+
         try{
             $response = $this->curl(json_encode($ips));
         }catch(\Exception $exception){

@@ -184,7 +184,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             } catch (Exception $exception) {
                 error_log($exception);
-
             }
         }
 
@@ -759,7 +758,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
             $ipDataForRequestVO = $geoIpData->filter(
                 function($candidate) use ($ipAddress){
-                    return $ipAddress === $candidate['ip'];
+                    return $ipAddress === ($candidate['ip'] ?? null);
                 }
             )->first();
 
@@ -770,8 +769,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $requestVO->ipRegion = $ipDataForRequestVO['region_code'];
             $requestVO->ipCity = $ipDataForRequestVO['city'];
             $requestVO->ipPostalZipCode = $ipDataForRequestVO['postal'];
-            $requestVO->ipTimezone = $ipDataForRequestVO['time_zone']->name;
-            $requestVO->ipCurrency = $ipDataForRequestVO['currency']->code;
+            if(!empty($ipDataForRequestVO['time_zone'])){
+                $requestVO->ipTimezone = $ipDataForRequestVO['time_zone']->name;
+            }
+            if(!empty($ipDataForRequestVO['currency'])){
+                $requestVO->ipCurrency = $ipDataForRequestVO['currency']->code;
+            }
         });
 
         // merge and return
