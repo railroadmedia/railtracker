@@ -24,7 +24,8 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
         for ($i = 0; $i < $numberOfRequestsFromUser; $i++) {
             $request = $this->createRequest($this->faker->userAgent, $url, '', $clientIp, 'GET', $cookies);
 
-            $this->sendRequestAndCallProcessCommand($request, $response);
+            $this->sendRequest($request, $response);
+            $this->processTrackings();
         }
 
         $this->assertDatabaseHas(
@@ -46,7 +47,8 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
 
         $tStart = microtime(true);
 
-        $this->sendRequestAndCallProcessCommand($request, $response);
+        $this->sendRequest($request, $response);
+        $this->processTrackings();
 
         $tEnd = microtime(true) - $tStart;
 

@@ -321,7 +321,8 @@ class ProcessTrackingsTest extends RailtrackerTestCase
         $request = $this->randomRequest();
         $response = $this->createResponse(200);
 
-        $this->sendRequestAndCallProcessCommand($request, $response);
+        $this->sendRequest($request, $response);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -339,7 +340,8 @@ class ProcessTrackingsTest extends RailtrackerTestCase
         $request = $this->randomRequest();
         $response = $this->createResponse(404);
 
-        $this->sendRequestAndCallProcessCommand($request, $response);
+        $this->sendRequest($request, $response);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             ConfigService::$tableResponseStatusCodes,
@@ -357,7 +359,8 @@ class ProcessTrackingsTest extends RailtrackerTestCase
         $request = $this->randomRequest();
         $response = $this->createResponse(200);
 
-        $this->sendRequestAndCallProcessCommand($request, $response);
+        $this->sendRequest($request, $response);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             ConfigService::$tableResponses,

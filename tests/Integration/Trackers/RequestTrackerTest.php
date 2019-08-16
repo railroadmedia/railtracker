@@ -42,7 +42,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'http://test.com/';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -68,7 +69,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://test.com/';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -94,7 +96,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://test.com/';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -120,7 +123,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -146,7 +150,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/test-path/test/test2/file.php';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -172,7 +177,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/test-path/test/test2';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -198,7 +204,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/test-path/test/test2/';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -224,7 +231,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/test-path?test=1&test2=as7da98dsda3-23f23';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -250,7 +258,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/test-path/test/test2';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -265,7 +274,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -283,7 +293,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $refererUrl = 'https://www.referer.com/345/2?test=1';
         $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -331,7 +342,8 @@ class RequestTrackerTest extends RailtrackerTestCase
             }
         );
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -372,7 +384,8 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         $request = $this->createRequest();
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // todo
     }
@@ -381,7 +394,8 @@ class RequestTrackerTest extends RailtrackerTestCase
     {
         $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -406,7 +420,8 @@ class RequestTrackerTest extends RailtrackerTestCase
     {
         $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -459,7 +474,8 @@ class RequestTrackerTest extends RailtrackerTestCase
     {
         $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -547,7 +563,8 @@ class RequestTrackerTest extends RailtrackerTestCase
     {
         $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         // -------------------------------------------------------
 
@@ -605,7 +622,8 @@ class RequestTrackerTest extends RailtrackerTestCase
             }
         );
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -854,7 +872,8 @@ class RequestTrackerTest extends RailtrackerTestCase
             }
         );
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -1043,7 +1062,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $request =
             $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -1071,7 +1091,8 @@ class RequestTrackerTest extends RailtrackerTestCase
             }
         );
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -1091,7 +1112,8 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -1105,7 +1127,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $userId = $this->createAndLogInNewUser();
         $request->setUserResolver(function () use ($userId) { return User::query()->find($userId); });
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -1348,7 +1371,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com' . $path;
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
@@ -1373,7 +1397,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com' . $path;
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseMissing(
             config('railtracker.table_prefix') . 'requests',
@@ -1395,7 +1420,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.test.com/media-playback-tracking/media-playback-session/123';
         $request = $this->createRequest($this->faker->userAgent, $url);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertDatabaseMissing(
             config('railtracker.table_prefix') . 'url_protocols',
@@ -1419,7 +1445,8 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         $this->expectsEvents(RequestTracked::class);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $requestIdActual = $this->firedEvents[0]->requestId;
 
@@ -1439,7 +1466,8 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         Carbon::setTestNow($hourLater);
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $this->assertEquals($this->firedEvents[1]->requestId, 2);
         $this->assertEquals($this->firedEvents[1]->userId, $userId);
@@ -1474,7 +1502,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         for($i = 0; $i < $numberOfRequests; $i++){
             Carbon::setTestNow($hourLater);
 
-            $this->sendRequestAndCallProcessCommand($request);
+            $this->sendRequest($request);
+            $this->processTrackings();
         }
 
         $indexOfMostRecentEvent = $numberOfRequests - 1;
@@ -1536,7 +1565,8 @@ class RequestTrackerTest extends RailtrackerTestCase
             }
         );
 
-        $this->sendRequestAndCallProcessCommand($request);
+        $this->sendRequest($request);
+        $this->processTrackings();
 
         $results = $this->getRequestsForUser((string) $userId);
 
@@ -1614,7 +1644,8 @@ class RequestTrackerTest extends RailtrackerTestCase
                     return User::query()->find($userId);
                 }
             );
-            $this->sendRequestAndCallProcessCommand($request);
+            $this->sendRequest($request);
+            $this->processTrackings();
 
             $highEnough = ($i - $skip) >= 0;
             $lowEnough = $i < ($skip + $limit);

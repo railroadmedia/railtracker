@@ -12,6 +12,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\DB;
 use Orchestra\Testbench\TestCase as BaseTestCase;
@@ -512,39 +513,27 @@ class RailtrackerTestCase extends BaseTestCase
 
     /**
      * @param Request $request
-     * @param null $response
+     * @param null|Response|int|string $response
      */
-    protected function sendRequest(Request $request, $response = null)
+    protected function sendRequest(Request $request, $response = 200)
     {
-        /** @var RailtrackerMiddleware $middleware */
-        $middleware = resolve(RailtrackerMiddleware::class);
+        // prepare response
 
-        if (!$response) {
-            $response = $this->createResponse(200);
+        $createResponseFromStatusCode = gettype($response) === 'integer' || gettype($response) === 'string';
+
+        if($createResponseFromStatusCode){
+            $response = $this->createResponse((integer) $response);
         }
 
         $next = function () use ($response) {
             return $response;
         };
 
+        // handle
+
+        $middleware = resolve(RailtrackerMiddleware::class);
+
         $middleware->handle($request, $next);
-    }
-
-    /**
-     * @param Request $request
-     * @param null $response
-     */
-    protected function sendRequestAndCallProcessCommand(Request $request, $response = null)
-    {
-        $this->sendRequest($request, $response);
-
-        try {
-            $this->processTrackings();
-        } catch (\Exception $exception) {
-            $this->fail(
-                'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
-            );
-        }
     }
 
     /**
