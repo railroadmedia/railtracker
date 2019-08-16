@@ -517,23 +517,16 @@ class RailtrackerTestCase extends BaseTestCase
      */
     protected function sendRequest(Request $request, $response = 200)
     {
-        // prepare response
-
-        $createResponseFromStatusCode = gettype($response) === 'integer' || gettype($response) === 'string';
-
-        if($createResponseFromStatusCode){
+        if(gettype($response) === 'integer' || gettype($response) === 'string'){
             $response = $this->createResponse((integer) $response);
         }
 
-        $next = function () use ($response) {
-            return $response;
-        };
-
-        // handle
-
-        $middleware = resolve(RailtrackerMiddleware::class);
-
-        $middleware->handle($request, $next);
+        resolve(RailtrackerMiddleware::class)->handle(
+            $request,
+            function () use ($response) {
+                return $response;
+            }
+        );
     }
 
     /**
