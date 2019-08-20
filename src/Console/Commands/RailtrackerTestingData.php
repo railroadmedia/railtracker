@@ -166,7 +166,7 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
         // -------------------------------------------------------------------------------------------------------------
 
         for($i = 0; $i < $amountToCreate; $i++){
-            RequestTracker::$uuid = $this->faker->uuid;
+            \Railroad\Railtracker\ValueObjects\RequestVO::$UUID = $this->faker->uuid;
 
             $userAgent = $poolOfUserAgents[rand(0, $numberOfUserAgents-1)];;
             $url = $this->faker->randomElement($poolOfUrls);
@@ -211,9 +211,9 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
             $response = $this->createResponse($statusCode);
 
             $responseData = $this->responseTracker->serializedFromHttpResponse($response);
-            $this->batchService->addToBatch($responseData, RequestTracker::$uuid);
+            $this->batchService->addToBatch($responseData, \Railroad\Railtracker\ValueObjects\RequestVO::$UUID);
 
-            // $this->info(RequestTracker::$uuid);
+            // $this->info(\Railroad\Railtracker\ValueObjects\RequestVO::$UUID);
 
             if($printProgressUpdates){
                 if($i % 100 === 0 && $i > 0){

@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
+use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class Handler extends ExceptionHandler
 {
@@ -36,7 +37,7 @@ class Handler extends ExceptionHandler
          */
         $exceptionTracker = app(ExceptionTracker::class);
 
-        $exceptionTracker->trackException($exception, RequestTracker::$uuid);
+        $exceptionTracker->trackException($exception, \Railroad\Railtracker\ValueObjects\RequestVO::$UUID);
 
         return parent::render($request, $exception);
     }

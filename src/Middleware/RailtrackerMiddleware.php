@@ -79,6 +79,8 @@ class RailtrackerMiddleware
         try {
             $requestVO = new RequestVO($request);
 
+            \Railroad\Railtracker\ValueObjects\RequestVO::$UUID = $requestVO->uuid;
+
             $this->batchService->storeRequest($requestVO);
         } catch (Exception $exception) {
             error_log($exception);

@@ -629,7 +629,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'requests',
             [
                 'id' => '1',
-                //'uuid' => RequestTracker::$uuid,  // todo: why can't we get uuid here?
+                //'uuid' => \Railroad\Railtracker\ValueObjects\RequestVO::$UUID,  // todo: why can't we get uuid here?
                 'user_id' => 1,
                 'cookie_id' => null,
 
@@ -879,7 +879,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'requests',
             [
                 'id' => '1',
-                //'uuid' => RequestTracker::$uuid,  // todo: why can't we get uuid here?
+                //'uuid' => \Railroad\Railtracker\ValueObjects\RequestVO::$UUID,  // todo: why can't we get uuid here?
                 'user_id' => 1,
                 'cookie_id' => null,
 
@@ -1735,3 +1735,4 @@ class RequestTrackerTest extends RailtrackerTestCase
 
     // todo: test that geoip rows connected to requests
 }
+

@@ -86,7 +86,7 @@ class ResponseTracker extends TrackerBase
 
         $response[ResponseStatusCode::$KEY] = $this->serialize($this->fillResponseStatusCode($httpResponse));
         $response['type'] = 'response';
-        $response['uuid'] = RequestTracker::$uuid;
+        $response['uuid'] = \Railroad\Railtracker\ValueObjects\RequestVO::$UUID;
 
         return $response;
     }
@@ -135,7 +135,7 @@ class ResponseTracker extends TrackerBase
             empty($responseData[ResponseStatusCode::$KEY]) ||
             empty($responseData['responseDurationMs']) ||
             empty($responseData['respondedOn'])) {
-            throw new Exception('Response data is empty from the cache, request uuid: ' . RequestTracker::$uuid);
+            throw new Exception('Response data is empty from the cache, request uuid: ' . \Railroad\Railtracker\ValueObjects\RequestVO::$UUID);
         }
 
         $response = new Response();

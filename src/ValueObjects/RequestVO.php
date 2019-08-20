@@ -57,6 +57,8 @@ class RequestVO
 
     public static $TIME_FORMAT = 'Y-m-d H:i:s.u';
 
+    public static $UUID;
+
     /**
      * RequestVO constructor.
      */

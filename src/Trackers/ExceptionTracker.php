@@ -13,6 +13,7 @@ use Railroad\Railtracker\Entities\Request;
 use Railroad\Railtracker\Entities\RequestException;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
+use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class ExceptionTracker extends TrackerBase
 {
@@ -56,7 +57,7 @@ class ExceptionTracker extends TrackerBase
      */
     public function trackException(Exception $exception, $uuid)
     {
-        if(!empty(RequestTracker::$uuid)){
+        if(!empty(\Railroad\Railtracker\ValueObjects\RequestVO::$UUID)){
             try {
                 $exceptionEntity = new ExceptionEntity();
 
@@ -79,7 +80,10 @@ class ExceptionTracker extends TrackerBase
 
                 $requestExceptionEntitySerialized['exception'] = $exceptionEntitySerialized;
 
-                $this->batchService->addToBatch($requestExceptionEntitySerialized, $uuid);
+                $this->batchService->storeException(
+                    $data,
+                    \Railroad\Railtracker\ValueObjects\RequestVO::$UUID
+                );
 
             } catch (Exception $exception) {
                 error_log($exception);
