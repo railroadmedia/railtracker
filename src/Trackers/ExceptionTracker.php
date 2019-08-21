@@ -13,6 +13,7 @@ use Railroad\Railtracker\Entities\Request;
 use Railroad\Railtracker\Entities\RequestException;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
+use Railroad\Railtracker\ValueObjects\ExceptionVO;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class ExceptionTracker extends TrackerBase
@@ -57,33 +58,14 @@ class ExceptionTracker extends TrackerBase
      */
     public function trackException(Exception $exception, $uuid)
     {
-        if(!empty(\Railroad\Railtracker\ValueObjects\RequestVO::$UUID)){
+        if(!empty(RequestVO::$UUID)){
             try {
-                $exceptionEntity = new ExceptionEntity();
 
-                $exceptionEntity->setCode($exception->getCode());
-                $exceptionEntity->setLine($exception->getLine());
-                $exceptionEntity->setExceptionClass(get_class($exception));
-                $exceptionEntity->setFile($exception->getFile());
-                $exceptionEntity->setMessage($exception->getMessage());
-                $exceptionEntity->setTrace($exception->getTraceAsString());
-                $exceptionEntity->setHash();
+                $uuid = RequestVO::$UUID;
 
-                $exceptionEntitySerialized = $this->serialize($exceptionEntity);
+                $exceptionVO = new ExceptionVO($exception, $uuid);
 
-                $requestExceptionEntity = new RequestException();
-                $requestExceptionEntity->setCreatedAtTimestampMs(round(microtime(true) * 1000));
-
-                $requestExceptionEntitySerialized = $this->serialize($requestExceptionEntity);
-                $requestExceptionEntitySerialized['uuid'] = RequestTracker::$uuid;
-                $requestExceptionEntitySerialized['type'] = 'request-exception';
-
-                $requestExceptionEntitySerialized['exception'] = $exceptionEntitySerialized;
-
-                $this->batchService->storeException(
-                    $data,
-                    \Railroad\Railtracker\ValueObjects\RequestVO::$UUID
-                );
+                $this->batchService->storeException($exceptionVO);
 
             } catch (Exception $exception) {
                 error_log($exception);

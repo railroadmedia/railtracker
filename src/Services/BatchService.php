@@ -7,6 +7,7 @@ use Illuminate\Cache\RedisStore;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Predis\ClientInterface;
+use Railroad\Railtracker\ValueObjects\ExceptionVO;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class BatchService
@@ -50,6 +51,29 @@ class BatchService
     public function removeRequest(RequestVO $requestVO)
     {
         $setKey = $this->batchKeyPrefix . 'set' . '_' . $requestVO->uuid;
+
+        $this->cache()->del([$setKey]);
+    }
+
+    /**
+     * @param ExceptionVO $exceptionVO
+     * @param string $uuid
+     */
+    public function storeException(ExceptionVO $exceptionVO)
+    {
+        $uuid = $exceptionVO->uuid;
+
+        $setKey = $this->batchKeyPrefix . 'set' . '_' . $uuid;
+
+        $this->cache()->sadd($setKey, [serialize($exceptionVO)]);
+    }
+
+    /**
+     * @param array $data
+     */
+    public function removeException($data)
+    {
+        $setKey = $this->batchKeyPrefix . 'set' . $data['uuid'];
 
         $this->cache()->del([$setKey]);
     }

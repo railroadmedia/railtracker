@@ -353,6 +353,8 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
     public function test_track_response()
     {
+        $this->markTestIncomplete('broken, needs updating');
+
         // todo: complete|fix
         $this->markTestIncomplete('WIP');
 
@@ -376,38 +378,41 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
     public function test_track_404_exception()
     {
-        app()->singleton(
-            ExceptionHandler::class,
-            Handler::class
-        );
+        /*
+         * moved to "test_wip_002"
+         */
 
-        $request = $this->randomRequest();
-        $kernel = app()->make(HttpKernel::class);
-        $kernel->pushMiddleware(RailtrackerMiddleware::class);
-        $kernel->handle($request);
-
-        try {
-            $this->processTrackings();
-        }catch(\Exception $exception){
-            $this->fail(
-                'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
-            );
-        }
-
-        $this->assertDatabaseHas(
-            ConfigService::$tableExceptions,
-            [
-                'exception_class' => NotFoundHttpException::class,
-            ]
-        );
-
-        $this->assertDatabaseHas(
-            ConfigService::$tableRequestExceptions,
-            [
-                'request_id' => 1,
-                'exception_id' => 1,
-            ]
-        );
+//        $this->markTestIncomplete('broken, needs updating');
+//
+//        app()->singleton(
+//            ExceptionHandler::class,
+//            Handler::class
+//        );
+//
+//        $kernel = app()->make(HttpKernel::class);
+//        $kernel->pushMiddleware(RailtrackerMiddleware::class);
+//
+//        $request = $this->randomRequest();
+//        $kernel->handle($request);
+//
+//        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//
+//
+//        try {
+//            $this->processTrackings();
+//        }catch(\Exception $exception){
+//            $this->fail(
+//                'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
+//            );
+//        }
+//
+//        $this->assertDatabaseHas(
+//            ConfigService::$tableRequestExceptions,
+//            [
+//                'request_id' => 1,
+//                'exception_id' => 1,
+//            ]
+//        );
     }
 
     public function test_track_multiple_exceptions()
@@ -507,4 +512,94 @@ class ProcessTrackingsTest extends RailtrackerTestCase
             ]
         );
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------                                                        --------        --------
+    //         --------        --------                                        --------        --------        --------
+    // --------        --------                        s a n d b o x                   --------        --------
+    //         --------        --------                                        --------        --------        --------
+    // --------        --------                                                        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function test_wip_001()
+    {
+        $request = $this->randomRequest();
+
+        $this->sendRequest($request);
+        $this->processTrackings();
+
+        $this->assertDatabaseHas(
+            config('railtracker.table_prefix') . 'requests',
+            [
+                'response_status_code' => 200,
+            ]
+        );
+    }
+
+    public function test_wip_002()
+    {
+        app()->singleton(
+            ExceptionHandler::class,
+            Handler::class
+        );
+
+        $kernel = app()->make(HttpKernel::class);
+        $kernel->pushMiddleware(RailtrackerMiddleware::class);
+
+        $request = $this->randomRequest();
+        $kernel->handle($request);
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        try {
+            $this->processTrackings();
+        }catch(\Exception $exception){
+            $this->fail(
+                'RailtrackerTestCase::processTrackings threw exception with message: "' . $exception->getMessage() . '"'
+            );
+        }
+
+        $this->assertDatabaseHas(
+            config('railtracker.table_prefix') . 'requests',
+            [
+                'id' => 1,
+                'exception_class' => "Symfony\\Component\\HttpKernel\\Exception\\NotFoundHttpException",
+            ]
+        );
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // --------        --------        --------        --------        --------        --------        --------
+    //         --------        --------        --------        --------        --------        --------        --------
+    // -----------------------------------------------------------------------------------------------------------------
+
 }

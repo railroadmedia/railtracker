@@ -192,6 +192,48 @@ class CreateRequestAssociationTables extends Migration
             }
         );
 
+        // exceptions
+        Schema::create(
+            config('railtracker.table_prefix') . 'exception_codes',
+            function (Blueprint $table) {
+                $table->unsignedInteger('exception_code', false, true)->nullable()->unique();
+            }
+        );
+
+        Schema::create(
+            config('railtracker.table_prefix') . 'exception_lines',
+            function (Blueprint $table) {
+                $table->unsignedInteger('exception_line', false, true)->nullable()->unique();
+            }
+        );
+
+        Schema::create(
+            config('railtracker.table_prefix') . 'exception_classs',
+            function (Blueprint $table) {
+                $table->string('exception_class', 1280)->nullable()->unique();
+            }
+        );
+
+        Schema::create(
+            config('railtracker.table_prefix') . 'exception_files',
+            function (Blueprint $table) {
+                $table->string('exception_file', 1280)->nullable()->unique();
+            }
+        );
+
+        Schema::create(
+            config('railtracker.table_prefix') . 'exception_messages',
+            function (Blueprint $table) {
+                $table->string('exception_message', 65535)->nullable()->unique();
+            }
+        );
+
+        Schema::create(
+            config('railtracker.table_prefix') . 'exception_traces',
+            function (Blueprint $table) {
+                $table->string('exception_trace', 65535)->nullable()->unique();
+            }
+        );
     }
 
     /**

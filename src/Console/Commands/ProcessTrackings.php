@@ -28,6 +28,7 @@ use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\Trackers\ResponseTracker;
+use Railroad\Railtracker\ValueObjects\ExceptionVO;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 use Throwable;
 
@@ -212,6 +213,27 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $requestVOs = $this->getAndAttachGeoIpData($requestVOs);
 
+        foreach($objectsFromCache as $item){
+            $type = get_class($item);
+            $isExceptionVO = $type === ExceptionVO::class;
+            if($isExceptionVO){ /** @var ExceptionVO $item */
+                $uuid = $item->uuid;
+                $exceptionVOs[$uuid] = $item;
+            }
+        }
+
+        foreach($requestVOs as $requestVO){ /** @var RequestVO $requestVO */
+            $uuid = $requestVO->uuid;
+            if(!empty($exceptionVOs[$uuid])){
+                $matchingExceptionVO = $exceptionVOs[$uuid];
+                $requestVO->exceptionCode = $matchingExceptionVO->code;
+                $requestVO->exceptionLine = $matchingExceptionVO->line;
+                $requestVO->exceptionClass = $matchingExceptionVO->class;
+                $requestVO->exceptionFile = $matchingExceptionVO->file;
+                $requestVO->exceptionMessage = $matchingExceptionVO->message;
+                $requestVO->exceptionTrace = $matchingExceptionVO->trace;
+            }
+        }
         $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
 
         $this->requestTracker->updateUsersAnonymousRequests($recordsInDatabase);

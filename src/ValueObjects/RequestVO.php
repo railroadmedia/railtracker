@@ -50,6 +50,15 @@ class RequestVO
     public $isRobot;
     public $responseStatusCode;
     public $responseDurationMs;
+
+    public $exceptionCode;
+    public $exceptionLine;
+    public $exceptionClass;
+    public $exceptionFile;
+    public $exceptionMessage;
+    public $exceptionTrace;
+    public $exceptionCreatedAt;
+
     public $requestedOn;
     public $respondedOn;
 
@@ -242,6 +251,14 @@ class RequestVO
             'ip_timezone' => $this->ipTimezone,
             'ip_currency' => $this->ipCurrency,
             'is_robot' => (string) $this->isRobot,
+
+            'exception_code' => $this->exceptionCode,
+            'exception_line' => $this->exceptionLine,
+            'exception_class' => $this->exceptionClass,
+            'exception_file' => $this->exceptionFile,
+            'exception_message' => $this->exceptionMessage,
+            'exception_trace' => $this->exceptionTrace,
+
             'requested_on' => $this->requestedOn,
         ];
 
