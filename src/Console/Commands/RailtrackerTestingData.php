@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Console\Commands;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
@@ -74,6 +75,10 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
 
     public function handle()
     {
+        // todo: fix
+
+        $this->info('Currently broken');
+
         $printGraphicRepresentationOrStatusCodes = false;
         $printProgressUpdates = false;
 
@@ -208,9 +213,16 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
                 }
             }
 
-            $response = $this->createResponse($statusCode);
 
-            $responseData = $this->responseTracker->serializedFromHttpResponse($response);
+            // todo: put RequestVO->setResponseData here?
+            $responseData = '___________?';
+
+            dd('WIP');
+            dd('WIP');
+            dd('WIP');
+            dd('WIP');
+
+
             $this->batchService->addToBatch($responseData, \Railroad\Railtracker\ValueObjects\RequestVO::$UUID);
 
             // $this->info(\Railroad\Railtracker\ValueObjects\RequestVO::$UUID);
