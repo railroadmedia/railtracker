@@ -546,7 +546,7 @@ class IpDataApiStubDataProvider
 
         foreach($expected as $requestVO){
 //            $arrayOfExpected = $requestVO->returnArrayForDatabaseInteraction(false);
-            $arrayOfExpected = $requestVO->returnArrayForDatabaseInteraction();
+            $arrayOfExpected = $requestVO->returnArrayForDatabaseInteraction(true);
 
             unset($arrayOfExpected['uuid']);
             unset($arrayOfExpected['cookie_id']);

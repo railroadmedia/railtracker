@@ -211,9 +211,10 @@ class RequestVO
     }
 
     /**
+     * @param bool $excludeForTest
      * @return array
      */
-    public function returnArrayForDatabaseInteraction($selectedOmissionsForTesting = true)
+    public function returnArrayForDatabaseInteraction($excludeForTest = false)
     {
         $array = [
             'uuid' => $this->uuid,
@@ -262,7 +263,7 @@ class RequestVO
             'requested_on' => $this->requestedOn,
         ];
 
-        if($selectedOmissionsForTesting){
+        if($excludeForTest){
             $array['response_status_code'] = $this->responseStatusCode;
             $array['response_duration_ms'] = $this->responseDurationMs;
             $array['responded_on'] = $this->respondedOn;
