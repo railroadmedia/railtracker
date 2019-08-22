@@ -70,6 +70,8 @@ class RequestVO
 
     /**
      * RequestVO constructor.
+     * @param Request $httpRequest
+     * @throws \Exception
      */
     public function __construct(Request $httpRequest)
     {
@@ -139,6 +141,9 @@ class RequestVO
 
     }
 
+    /**
+     * @param BaseResponse $response
+     */
     public function setResponseData(BaseResponse $response)
     {
         $this->responseStatusCode = $response->getStatusCode();

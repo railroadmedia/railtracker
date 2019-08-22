@@ -7,7 +7,6 @@ use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateBuilder;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateMySqlGrammar;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateSqlLiteGrammar;
 use Railroad\Railtracker\ValueObjects\RequestVO;
-use Throwable;
 
 class RequestRepository extends TrackerRepositoryBase
 {
