@@ -7,8 +7,6 @@ use Illuminate\Cache\Repository;
 use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Routing\Router;
-use Railroad\Doctrine\Serializers\BasicEntitySerializer;
-use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\ValueObjects\ExceptionVO;
 use Railroad\Railtracker\ValueObjects\RequestVO;
@@ -20,18 +18,14 @@ class ExceptionTracker extends TrackerBase
         Router $router,
         CookieJar $cookieJar,
         BatchService $batchService,
-        BasicEntitySerializer $basicEntitySerializer,
-        RailtrackerEntityManager $entityManager,
         Repository $cache = null
     ){
         parent::__construct(
             $databaseManager,
             $router,
             $cookieJar,
-            $cache,
             $batchService,
-            $basicEntitySerializer,
-            $entityManager
+            $cache
         );
         $this->batchService = $batchService;
     }
