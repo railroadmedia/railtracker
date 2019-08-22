@@ -30,7 +30,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         $this->mediaPlaybackTracker->trackMediaType($type, $category);
 
         $this->assertDatabaseHas(
-            ConfigService::$tableMediaPlaybackTypes,
+            config('railtracker.tables.media_playback_types'),
             [
                 'type' => $type,
                 'category' => $category,
@@ -63,7 +63,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            ConfigService::$tableMediaPlaybackSessions,
+            config('railtracker.tables.media_playback_sessions'),
             [
                 'media_id' => $mediaId,
                 'media_length_seconds' => $mediaLength,
@@ -96,7 +96,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            ConfigService::$tableMediaPlaybackSessions,
+            config('railtracker.tables.media_playback_sessions'),
             [
                 'media_id' => $mediaId,
                 'media_length_seconds' => $mediaLength,
@@ -140,7 +140,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            ConfigService::$tableMediaPlaybackSessions,
+            config('railtracker.tables.media_playback_sessions'),
             [
                 'id' => $sessionId,
                 'seconds_played' => $secondsPlayed,
@@ -186,7 +186,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            ConfigService::$tableMediaPlaybackSessions,
+            config('railtracker.tables.media_playback_sessions'),
             [
                 'id' => $sessionId,
                 'seconds_played' => $secondsPlayed,
@@ -233,7 +233,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             );
 
             $this->assertDatabaseHas(
-                ConfigService::$tableMediaPlaybackSessions,
+                config('railtracker.tables.media_playback_sessions'),
                 [
                     'media_id' => $mediaId,
                     'media_length_seconds' => $mediaLength,

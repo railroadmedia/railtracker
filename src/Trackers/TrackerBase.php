@@ -76,7 +76,7 @@ class TrackerBase
      */
     protected function connection()
     {
-        return $this->databaseManager->connection(ConfigService::$databaseConnectionName);
+        return $this->databaseManager->connection(config('railtracker.database_connection_name'));
     }
 
     /**
@@ -106,7 +106,7 @@ class TrackerBase
             $this->cache->put(
                 $cacheKey,
                 $id,
-                ConfigService::$cacheTime
+                config('railtracker.cache_duration')
             );
         }
 

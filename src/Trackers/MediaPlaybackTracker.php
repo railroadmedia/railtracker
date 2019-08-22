@@ -56,7 +56,7 @@ class MediaPlaybackTracker extends TrackerBase
             'last_updated_on' => $startedOn,
         ];
 
-        $id = $this->query(ConfigService::$tableMediaPlaybackSessions)->insertGetId($data);
+        $id = $this->query(config('railtracker.tables.media_playback_sessions'))->insertGetId($data);
 
         $data['id'] = $id;
 
@@ -102,13 +102,13 @@ class MediaPlaybackTracker extends TrackerBase
             'last_updated_on' => $lastUpdatedOn,
         ];
 
-        $session = (array) $this->query(ConfigService::$tableMediaPlaybackSessions)
+        $session = (array) $this->query(config('railtracker.tables.media_playback_sessions'))
             ->where(['id' => $sessionId])
             ->take(1)
             ->first();
 
         if (!empty($session)) {
-            $updated = $this->query(ConfigService::$tableMediaPlaybackSessions)
+            $updated = $this->query(config('railtracker.tables.media_playback_sessions'))
                 ->where(['id' => $sessionId])
                 ->update($data);
 
@@ -148,6 +148,6 @@ class MediaPlaybackTracker extends TrackerBase
             'category' => substr($category, 0, 128),
         ];
 
-        return $this->storeAndCache($data, ConfigService::$tableMediaPlaybackTypes);
+        return $this->storeAndCache($data, config('railtracker.tables.media_playback_types'));
     }
 }
