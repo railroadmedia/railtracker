@@ -37,7 +37,7 @@ class Handler extends ExceptionHandler
          */
         $exceptionTracker = app(ExceptionTracker::class);
 
-        $exceptionTracker->trackException($exception, \Railroad\Railtracker\ValueObjects\RequestVO::$UUID);
+        $exceptionTracker->trackException($exception);
 
         return parent::render($request, $exception);
     }
