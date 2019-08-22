@@ -67,9 +67,12 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
 
     public function handle()
     {
-        // todo: fix
-
         $this->info('Currently broken');
+        $this->info('Currently broken');
+        $this->info('Currently broken');
+
+        // todo: fix
+        //      ----------------------------------------
 
         $printGraphicRepresentationOrStatusCodes = false;
         $printProgressUpdates = false;
@@ -181,7 +184,18 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
                 $cookies
             );
 
-            $requestSerialized = $this->requestTracker->serializedFromHttpRequest($request);
+            // ---------------------------------------------------------------------------------------------------
+
+            // todo: what to do with this?
+
+//            try {
+//                $requestSerialized = new \Railroad\Railtracker\ValueObjects\RequestVO($httpRequest);
+//            } catch (\Exception $e) {
+//            }
+//
+//            dd(unserialize(serialize($requestSerialized)));
+
+            // ---------------------------------------------------------------------------------------------------
 
             $this->batchService->addToBatch($requestSerialized, $requestSerialized['uuid']);
 

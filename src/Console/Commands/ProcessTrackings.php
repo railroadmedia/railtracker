@@ -3,7 +3,10 @@
 namespace Railroad\Railtracker\Console\Commands;
 
 use Exception;
+use Illuminate\Cookie\CookieJar;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
+use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Repositories\RequestRepository;
 use Railroad\Railtracker\Services\BatchService;
@@ -25,6 +28,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @var string
      */
     protected $description = 'Process items to track.';
+
+    /**
+     * @var string
+     */
+    public static $cookieKey = 'railtracker_visitor';
 
     /**
      * @var BatchService
@@ -62,23 +70,35 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $requestRepository;
 
     /**
+     * @var DatabaseManager
+     */
+    private $databaseManager;
+
+    /**
+     * @var CookieJar
+     */
+    private $cookieJar;
+
+    /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param RequestTracker $requestTracker
      * @param ExceptionTracker $exceptionTracker
-     * @param ResponseTracker $responseTracker
      * @param RailtrackerEntityManager $entityManager
      * @param IpDataApiSdkService $ipDataApiSdkService
      * @param RequestRepository $requestRepository
+     * @param DatabaseManager $databaseManager
+     * @param CookieJar $cookieJar
      */
     public function __construct(
         BatchService $batchService,
         RequestTracker $requestTracker,
         ExceptionTracker $exceptionTracker,
-        ResponseTracker $responseTracker,
         RailtrackerEntityManager $entityManager,
         IpDataApiSdkService $ipDataApiSdkService,
-        RequestRepository $requestRepository
+        RequestRepository $requestRepository,
+        DatabaseManager $databaseManager,
+        CookieJar $cookieJar
     )
     {
         parent::__construct();
@@ -86,10 +106,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->batchService = $batchService;
         $this->requestTracker = $requestTracker;
         $this->exceptionTracker = $exceptionTracker;
-        $this->responseTracker = $responseTracker;
         $this->entityManager = $entityManager;
         $this->ipDataApiSdkService = $ipDataApiSdkService;
         $this->requestRepository = $requestRepository;
+        $this->databaseManager = $databaseManager;
+        $this->cookieJar = $cookieJar;
     }
 
     /**
@@ -191,11 +212,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
         $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
 
-        $this->requestTracker->updateUsersAnonymousRequests($recordsInDatabase);
+        $this->updateUsersAnonymousRequests($recordsInDatabase);
 
         $usersPreviousRequestsByCookieId = $this->findUsersPreviousByRequestCookieId($requestVOs);
 
-        $this->requestTracker->fireRequestTrackedEvents(
+        $this->fireRequestTrackedEvents(
             $recordsInDatabase,
             $usersPreviousRequestsByCookieId
         );
@@ -204,6 +225,78 @@ class ProcessTrackings extends \Illuminate\Console\Command
             'requestsCount' => count($recordsInDatabase),
             'exceptionsCount' => $exceptionsCount
         ];
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // NEW -------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * @param Collection|RequestVO[] $requests
+     * @return void
+     */
+    public function updateUsersAnonymousRequests(Collection $requests)
+    {
+        foreach($requests as $request){
+            $userId = $request->user_id;
+            $cookieId = $request->cookie_id;
+
+            $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
+
+            if (!empty($userId) && !empty($cookieId)) {
+                $this->databaseManager->table($table)
+                    ->where(['cookie_id' => $cookieId])
+                    ->whereNull('user_id')
+                    ->update(['user_id' => $userId]);
+
+                // delete cookie
+                $this->cookieJar->queue($this->cookieJar->forget(self::$cookieKey));
+            }
+        }
+    }
+
+    /**
+     * @param Collection|array[] $requestRecords
+     * @param array $usersPreviousRequestsByCookieId
+     */
+    public function fireRequestTrackedEvents($requestRecords, $usersPreviousRequestsByCookieId = [])
+    {
+        foreach($requestRecords as $requestRecord){
+
+            $userHasPreviousRequest = !empty($usersPreviousRequestsByCookieId[$requestRecord->cookie_id]);
+
+            if($userHasPreviousRequest){
+                $previousRequest = $usersPreviousRequestsByCookieId[$requestRecord->cookie_id];
+                $timeOfPreviousRequest = $previousRequest->requested_on;
+            }
+
+            event(
+                new RequestTracked(
+                    $requestRecord->id,
+                    $requestRecord->user_id,
+                    $requestRecord->ip_address,
+                    $requestRecord->agent_string,
+                    $requestRecord->requested_on,
+                    $timeOfPreviousRequest ?? null
+                )
+            );
+        }
+    }
+
+    /**
+     * @param $requestEntity
+     * @return array
+     */
+    public function getPreviousRequestsDatabaseRows($requestEntity)
+    {
+        $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
+
+        $results = $this->databaseManager->table($table)
+            ->where(['user_id' => $requestEntity->userId])
+            ->get()
+            ->all();
+
+        return $results;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -238,7 +331,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     {
         foreach ($requests as $request) {
             if ($request->userId !== null) {
-                $previousRequests = $this->requestTracker->getPreviousRequestsDatabaseRows($request);
+                $previousRequests = $this->getPreviousRequestsDatabaseRows($request);
                 $enough = count($previousRequests) >= 2;
                 if (!$enough) {
                     continue;
