@@ -136,7 +136,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
     public function handle()
     {
         $redisIterator = null;
-        $counts = ['requests' => 0, 'reqExc' => 0, 'responses' => 0];
 
         while ($redisIterator !== 0) {
 
@@ -167,38 +166,28 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 $this->batchService->forget($keys);
 
-                // this here?
-//                // todo: change?
-//                $this->getGeoIpEntitiesCreateWhereNeeded()
-
-
-                $this->processRequests($valuesThisChunk);
-
-                continue;
-
-                // todo: exceptions!
-                //$this->processRequestExceptions();
+                $resultsCounts = $this->processRequests($valuesThisChunk);
 
                 $this->entityManager->clear();
-
-                $counts = $this->incrementCountersForOutputMessage($counts);
 
             } catch (Exception $exception) {
                 error_log($exception);
             }
         }
 
-       $this->printTotalResultsInfo($counts);
+        $this->printMessage($resultsCounts ?? []);
 
         return true;
     }
 
     /**
      * @param Collection $objectsFromCache
-     * @return void
+     * @return array
      */
     private function processRequests(Collection $objectsFromCache)
     {
+        $exceptionsCount = 0;
+
         $requestVOs = $objectsFromCache->filter(
             function ($candidate) {
                 return $candidate instanceof RequestVO;
@@ -206,7 +195,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
         );
 
         if ($requestVOs->isEmpty()) {
-            return;
+            return [
+                'requestsCount' => 0,
+                'exceptionsCount' => $exceptionsCount
+            ];
         }
 
         $this->requestRepository->removeDuplicateVOs($requestVOs);
@@ -232,6 +224,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $requestVO->exceptionFile = $matchingExceptionVO->file;
                 $requestVO->exceptionMessage = $matchingExceptionVO->message;
                 $requestVO->exceptionTrace = $matchingExceptionVO->trace;
+                $exceptionsCount++;
             }
         }
         $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
@@ -245,7 +238,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $usersPreviousRequestsByCookieId
         );
 
-        return;
+        return [
+            'requestsCount' => count($recordsInDatabase),
+            'exceptionsCount' => $exceptionsCount
+        ];
     }
 
     /**
@@ -290,49 +286,26 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->responsesThisChunk = $this->hydrateAndPersistResponses($responses, $statusCodes);
     }
 
-
     // -----------------------------------------------------------------------------------------------------------------
     // used only by handle ---------------------------------------------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * @param array $counts
-     * @return array
+     * @param $resultsCounts
      */
-    private function incrementCountersForOutputMessage($counts)
+    public function printMessage($resultsCounts)
     {
-        $counts['requests'] = ($counts['requests'] ?? 0) + $this->requestsThisChunk->count();
-        $counts['reqExc'] = ($counts['reqExc'] ?? 0) + $this->requestExceptionsThisChunk->count();
-        $counts['responses'] = ($counts['responses'] ?? 0) + $this->responsesThisChunk->count();
-
-        return $counts;
-    }
-
-    /**
-     * @param array $counts
-     * @return void
-     */
-    private function printTotalResultsInfo($counts)
-    {
-        $output =
-            'Processed ' .
-            $counts['requests'] .
-            ' ' .
-            ($counts['requests'] === 1 ? 'request' : 'requests') .
-            ', ' .
-            $counts['reqExc'] .
-            ' ' .
-            ($counts['reqExc'] === 1 ? 'requestException' : 'requestExceptions') .
-            ', and ' .
-            $counts['responses'] .
-            ' ' .
-            ($counts['responses'] === 1 ? 'response' : 'responses') .
-            '.';
-
         if (getenv('APP_ENV') !== 'testing') {
-            $this->info($output);
+            $requestsCount = $resultsCounts['requestsCount'] ?? 0;
+            $exceptionsCount = $resultsCounts['exceptionsCount'] ?? 0;
+            $successfulRequestsCount = $requestsCount - $exceptionsCount;
+            $this->info(
+                'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
+                ', ' . $exceptionsCount
+            );
         }
     }
+
 
     // -----------------------------------------------------------------------------------------------------------------
     // helper methods for processing responses -------------------------------------------------------------------------
@@ -533,7 +506,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $this->entityManager->persist($r);
 
                 $requestEntitiesByUuid[$r->getUuid()] =
-                    $r ?? null; // todo: why this ?? operator? Delete if shouldn't be here
+                    $r ?? null; // why this ?? operator? Delete if shouldn't be here
 
             } catch (Exception $e) {
                 error_log($e);
