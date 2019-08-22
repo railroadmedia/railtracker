@@ -3,11 +3,9 @@
 namespace Railroad\Railtracker\Console\Commands;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
 use Railroad\Railtracker\Trackers\RequestTracker;
-use Railroad\Railtracker\Trackers\ResponseTracker;
 
 class RailtrackerTestingData extends \Illuminate\Console\Command
 {
@@ -44,10 +42,6 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
     private $exceptionTracker;
 
     /**
-     * @var ResponseTracker
-     */
-    private $responseTracker;
-    /**
      * @var \Faker\Generator
      */
     private $faker;
@@ -55,8 +49,7 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
     public function __construct(
         BatchService $batchService,
         RequestTracker $requestTracker,
-        ExceptionTracker $exceptionTracker,
-        ResponseTracker $responseTracker
+        ExceptionTracker $exceptionTracker
     )
     {
         parent::__construct();
@@ -64,7 +57,6 @@ class RailtrackerTestingData extends \Illuminate\Console\Command
         $this->batchService = $batchService;
         $this->requestTracker = $requestTracker;
         $this->exceptionTracker = $exceptionTracker;
-        $this->responseTracker = $responseTracker;
 
         $this->faker = \Faker\Factory::create();
     }
