@@ -4,8 +4,6 @@ namespace Railroad\Railtracker\Tests\Integration\Commands;
 
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
-use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
-use Railroad\Railtracker\Trackers\RequestTracker;
 
 class ProcessTrackingsTest extends RailtrackerTestCase
 {

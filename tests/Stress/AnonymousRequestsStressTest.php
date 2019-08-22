@@ -2,10 +2,10 @@
 
 namespace Railroad\Railtracker\Tests\Stress;
 
+use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Tests\Resources\Models\User;
-use Railroad\Railtracker\Trackers\RequestTracker;
 use Ramsey\Uuid\Uuid;
 
 class AnonymousRequestsStressTest extends RailtrackerTestCase
@@ -17,7 +17,7 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
         $url = 'https://www.drumeo.com/';
         $clientIp = '192.562.33.42';
 
-        $cookies = [RequestTracker::$cookieKey => Uuid::uuid4()->toString()];
+        $cookies = [ProcessTrackings::$cookieKey => Uuid::uuid4()->toString()];
 
         $response = $this->createResponse(200);
 
@@ -32,7 +32,7 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
             ConfigService::$tableRequests,
             [
                 'user_id' => null,
-                'cookie_id' => $cookies[RequestTracker::$cookieKey],
+                'cookie_id' => $cookies[ProcessTrackings::$cookieKey],
             ]
         );
 

@@ -3,16 +3,12 @@
 namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Railroad\Railtracker\Entities\Request as RequestEntity;
 use Railroad\Railtracker\Events\RequestTracked;
-use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Tests\Resources\IpDataApiStubDataProvider;
 use Railroad\Railtracker\Tests\Resources\Models\User;
-use Railroad\Railtracker\Trackers\RequestTracker;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 use stdClass;
 
@@ -1057,7 +1053,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.testing.com/?test=1';
         $refererUrl = 'http://www.referer-testing.com/?test=2';
         $clientIp = '183.22.98.51';
-        $_COOKIE[RequestTracker::$cookieKey] = 'kmn234';
+        $_COOKIE[ProcessTrackings::$cookieKey] = 'kmn234';
 
         $request =
             $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
@@ -1080,7 +1076,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.testing.com/?test=1';
         $refererUrl = 'http://www.referer-testing.com/?test=2';
         $clientIp = '183.22.98.51';
-        $_COOKIE[RequestTracker::$cookieKey] = 'kmn234';
+        $_COOKIE[ProcessTrackings::$cookieKey] = 'kmn234';
 
         $request =
             $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
@@ -1108,7 +1104,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $url = 'https://www.testing.com/?test=1';
         $refererUrl = 'http://www.referer-testing.com/?test=2';
         $clientIp = '183.22.98.51';
-        $_COOKIE[RequestTracker::$cookieKey] = 'kmn234';
+        $_COOKIE[ProcessTrackings::$cookieKey] = 'kmn234';
 
         $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
 
@@ -1158,7 +1154,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $refererUrl = $this->faker->url;
             $clientIp = $this->faker->ipv4;
             $cookieKeys[$i] = $this->faker->word . rand(00000,99999);
-            $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+            $_COOKIE[ProcessTrackings::$cookieKey] = $cookieKeys[$i];
 
             $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
             $this->sendRequest($request);
@@ -1191,7 +1187,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $url = $this->faker->url;
             $refererUrl = $this->faker->url;
             $clientIp = $this->faker->ipv4;
-            $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+            $_COOKIE[ProcessTrackings::$cookieKey] = $cookieKeys[$i];
 
             $userIds[$i] = $this->createAndLogInNewUser();
             $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
@@ -1251,7 +1247,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $refererUrl = $this->faker->url;
             $clientIp = $this->faker->ipv4;
             $cookieKeys[$i] = $this->faker->word . rand(00000,99999);
-            $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+            $_COOKIE[ProcessTrackings::$cookieKey] = $cookieKeys[$i];
 
             $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
             $this->sendRequest($request);
@@ -1268,7 +1264,7 @@ class RequestTrackerTest extends RailtrackerTestCase
                 $url = $this->faker->url;
                 $refererUrl = $this->faker->url;
                 $clientIp = $this->faker->ipv4;
-                $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+                $_COOKIE[ProcessTrackings::$cookieKey] = $cookieKeys[$i];
 
                 $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);
                 $this->sendRequest($request);
@@ -1319,7 +1315,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $url = $this->faker->url;
             $refererUrl = $this->faker->url;
             $clientIp = $this->faker->ipv4;
-            $_COOKIE[RequestTracker::$cookieKey] = $cookieKeys[$i];
+            $_COOKIE[ProcessTrackings::$cookieKey] = $cookieKeys[$i];
 
             $userIds[$i] = $this->createAndLogInNewUser();
             $request = $this->createRequest($this->faker->userAgent, $url, $refererUrl, $clientIp, 'GET', $_COOKIE);

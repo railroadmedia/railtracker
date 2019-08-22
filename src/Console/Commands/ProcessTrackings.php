@@ -12,8 +12,6 @@ use Railroad\Railtracker\Repositories\RequestRepository;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
-use Railroad\Railtracker\Trackers\RequestTracker;
-use Railroad\Railtracker\Trackers\ResponseTracker;
 use Railroad\Railtracker\ValueObjects\ExceptionVO;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 
@@ -38,11 +36,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * @var BatchService
      */
     private $batchService;
-
-    /**
-     * @var RequestTracker
-     */
-    private $requestTracker;
 
     /**
      * @var ExceptionTracker
@@ -82,7 +75,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
     /**
      * ProcessTrackings constructor.
      * @param BatchService $batchService
-     * @param RequestTracker $requestTracker
      * @param ExceptionTracker $exceptionTracker
      * @param RailtrackerEntityManager $entityManager
      * @param IpDataApiSdkService $ipDataApiSdkService
@@ -92,7 +84,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     public function __construct(
         BatchService $batchService,
-        RequestTracker $requestTracker,
         ExceptionTracker $exceptionTracker,
         RailtrackerEntityManager $entityManager,
         IpDataApiSdkService $ipDataApiSdkService,
@@ -104,7 +95,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         parent::__construct();
 
         $this->batchService = $batchService;
-        $this->requestTracker = $requestTracker;
         $this->exceptionTracker = $exceptionTracker;
         $this->entityManager = $entityManager;
         $this->ipDataApiSdkService = $ipDataApiSdkService;

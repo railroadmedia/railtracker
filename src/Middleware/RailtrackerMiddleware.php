@@ -7,22 +7,11 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Railroad\Railtracker\Services\BatchService;
-use Railroad\Railtracker\Trackers\RequestTracker;
-use Railroad\Railtracker\Trackers\ResponseTracker;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 use Ramsey\Uuid\Uuid;
 
 class RailtrackerMiddleware
 {
-    /**
-     * @var RequestTracker
-     */
-    protected $requestTracker;
-
-    /**
-     * @var ResponseTracker
-     */
-    protected $responseTracker;
     /**
      * @var BatchService
      */
@@ -31,18 +20,12 @@ class RailtrackerMiddleware
     /**
      * RailtrackerMiddleware constructor.
      *
-     * @param RequestTracker $requestTracker
-     * @param ResponseTracker $responseTracker
      * @param BatchService $batchService
      */
     public function __construct(
-        RequestTracker $requestTracker,
-        ResponseTracker $responseTracker,
         BatchService $batchService
     )
     {
-        $this->requestTracker = $requestTracker;
-        $this->responseTracker = $responseTracker;
         $this->batchService = $batchService;
     }
 

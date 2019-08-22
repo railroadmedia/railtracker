@@ -5,8 +5,6 @@ namespace Railroad\Railtracker\Tests\Resources\Exceptions;
 use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
-use Railroad\Railtracker\Trackers\RequestTracker;
-use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class Handler extends ExceptionHandler
 {

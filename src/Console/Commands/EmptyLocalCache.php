@@ -2,11 +2,7 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
-use Illuminate\Http\Request;
 use Railroad\Railtracker\Services\BatchService;
-use Railroad\Railtracker\Trackers\ExceptionTracker;
-use Railroad\Railtracker\Trackers\RequestTracker;
-use Railroad\Railtracker\Trackers\ResponseTracker;
 
 class EmptyLocalCache extends \Illuminate\Console\Command
 {
