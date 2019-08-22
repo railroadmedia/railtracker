@@ -2,9 +2,7 @@
 
 namespace Railroad\Railtracker\Services;
 
-use Exception;
 use Illuminate\Cache\RedisStore;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Predis\ClientInterface;
 use Railroad\Railtracker\ValueObjects\ExceptionVO;
@@ -45,6 +43,7 @@ class BatchService
         $this->cache()->sadd($setKey, [serialize($requestVO)]);
     }
 
+    // todo: test for this (it's not used anywhere, so delete it or write test for it?)
     /**
      * @param RequestVO $requestVO
      */
@@ -68,6 +67,7 @@ class BatchService
         $this->cache()->sadd($setKey, [serialize($exceptionVO)]);
     }
 
+    // todo: test for this (it's not used anywhere, so delete it or write test for it?)
     /**
      * @param array $data
      */
@@ -76,49 +76,6 @@ class BatchService
         $setKey = $this->batchKeyPrefix . 'set' . $data['uuid'];
 
         $this->cache()->del([$setKey]);
-    }
-
-    /**
-     * @return Collection
-     */
-    public function getAll()
-    {
-        $redisIterator = null;
-        $redisValues = new Collection();
-
-        while ($redisIterator !== 0) {
-
-            try {
-                $scanResult =
-                    $this->cache()
-                        ->scan(
-                            $redisIterator,
-                            [
-                                'MATCH' => $this->batchKeyPrefix . '*',
-                                'COUNT' => config('railtracker.scan-size', 1000)
-                            ]
-                        );
-                $redisIterator = (integer)$scanResult[0];
-                $keys = $scanResult[1];
-
-                if (empty($keys)) {
-                    continue;
-                }
-
-
-                foreach ($keys as $keyThisChunk) {
-                    $values = $this->cache()->smembers($keyThisChunk);
-
-                    foreach($values as $value){
-                        $redisValues->push(unserialize($value));
-                    }
-                }
-            } catch (Exception $exception) {
-                error_log($exception);
-            }
-        }
-
-        return $redisValues;
     }
 
     /**
