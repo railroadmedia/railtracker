@@ -378,6 +378,8 @@ class ProcessTrackingsTest extends RailtrackerTestCase
 
     public function test_track_404_exception()
     {
+        $this->markTestIncomplete();
+
         /*
          * moved to "test_wip_002"
          */

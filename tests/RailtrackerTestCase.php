@@ -76,25 +76,6 @@ class RailtrackerTestCase extends BaseTestCase
             define('LARAVEL_START', microtime(true));
         }
 
-        // Run the schema update tool using our entity metadata
-        $this->entityManager = app(RailtrackerEntityManager::class);
-
-        $this->entityManager->getMetadataFactory()
-            ->getCacheDriver()
-            ->deleteAll();
-
-        // make sure laravel is using the same connection
-        DB::connection()
-            ->setPdo(
-                $this->entityManager->getConnection()
-                    ->getWrappedConnection()
-            );
-        DB::connection()
-            ->setReadPdo(
-                $this->entityManager->getConnection()
-                    ->getWrappedConnection()
-            );
-
         $this->artisan('migrate');
         $this->artisan('cache:clear', []);
 
@@ -105,9 +86,7 @@ class RailtrackerTestCase extends BaseTestCase
         $this->batchService = $this->app->make(BatchService::class);
         $this->railtrackerMiddleware = $this->app->make(RailtrackerMiddleware::class);
 
-        $this->getEnvironmentSetUp($this->app);
-
-        $this->queryLogger = app(RailtrackerQueryLogger::class);
+//        $this->getEnvironmentSetUp($this->app);
 
         // clear everything *first*
         $toDelete =
