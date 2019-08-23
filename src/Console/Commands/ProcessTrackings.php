@@ -7,7 +7,6 @@ use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Events\RequestTracked;
-use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Repositories\RequestRepository;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
@@ -43,16 +42,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
     private $exceptionTracker;
 
     /**
-     * @var ResponseTracker
-     */
-    private $responseTracker;
-
-    /**
-     * @var RailtrackerEntityManager
-     */
-    private $entityManager;
-
-    /**
      * @var IpDataApiSdkService
      */
     private $ipDataApiSdkService;
@@ -76,7 +65,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
      * ProcessTrackings constructor.
      * @param BatchService $batchService
      * @param ExceptionTracker $exceptionTracker
-     * @param RailtrackerEntityManager $entityManager
      * @param IpDataApiSdkService $ipDataApiSdkService
      * @param RequestRepository $requestRepository
      * @param DatabaseManager $databaseManager
@@ -85,7 +73,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
     public function __construct(
         BatchService $batchService,
         ExceptionTracker $exceptionTracker,
-        RailtrackerEntityManager $entityManager,
         IpDataApiSdkService $ipDataApiSdkService,
         RequestRepository $requestRepository,
         DatabaseManager $databaseManager,
@@ -96,7 +83,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $this->batchService = $batchService;
         $this->exceptionTracker = $exceptionTracker;
-        $this->entityManager = $entityManager;
         $this->ipDataApiSdkService = $ipDataApiSdkService;
         $this->requestRepository = $requestRepository;
         $this->databaseManager = $databaseManager;
@@ -140,8 +126,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $this->batchService->forget($keys);
 
                 $resultsCounts = $this->processRequests($valuesThisChunk);
-
-                $this->entityManager->clear();
 
             } catch (Exception $exception) {
                 error_log($exception);
@@ -274,15 +258,15 @@ class ProcessTrackings extends \Illuminate\Console\Command
     }
 
     /**
-     * @param $requestEntity
+     * @param RequestVO $requestVO
      * @return array
      */
-    public function getPreviousRequestsDatabaseRows($requestEntity)
+    public function getPreviousRequestsDatabaseRows($requestVO)
     {
-        $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
+        $table = config('railtracker.table_prefix') . 'requests';
 
         $results = $this->databaseManager->table($table)
-            ->where(['user_id' => $requestEntity->userId])
+            ->where(['user_id' => $requestVO->userId])
             ->get()
             ->all();
 
@@ -314,14 +298,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * @param $requests
+     * @param RequestVO[] $requestVOs
      * @return array
      */
-    private function findUsersPreviousByRequestCookieId($requests)
+    private function findUsersPreviousByRequestCookieId($requestVOs)
     {
-        foreach ($requests as $request) {
-            if ($request->userId !== null) {
-                $previousRequests = $this->getPreviousRequestsDatabaseRows($request);
+        foreach ($requestVOs as $requestVO) {
+            if ($requestVO->userId !== null) {
+                $previousRequests = $this->getPreviousRequestsDatabaseRows($requestVO);
                 $enough = count($previousRequests) >= 2;
                 if (!$enough) {
                     continue;
