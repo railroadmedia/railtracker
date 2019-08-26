@@ -9,8 +9,6 @@ use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Trackers\ExceptionTracker;
-use Railroad\Railtracker\Trackers\RequestTracker;
-use Railroad\Railtracker\Trackers\ResponseTracker;
 use Carbon\Carbon;
 
 // from ExceptionTrackerTest
@@ -22,7 +20,6 @@ use Illuminate\Foundation\Auth\User;
 use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Tests\Resources\Exceptions\Handler;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProcessTrackingsTest extends RailtrackerTestCase
 {

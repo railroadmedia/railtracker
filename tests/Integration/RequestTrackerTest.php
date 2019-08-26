@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Tests\Integration\Trackers;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
@@ -550,7 +551,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
             [
-                'device_is_mobile' => false,
+                'device_is_mobile' => '0',
             ]
         );
     }

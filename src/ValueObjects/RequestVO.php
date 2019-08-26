@@ -111,13 +111,13 @@ class RequestVO
         $this->deviceModel = substr($userAgentObject->device(), 0, 64);
         $this->devicePlatform = substr($userAgentObject->platform(), 0, 64);
         $this->deviceVersion = substr($userAgentObject->version($userAgentObject->platform()), 0, 64);
-        $this->deviceIsMobile = $userAgentObject->isMobile();
+        $this->deviceIsMobile = $userAgentObject->isMobile() ? 1 : 0;
 
         // agent
         $this->agentString = substr($userAgentObject->getUserAgent() ?: 'Other', 0, 560);
         $this->agentBrowser = substr($userAgentObject->browser(), 0, 64);
         $this->agentBrowserVersion = substr($userAgentObject->version($userAgentObject->browser()), 0, 64);
-        $this->isRobot = $userAgentObject->isRobot();
+        $this->isRobot = $userAgentObject->isRobot() ? 1 : 0;
 
         // referer url
         $fullRefererUrl = $httpRequest->headers->get('referer');
