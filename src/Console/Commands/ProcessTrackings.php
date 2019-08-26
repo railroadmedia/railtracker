@@ -298,7 +298,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * @param RequestVO[] $requestVOs
+     * @param RequestVO[]|Collection $requestVOs
      * @return array
      */
     private function findUsersPreviousByRequestCookieId($requestVOs)
@@ -407,18 +407,20 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 }
             )->first();
 
-            $requestVO->ipLatitude = $ipDataForRequestVO['latitude'];
-            $requestVO->ipLongitude = $ipDataForRequestVO['longitude'];
-            $requestVO->ipCountryCode = $ipDataForRequestVO['country_code'];
-            $requestVO->ipCountryName = $ipDataForRequestVO['country_name'];
-            $requestVO->ipRegion = $ipDataForRequestVO['region_code'];
-            $requestVO->ipCity = $ipDataForRequestVO['city'];
-            $requestVO->ipPostalZipCode = $ipDataForRequestVO['postal'];
-            if(!empty($ipDataForRequestVO['time_zone'])){
-                $requestVO->ipTimezone = $ipDataForRequestVO['time_zone']->name;
-            }
-            if(!empty($ipDataForRequestVO['currency'])){
-                $requestVO->ipCurrency = $ipDataForRequestVO['currency']->code;
+            if(!empty($ipDataForRequestVO)){
+                $requestVO->ipLatitude = $ipDataForRequestVO['latitude'];
+                $requestVO->ipLongitude = $ipDataForRequestVO['longitude'];
+                $requestVO->ipCountryCode = $ipDataForRequestVO['country_code'];
+                $requestVO->ipCountryName = $ipDataForRequestVO['country_name'];
+                $requestVO->ipRegion = $ipDataForRequestVO['region_code'];
+                $requestVO->ipCity = $ipDataForRequestVO['city'];
+                $requestVO->ipPostalZipCode = $ipDataForRequestVO['postal'];
+                if(!empty($ipDataForRequestVO['time_zone'])){
+                    $requestVO->ipTimezone = $ipDataForRequestVO['time_zone']->name;
+                }
+                if(!empty($ipDataForRequestVO['currency'])){
+                    $requestVO->ipCurrency = $ipDataForRequestVO['currency']->code;
+                }
             }
         });
 
