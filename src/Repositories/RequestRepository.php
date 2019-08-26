@@ -10,6 +10,8 @@ use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class RequestRepository extends TrackerRepositoryBase
 {
+    private static $BULK_INSERT_CHUNK_SIZE = 20;
+
     private static $requestAttributeTableColumnMap = [
         'uuid' => [
             'table' => 'requests',
@@ -237,7 +239,7 @@ class RequestRepository extends TrackerRepositoryBase
             $bulkInsertData[] = $requestVO->returnArrayForDatabaseInteraction();
         }
 
-        foreach(array_chunk($bulkInsertData, 50) as $chunkOfBulkInsertData){
+        foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
             // then populate the requests table
             if (!empty($chunkOfBulkInsertData)) {
                 $builder->from(config('railtracker.table_prefix') . 'requests')
