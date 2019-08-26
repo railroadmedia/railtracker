@@ -268,7 +268,7 @@ class RequestVO
             'requested_on' => $this->requestedOn,
         ];
 
-        if($excludeForTest){
+        if(!$excludeForTest){
             $array['response_status_code'] = $this->responseStatusCode;
             $array['response_duration_ms'] = $this->responseDurationMs;
             $array['responded_on'] = $this->respondedOn;
