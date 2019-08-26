@@ -1681,7 +1681,6 @@ class RequestTrackerTest extends RailtrackerTestCase
     {
         $input = IpDataApiStubDataProvider::$INPUT;
         $output = IpDataApiStubDataProvider::output();
-        $expected = IpDataApiStubDataProvider::expectedInDatabase();
 
         $this->ipDataApiSdkServiceMock
             ->method('bulkRequest')
@@ -1698,14 +1697,69 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->fail($exception->getMessage());
         }
 
-        foreach($expected as $expectedRow){
+        foreach($output as $singleOutput){
             $this->assertDatabaseHas(
-                config('railtracker.table_prefix') . 'url_protocols',
-                $expectedRow
+                config('railtracker.table_prefix') . 'requests',
+                [
+                    'ip_address' => $singleOutput['ip'],
+                    'ip_city' => $singleOutput['city'],
+                    'ip_region' => $singleOutput['region_code'],
+                    'ip_country_name' => $singleOutput['country_name'],
+                    'ip_country_code' => $singleOutput['country_code'],
+                    'ip_latitude' => $singleOutput['latitude'],
+                    'ip_longitude' => $singleOutput['longitude'],
+                ]
+            );
+
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'ip_addresses',
+                [
+                    'ip_address' => $singleOutput['ip'],
+                ]
+            );
+
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'ip_latitudes',
+                [
+                    'ip_latitude' => $singleOutput['latitude'],
+                ]
+            );
+
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'ip_longitudes',
+                [
+                    'ip_longitude' => $singleOutput['longitude'],
+                ]
+            );
+
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'ip_country_codes',
+                [
+                    'ip_country_code' => $singleOutput['country_code'],
+                ]
+            );
+
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'ip_country_names',
+                [
+                    'ip_country_name' => $singleOutput['country_name'],
+                ]
+            );
+
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'ip_regions',
+                [
+                    'ip_region' => $singleOutput['region_code'],
+                ]
+            );
+
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'ip_cities',
+                [
+                    'ip_city' => $singleOutput['city'],
+                ]
             );
         }
     }
-
-    // todo: test that geoip rows connected to requests
 }
 

@@ -216,10 +216,9 @@ class RequestVO
     }
 
     /**
-     * @param bool $excludeForTest
      * @return array
      */
-    public function returnArrayForDatabaseInteraction($excludeForTest = false)
+    public function returnArrayForDatabaseInteraction()
     {
         $array = [
             'uuid' => $this->uuid,
@@ -266,13 +265,10 @@ class RequestVO
             'exception_trace' => $this->exceptionTrace,
 
             'requested_on' => $this->requestedOn,
+            'response_status_code' => $this->responseStatusCode,
+            'response_duration_ms' => $this->responseDurationMs,
+            'responded_on' => $this->respondedOn,
         ];
-
-        if(!$excludeForTest){
-            $array['response_status_code'] = $this->responseStatusCode;
-            $array['response_duration_ms'] = $this->responseDurationMs;
-            $array['responded_on'] = $this->respondedOn;
-        }
 
         return $array;
     }

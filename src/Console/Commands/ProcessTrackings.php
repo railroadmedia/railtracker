@@ -385,7 +385,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $requestVO->ipLongitude = $matchingRequestForIpAddress->ip_longitude;
                 $requestVO->ipCountryCode = $matchingRequestForIpAddress->ip_country_code;
                 $requestVO->ipCountryName = $matchingRequestForIpAddress->ip_country_name;
-                $requestVO->ipRegion = $matchingRequestForIpAddress->ip_region;
+                $requestVO->ipRegion = $matchingRequestForIpAddress->ip_region_name;
                 $requestVO->ipCity = $matchingRequestForIpAddress->ip_city;
                 $requestVO->ipPostalZipCode = $matchingRequestForIpAddress->ip_postal_zip_code;
                 $requestVO->ipTimezone = $matchingRequestForIpAddress->ip_timezone;
