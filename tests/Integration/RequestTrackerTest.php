@@ -375,18 +375,6 @@ class RequestTrackerTest extends RailtrackerTestCase
         );
     }
 
-    public function test_track_route_non_existing()
-    {
-        $this->markTestIncomplete('What do we need for this?');
-
-        $request = $this->createRequest();
-
-        $this->sendRequest($request);
-        $this->processTrackings();
-
-        // todo
-    }
-
     public function test_request_method()
     {
         $request = $this->createRequest(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10);
@@ -626,7 +614,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'requests',
             [
                 'id' => '1',
-                //'uuid' => \Railroad\Railtracker\ValueObjects\RequestVO::$UUID,  // todo: why can't we get uuid here?
+                'uuid' => \Railroad\Railtracker\ValueObjects\RequestVO::$UUID,
                 'user_id' => 1,
                 'cookie_id' => null,
 
@@ -659,8 +647,8 @@ class RequestTrackerTest extends RailtrackerTestCase
                 'language_range' => 'en-gb,en-us,en',
 
                 'ip_address' => '183.22.98.51',
-                'ip_latitude' => null,
-                'ip_longitude' => null,
+                'ip_latitude' => '',
+                'ip_longitude' => '',
                 'ip_country_code' => null,
                 'ip_country_name' => null,
                 'ip_region' => null,
@@ -815,18 +803,6 @@ class RequestTrackerTest extends RailtrackerTestCase
         // ----------------------------------------------------
     }
 
-    /* ---------------------------------------------------------
-
-        todo: test for responses
-
-        assert for values for these columns in requests table:
-
-        * response_status_code
-        * response_duration_ms
-        * responded_on
-
-    --------------------------------------------------------- */
-
     public function test_request_with_route()
     {
         Carbon::setTestNow(Carbon::now());
@@ -908,8 +884,8 @@ class RequestTrackerTest extends RailtrackerTestCase
                 'language_range' => 'en-gb,en-us,en',
 
                 'ip_address' => $clientIp,
-                'ip_latitude' => null,
-                'ip_longitude' => null,
+                'ip_latitude' => '',
+                'ip_longitude' => '',
                 'ip_country_code' => null,
                 'ip_country_name' => null,
                 'ip_region' => null,
