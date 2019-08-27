@@ -220,7 +220,6 @@ class RequestTrackerTest extends RailtrackerTestCase
             $request = $this->randomRequest($ip);
             $requestsTwo->push($request);
             $requestVO = new RequestVO($request);
-            $requestVO->setIpDataFromApiResult($outputKeyedByIp[$ip]);
             $expectedTwo->push($requestVO);
             $this->sendRequest($request);
         }

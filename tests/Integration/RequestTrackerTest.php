@@ -1108,7 +1108,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             [
                 'user_id' => $userId,
                 'cookie_id' => 'kmn234',
-                ]
+            ]
         );
 
         $rows = DB::table(config('railtracker.table_prefix') . 'requests')->get();

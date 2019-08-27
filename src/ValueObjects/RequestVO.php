@@ -199,23 +199,6 @@ class RequestVO
     }
 
     /**
-     * @param array $ipDataForRequestVO
-     */
-    public function setIpDataFromApiResult($ipDataForRequestVO)
-    {
-        $this->ipLatitude = $ipDataForRequestVO['latitude'] ?? null;
-        $this->ipLongitude = $ipDataForRequestVO['longitude'] ?? null;
-        $this->ipCountryCode = $ipDataForRequestVO['country_code'] ?? null;
-        $this->ipCountryName = $ipDataForRequestVO['country_name'] ?? null;
-        $this->ipRegion = $ipDataForRequestVO['region_code'] ?? null;
-        $this->ipCity = $ipDataForRequestVO['city'] ?? null;
-        $this->ipPostalZipCode = $ipDataForRequestVO['postal'] ?? null;
-
-        $this->ipTimezone = $ipDataForRequestVO['time_zone'] ? $ipDataForRequestVO['time_zone']->name : null;
-        $this->ipCurrency = $ipDataForRequestVO['currency'] ? $ipDataForRequestVO['currency']->code : null;
-    }
-
-    /**
      * @return array
      */
     public function returnArrayForDatabaseInteraction()
