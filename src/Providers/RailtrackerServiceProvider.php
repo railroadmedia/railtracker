@@ -5,7 +5,6 @@ namespace Railroad\Railtracker\Providers;
 use Doctrine\Common\Cache\RedisCache;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Railroad\Railtracker\Console\Commands\FixDuplicates;
-use Railroad\Railtracker\Console\Commands\RailtrackerTestingData;
 use Railroad\Railtracker\Console\Commands\EmptyLocalCache;
 use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
@@ -62,7 +61,6 @@ class RailtrackerServiceProvider extends ServiceProvider
         $this->commands([
             ProcessTrackings::class,
             PrintKeyCount::class,
-            RailtrackerTestingData::class,
             EmptyLocalCache::class,
             ReHashExistingData::class,
             FixDuplicates::class,
