@@ -15,8 +15,6 @@ use stdClass;
 
 class RequestTrackerTest extends RailtrackerTestCase
 {
-    // todo: new test case that makes multiple requests and asserts multiple results (heck, include responses and exceptions in there too maybe)?
-
     /**
      * @var \PHPUnit\Framework\MockObject\MockObject $ipDataApiSdkServiceMock
      */
@@ -1235,9 +1233,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         }
 
         for ($i = 0; $i < $numberOrUsers; $i++){
-
             for ($r = 0; $r < $numberOrRequestsPerUser; $r++){
-
                 $url = $this->faker->url;
                 $refererUrl = $this->faker->url;
                 $clientIp = $this->faker->ipv4;
@@ -1260,33 +1256,26 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->fail($exception->getMessage());
         }
 
-        //   -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -
-        // debugging and dev aids only                                      // debugging and dev aids only
-        $_db_ = $this->seeDbWhileDebugging();                               // debugging and dev aids only
-        foreach($_db_['railtracker_requests'] as $_TEMP_request){           // debugging and dev aids only
-            $_TEMP_cookieId = $_TEMP_request['cookie_id'];                  // debugging and dev aids only
-            $_TEMP_requestsByCookieId[$_TEMP_cookieId][] = $_TEMP_request;  // debugging and dev aids only
-        }                                                                   // debugging and dev aids only
-        //   -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -    -
-
         // ============================ primary set of assertions ======================================================
 
         for ($i = 0; $i < $numberOrUsers; $i++) {
+
             $this->assertDatabaseHas(
                 config('railtracker.table_prefix') . 'requests',
-                ['user_id' => null,'cookie_id' => $cookieKeys[$i]]
+                [
+                    'user_id' => null,
+                    'cookie_id' => $cookieKeys[$i],
+                    'requested_on' => Carbon::getTestNow()->copy()->format(RequestVO::$TIME_FORMAT)
+                ]
             );
         }
 
-        // ============================ wait before executing secondary set of requests ================================
-
-        // todo: evaluate if still needed, remove if not
+        // ================================= differentiate second set of requests ======================================
 
         $now->addHour();
-
         Carbon::setTestNow($now);
 
-        // ============================ secondary set of requests (send, then process) =================================
+        // ============================= second set of requests (send, then process) ===================================
 
         for ($i = 0; $i < $numberOrUsers; $i++){
             $url = $this->faker->url;
@@ -1300,7 +1289,18 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->sendRequest($request);
         }
 
-        // ============================ process secondary set ==========================================================
+        // == Let's just quickly check that we the DB looks as it should (namely that there's no users in there yet)====
+
+        for ($i = 0; $i < $numberOrUsers; $i++) {
+            $this->assertDatabaseMissing(
+                config('railtracker.table_prefix') . 'requests',
+                [
+                    'user_id' => $userIds[$i]
+                ]
+            );
+        }
+
+        // ============================= process second set ============================================================
 
         try{
             $this->processTrackings();
@@ -1308,7 +1308,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->fail($exception->getMessage());
         }
 
-        // ============================ secondary set of assertions ====================================================
+        // ============================= second set of assertions ======================================================
 
         $requests = collect(DB::table(config('railtracker.table_prefix') . 'requests')->get()->all());
 
@@ -1320,21 +1320,33 @@ class RequestTrackerTest extends RailtrackerTestCase
         }
 
         for ($i = 0; $i < $numberOrUsers; $i++) {
+
+            // requests made after before user created that were subsequently updated
             $this->assertDatabaseHas(
                 config('railtracker.table_prefix') . 'requests',
-                ['user_id' => $userIds[$i], 'cookie_id' => $cookieKeys[$i]]
+                [
+                    'user_id' => $userIds[$i],
+                    'cookie_id' => $cookieKeys[$i],
+                    'requested_on' => Carbon::getTestNow()->copy()->subHour()->format(RequestVO::$TIME_FORMAT)
+                ]
+            );
+
+            // requests made after user created
+            $this->assertDatabaseHas(
+                config('railtracker.table_prefix') . 'requests',
+                [
+                    'user_id' => $userIds[$i],
+                    'cookie_id' => $cookieKeys[$i],
+                    'requested_on' => Carbon::getTestNow()->copy()->format(RequestVO::$TIME_FORMAT)
+                ]
             );
 
             $this->assertDatabaseMissing(
                 config('railtracker.table_prefix') . 'requests',
-                ['user_id' => null, 'cookie_id' => $cookieKeys[$i]]
+                [
+                    'user_id' => null,
+                ]
             );
-
-            // todo: replace this because it's (maybe) totally wrong?
-            //$secondRequest = $requestsKeyedByCookieId[$cookieKeys[$i]];
-
-            // todo: reinstate this?
-//            $this->assertEquals($userIds[$i], $secondRequest->user_id);
         }
     }
 
