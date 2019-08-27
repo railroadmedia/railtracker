@@ -208,7 +208,7 @@ class CreateRequestAssociationTables extends Migration
         );
 
         Schema::create(
-            config('railtracker.table_prefix') . 'exception_classs',
+            config('railtracker.table_prefix') . 'exception_class',
             function (Blueprint $table) {
                 $table->string('exception_class', 1280)->nullable()->unique();
             }
@@ -244,5 +244,37 @@ class CreateRequestAssociationTables extends Migration
     public function down()
     {
         Schema::dropIfExists(config('railtracker.table_prefix') . 'url_protocols');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'url_domains');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'url_paths');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'url_queries');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'methods');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'route_names');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'route_actions');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_kinds');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_models');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_platforms');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_versions');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'agent_strings');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'agent_browsers');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'agent_browser_versions');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'language_preferences');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'language_ranges');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_addresses');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_latitudes');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_longitudes');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_country_codes');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_country_names');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_regions');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_cities');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_postal_zip_codes');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_timezones');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_currencies');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'response_status_codes');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_codes');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_lines');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_class');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_files');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_messages');
+        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_traces');
     }
 }
