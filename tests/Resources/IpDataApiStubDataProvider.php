@@ -538,13 +538,30 @@ class IpDataApiStubDataProvider
 
     /**
      * @param Collection|RequestVO[] $expected
+     * @param array $outputKeyedByIp
      * @return array
      */
-    public static function expectedInDatabase(Collection $expected)
+    public static function expectedInDatabase(Collection $expected, $outputKeyedByIp)
     {
         $expectedInDatabase = [];
 
         foreach($expected as $requestVO){
+
+            foreach($outputKeyedByIp as $ip => $outputForIp){
+                if($ip === $requestVO->ipAddress){
+                    $requestVO->ipLatitude = $outputForIp['latitude'] ?? null;
+                    $requestVO->ipLongitude = $outputForIp['longitude'] ?? null;
+                    $requestVO->ipCountryCode = $outputForIp['country_code'] ?? null;
+                    $requestVO->ipCountryName = $outputForIp['country_name'] ?? null;
+                    $requestVO->ipRegion = $outputForIp['region_code'] ?? null;
+                    $requestVO->ipCity = $outputForIp['city'] ?? null;
+                    $requestVO->ipPostalZipCode = $outputForIp['postal'] ?? null;
+
+                    $requestVO->ipTimezone = $outputForIp['time_zone'] ? $outputForIp['time_zone']->name : null;
+                    $requestVO->ipCurrency = $outputForIp['currency'] ? $outputForIp['currency']->code : null;
+                }
+            }
+
             $arrayOfExpected = $requestVO->returnArrayForDatabaseInteraction();
 
             unset($arrayOfExpected['uuid']);

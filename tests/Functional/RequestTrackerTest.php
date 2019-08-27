@@ -2,8 +2,6 @@
 
 namespace Railroad\Railtracker\Tests\Functional\Trackers;
 
-use Illuminate\Support\Collection;
-use Railroad\Railtracker\Services\ConfigService;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Railroad\Railtracker\Tests\Resources\IpDataApiStubDataProvider;
@@ -68,7 +66,6 @@ class RequestTrackerTest extends RailtrackerTestCase
             $requests->push($request);
 
             $requestVO = new RequestVO($request);
-            $requestVO->setIpDataFromApiResult($outputKeyedByIp[$ip]);
             $expected->push($requestVO);
         }
 
@@ -84,7 +81,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         // todo: now assert for ~~two~~ *multiple* tables: requests and ip_addresses... but then also all the other "ip_..." assoication tables?
 
-        $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected);
+        $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected, $outputKeyedByIp);
 
         foreach($expectedInDatabase as $expectedRow){
             $this->assertDatabaseHas(
@@ -106,8 +103,6 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->fail($exception->getMessage());
         }
 
-        // todo: now assert for ~~two~~ *multiple* tables: requests and ip_addresses... but then also all the other "ip_..." assoication tables?
-        // todo: decide if a change is needed here since it's not really doing what we want-namely ensuring that the API is just called once...? But then maybe that doesn't matter and this is just a check that everything is still has expected...? Or might that be better addressed by comparing before-and-after the output from `$this->seeDbWhileDebugging()` for some tables...? Maybe just add a note that this isn't important and point emphasis up to setting the expectation for bulkRequest be passed an empty array the second time its called...?
         foreach($expectedInDatabase as $expectedRow){
             $this->assertDatabaseHas(
                 config('railtracker.table_prefix') . 'requests',
@@ -376,11 +371,15 @@ class RequestTrackerTest extends RailtrackerTestCase
         }
     }
 
-//    /**
-//     * todo: write this test
-//     */
-//    public function test_process_no_keys()
-//    {
-//        $this->markTestIncomplete('todo');
-//    }
+    /**
+     * @doesNotPerformAssertions
+     */
+    public function test_process_no_keys()
+    {
+        try{
+            $this->processTrackings();
+        }catch(\Exception $exception){
+            $this->fail($exception->getMessage());
+        }
+    }
 }

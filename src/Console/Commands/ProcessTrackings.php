@@ -373,23 +373,17 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $requestVOsNotRequiringApiCall->map(
             function($requestVO) use($matchingRequests){
 
-                $matchingRequestsForIpAddress = $this->requestRecordMatchingIp($requestVO, $matchingRequests);
+                $dbRowWithIpData = $this->requestRecordMatchingIp($requestVO, $matchingRequests)->first();
 
-                if($matchingRequestsForIpAddress->isEmpty()){
-                    error_log('There shouldn\' be any empty results here');
-                }
-
-                $matchingRequestForIpAddress = $matchingRequestsForIpAddress->first();
-
-                $requestVO->ipLatitude = $matchingRequestForIpAddress->ip_latitude;
-                $requestVO->ipLongitude = $matchingRequestForIpAddress->ip_longitude;
-                $requestVO->ipCountryCode = $matchingRequestForIpAddress->ip_country_code;
-                $requestVO->ipCountryName = $matchingRequestForIpAddress->ip_country_name;
-                $requestVO->ipRegion = $matchingRequestForIpAddress->ip_region_name;
-                $requestVO->ipCity = $matchingRequestForIpAddress->ip_city;
-                $requestVO->ipPostalZipCode = $matchingRequestForIpAddress->ip_postal_zip_code;
-                $requestVO->ipTimezone = $matchingRequestForIpAddress->ip_timezone;
-                $requestVO->ipCurrency = $matchingRequestForIpAddress->ip_currency;
+                $requestVO->ipLatitude = $dbRowWithIpData->ip_latitude ?? null;
+                $requestVO->ipLongitude = $dbRowWithIpData->ip_longitude ?? null;
+                $requestVO->ipCountryCode = $dbRowWithIpData->ip_country_code ?? null;
+                $requestVO->ipCountryName = $dbRowWithIpData->ip_country_name ?? null;
+                $requestVO->ipRegion = $dbRowWithIpData->ip_region_name ?? null;
+                $requestVO->ipCity = $dbRowWithIpData->ip_city ?? null;
+                $requestVO->ipPostalZipCode = $dbRowWithIpData->ip_postal_zip_code ?? null;
+                $requestVO->ipTimezone = $dbRowWithIpData->ip_timezone ?? null;
+                $requestVO->ipCurrency = $dbRowWithIpData->ip_currency ?? null;
             }
         );
 
