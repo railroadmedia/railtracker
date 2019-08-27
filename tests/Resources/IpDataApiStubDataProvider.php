@@ -538,12 +538,17 @@ class IpDataApiStubDataProvider
 
     /**
      * @param Collection|RequestVO[] $expected
-     * @param array $outputKeyedByIp
+     * @param array $stubOutput
      * @return array
      */
-    public static function expectedInDatabase(Collection $expected, $outputKeyedByIp)
+    public static function expectedInDatabase(Collection $expected, $stubOutput)
     {
+        $outputKeyedByIp = [];
         $expectedInDatabase = [];
+
+        foreach($stubOutput as $dataForIp){
+            $outputKeyedByIp[$dataForIp['ip']] = $dataForIp;
+        }
 
         foreach($expected as $requestVO){
 

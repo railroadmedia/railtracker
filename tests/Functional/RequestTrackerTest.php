@@ -51,14 +51,7 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         app()->instance(IpDataApiSdkService::class, $ipDataApiSdkServiceMock);
 
-        // todo: Stub RequestRepostitory? (So you can add an expectation for getMostRecentRequestForEachIpAddress() to be called and on the second time to be passed an empty array)
-
-
         // first set of requests ---------------------------------------------------------------------------------------
-
-        foreach($output as $dataForIp){
-            $outputKeyedByIp[$dataForIp['ip']] = $dataForIp;
-        }
 
         // create requests and corresponding DB expectations for the results of their processing
         foreach($input as $ip){
@@ -79,120 +72,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->fail($exception->getMessage());
         }
 
-        // todo: now assert for ~~two~~ *multiple* tables: requests and ip_addresses... but then also all the other "ip_..." assoication tables?
-
-        $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected, $outputKeyedByIp);
-
-        foreach($expectedInDatabase as $expectedRow){
-            $this->assertDatabaseHas(
-                config('railtracker.table_prefix') . 'requests',
-                $expectedRow
-            );
-        }
-
-        // second set of requests --------------------------------------------------------------------------------------
-
-        foreach($input as $ip){
-            $request = $this->randomRequest($ip);
-            $this->sendRequest($request);
-        }
-
-        try{
-            $this->processTrackings();
-        }catch(\Exception $exception){
-            $this->fail($exception->getMessage());
-        }
-
-        foreach($expectedInDatabase as $expectedRow){
-            $this->assertDatabaseHas(
-                config('railtracker.table_prefix') . 'requests',
-                $expectedRow
-            );
-        }
-    }
-
-    public function test_ipData_api_not_queried_for_already_known_ips_lite()
-    {
-        $requests = collect();
-        $expected = collect();
-        $outputKeyedByIp = [];
-
-        $input = IpDataApiStubDataProvider::$INPUT;
-        $output = IpDataApiStubDataProvider::output();
-
-        $input = [
-            $input[0],
-            $input[1],
-            $input[2],
-        ];
-
-        $output = [
-            $output[0],
-            $output[1],
-            $output[2],
-        ];
-
-        // -------------------------------------------------------------------------------------------------------------
-
-        $ipDataApiSdkServiceMock = $this
-            ->getMockBuilder(IpDataApiSdkService::class)
-            ->setMethods(['bulkRequest'])
-            ->getMock();
-
-        /*
-         * Note that the first is *not* empty but the second *is*... this is the key point of this test.
-         *
-         * We're asserting that's the API is *not* called the second time around because we it's not needed as we
-         * in our database already have the specifics corresponding to that IP address.
-         */
-
-        // first *not* empty
-        $ipDataApiSdkServiceMock
-            ->expects($this->at(0))
-            ->method('bulkRequest')
-            ->with($this->callback(function($array){
-                return !empty($array);
-            }))
-            ->willReturn(collect($output));
-
-        // second *is* empty
-        $ipDataApiSdkServiceMock
-            ->expects($this->at(1))
-            ->method('bulkRequest')
-            ->with($this->callback(function($array){
-                return empty($array);
-            }))
-            ->willReturn([]);
-
-        app()->instance(IpDataApiSdkService::class, $ipDataApiSdkServiceMock);
-
-        // first set of requests ---------------------------------------------------------------------------------------
-
-        foreach($output as $dataForIp){
-            $outputKeyedByIp[$dataForIp['ip']] = $dataForIp;
-        }
-
-        // create requests and corresponding DB expectations for the results of their processing
-        foreach($input as $ip){
-            $request = $this->randomRequest($ip);
-            $requests->push($request);
-
-            $requestVO = new RequestVO($request);
-            $requestVO->setIpDataFromApiResult($outputKeyedByIp[$ip]);
-            $expected->push($requestVO);
-        }
-
-        foreach($requests as $request){
-            $this->sendRequest($request);
-        }
-
-        try{
-            $this->processTrackings();
-        }catch(\Exception $exception){
-            $this->fail($exception->getMessage());
-        }
-
-        $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected);
+        $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected, $output);
 
         foreach($expectedInDatabase as $expectedRow){
             $this->assertDatabaseHas(
@@ -310,7 +190,6 @@ class RequestTrackerTest extends RailtrackerTestCase
             $requests->push($request);
 
             $requestVO = new RequestVO($request);
-            $requestVO->setIpDataFromApiResult($outputKeyedByIp[$ip]);
             $expected->push($requestVO);
         }
 
@@ -324,7 +203,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->fail($exception->getMessage());
         }
 
-        $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected);
+        $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected, $outputAll);
 
         if(!$onlyTestBulkRequestParams){
             foreach($expectedInDatabase as $expectedRow){
@@ -346,7 +225,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             $this->sendRequest($request);
         }
 
-        $expectedInDatabaseTwo = IpDataApiStubDataProvider::expectedInDatabase($expectedTwo);
+        $expectedInDatabaseTwo = IpDataApiStubDataProvider::expectedInDatabase($expectedTwo, $outputAll);
 
         $expectedInDatabaseBoth = array_merge($expectedInDatabase, $expectedInDatabaseTwo);
 
