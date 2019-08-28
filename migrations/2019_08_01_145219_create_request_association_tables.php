@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class CreateRequestAssociationTables extends Migration
@@ -13,228 +14,264 @@ class CreateRequestAssociationTables extends Migration
      */
     public function up()
     {
+        $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
 
         // url
         Schema::create(
-            config('railtracker.table_prefix') . 'url_protocols',
+            $tablePrefix . 'url_protocols',
             function (Blueprint $table) {
-                $table->string('url_protocol', 32)->unique();
+                $table->string('url_protocol', 32)->unique('url_protocol_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'url_domains',
+            $tablePrefix . 'url_domains',
             function (Blueprint $table) {
-                $table->string('url_domain', 128)->unique();
+                $table->string('url_domain', 128)->unique('url_domain_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'url_paths',
+            $tablePrefix . 'url_paths',
             function (Blueprint $table) {
-                $table->string('url_path', 512)->nullable()->unique();
+                $table->string('url_path', 512)->nullable();//->unique('url_path_indx');
             }
         );
+
+        DB::statement('CREATE INDEX url_path_indx ON ' . $tablePrefix . 'url_paths' . ' (url_path(512));');
+        //DB::statement('CREATE UNIQUE INDEX url_path_indx ON ' . $tablePrefix . 'url_paths' . ' (url_path(512));');
+        //DB::statement('CREATE UNIQUE url_path_indx ON ' . $tablePrefix . 'url_paths' . ' (url_path(512));');
+
+
         Schema::create(
-            config('railtracker.table_prefix') . 'url_queries',
+            $tablePrefix . 'url_queries',
             function (Blueprint $table) {
-                $table->string('url_query', 1280)->nullable()->unique();
+                $table->string('url_query', 1280)->nullable();//->unique('url_query_indx');
             }
         );
+
+        DB::statement('CREATE INDEX url_query_indx ON ' . $tablePrefix . 'url_queries' . ' (url_query(1280));');
+        //DB::statement('CREATE UNIQUE INDEX url_query_indx ON ' . $tablePrefix . 'url_queries' . ' (url_query(1280));');
+        //DB::statement('CREATE UNIQUE url_query_indx ON ' . $tablePrefix . 'url_queries' . ' (url_query(1280));');
+
 
         // method
         Schema::create(
-            config('railtracker.table_prefix') . 'methods',
+            $tablePrefix . 'methods',
             function (Blueprint $table) {
-                $table->string('method', 10)->nullable()->unique();
+                $table->string('method', 10)->nullable()->unique('method_indx');
             }
         );
+
 
         // route
         Schema::create(
-            config('railtracker.table_prefix') . 'route_names',
+            $tablePrefix . 'route_names',
             function (Blueprint $table) {
-                $table->string('route_name', 840)->nullable()->unique();
-            }
-        );
-        Schema::create(
-            config('railtracker.table_prefix') . 'route_actions',
-            function (Blueprint $table) {
-                $table->string('route_action', 840)->nullable()->unique();
+                $table->string('route_name', 840)->nullable();//->unique('route_name_indx');
             }
         );
 
+        DB::statement('CREATE INDEX route_name_indx ON ' . $tablePrefix . 'route_names' . ' (route_name(840));');
+
+
+        Schema::create(
+            $tablePrefix . 'route_actions',
+            function (Blueprint $table) {
+                $table->string('route_action', 840)->nullable();//->unique('route_action_indx');
+            }
+        );
+
+        DB::statement('CREATE INDEX route_action_indx ON ' . $tablePrefix . 'route_actions' . ' (route_action(840));');
+
+
         // device
         Schema::create(
-            config('railtracker.table_prefix') . 'device_kinds',
+            $tablePrefix . 'device_kinds',
             function (Blueprint $table) {
-                $table->string('device_kind', 64)->unique();
+                $table->string('device_kind', 64)->unique('device_kind_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'device_models',
+            $tablePrefix . 'device_models',
             function (Blueprint $table) {
-                $table->string('device_model', 64)->nullable()->unique();
+                $table->string('device_model', 64)->nullable()->unique('device_model_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'device_platforms',
+            $tablePrefix . 'device_platforms',
             function (Blueprint $table) {
-                $table->string('device_platform', 64)->nullable()->unique();
+                $table->string('device_platform', 64)->nullable()->unique('device_platform_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'device_versions',
+            $tablePrefix . 'device_versions',
             function (Blueprint $table) {
-                $table->string('device_version', 64)->nullable()->unique();
+                $table->string('device_version', 64)->nullable()->unique('device_version_indx');
             }
         );
 
         // agent
         Schema::create(
-            config('railtracker.table_prefix') . 'agent_strings',
+            $tablePrefix . 'agent_strings',
             function (Blueprint $table) {
-                $table->string('agent_string', 560)->nullable()->unique();
+                $table->string('agent_string', 560)->nullable();//->unique('agent_string_indx');
+            }
+        );
+
+        DB::statement('CREATE INDEX agent_string_indx ON ' . $tablePrefix . 'agent_strings' . ' (agent_string(560));');
+
+
+        Schema::create(
+            $tablePrefix . 'agent_browsers',
+            function (Blueprint $table) {
+                $table->string('agent_browser', 64)->nullable()->unique('agent_browser_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'agent_browsers',
+            $tablePrefix . 'agent_browser_versions',
             function (Blueprint $table) {
-                $table->string('agent_browser', 64)->nullable()->unique();
-            }
-        );
-        Schema::create(
-            config('railtracker.table_prefix') . 'agent_browser_versions',
-            function (Blueprint $table) {
-                $table->string('agent_browser_version', 64)->nullable()->unique();
+                $table->string('agent_browser_version', 64)->nullable()->unique('agent_browser_version_indx');
             }
         );
 
         // language
         Schema::create(
-            config('railtracker.table_prefix') . 'language_preferences',
+            $tablePrefix . 'language_preferences',
             function (Blueprint $table) {
-                $table->string('language_preference', 10)->nullable()->unique();
+                $table->string('language_preference', 10)->nullable()->unique('language_preference_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'language_ranges',
+            $tablePrefix . 'language_ranges',
             function (Blueprint $table) {
-                $table->string('language_range', 64)->nullable()->unique();
+                $table->string('language_range', 64)->nullable()->unique('language_range_indx');
             }
         );
 
         // ip address
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_addresses',
+            $tablePrefix . 'ip_addresses',
             function (Blueprint $table) {
-                $table->string('ip_address', 128)->nullable()->unique();
+                $table->string('ip_address', 128)->nullable()->unique('ip_address_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_latitudes',
+            $tablePrefix . 'ip_latitudes',
             function (Blueprint $table) {
-                $table->decimal('ip_latitude', 10, 8)->nullable()->unique();
+                $table->decimal('ip_latitude', 10, 8)->nullable()->unique('ip_latitude_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_longitudes',
+            $tablePrefix . 'ip_longitudes',
             function (Blueprint $table) {
-                $table->decimal('ip_longitude', 10, 8)->nullable()->unique();
+                $table->decimal('ip_longitude', 10, 8)->nullable()->unique('ip_longitude_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_country_codes',
+            $tablePrefix . 'ip_country_codes',
             function (Blueprint $table) {
-                $table->string('ip_country_code', 6)->nullable()->unique();
+                $table->string('ip_country_code', 6)->nullable()->unique('ip_country_code_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_country_names',
+            $tablePrefix . 'ip_country_names',
             function (Blueprint $table) {
-                $table->string('ip_country_name', 128)->nullable()->unique();
+                $table->string('ip_country_name', 128)->nullable()->unique('ip_country_name_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_regions',
+            $tablePrefix . 'ip_regions',
             function (Blueprint $table) {
-                $table->string('ip_region', 128)->nullable()->unique();
+                $table->string('ip_region', 128)->nullable()->unique('ip_region_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_cities',
+            $tablePrefix . 'ip_cities',
             function (Blueprint $table) {
-                $table->string('ip_city', 128)->nullable()->unique();
+                $table->string('ip_city', 128)->nullable()->unique('ip_city_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_postal_zip_codes',
+            $tablePrefix . 'ip_postal_zip_codes',
             function (Blueprint $table) {
-                $table->string('ip_postal_zip_code', 16)->nullable()->unique();
+                $table->string('ip_postal_zip_code', 16)->nullable()->unique('ip_postal_zip_code_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_timezones',
+            $tablePrefix . 'ip_timezones',
             function (Blueprint $table) {
-                $table->string('ip_timezone', 64)->nullable()->unique();
+                $table->string('ip_timezone', 64)->nullable()->unique('ip_timezone_indx');
             }
         );
         Schema::create(
-            config('railtracker.table_prefix') . 'ip_currencies',
+            $tablePrefix . 'ip_currencies',
             function (Blueprint $table) {
-                $table->string('ip_currency', 16)->nullable()->unique();
+                $table->string('ip_currency', 16)->nullable()->unique('ip_currency_indx');
             }
         );
 
         // response status code
         Schema::create(
-            config('railtracker.table_prefix') . 'response_status_codes',
+            $tablePrefix . 'response_status_codes',
             function (Blueprint $table) {
-                $table->unsignedInteger('response_status_code', false, true)->nullable()->unique();
+                $table->unsignedInteger('response_status_code', false, true)->nullable()->unique('response_status_code_indx');
             }
         );
 
         // exceptions
         Schema::create(
-            config('railtracker.table_prefix') . 'exception_codes',
+            $tablePrefix . 'exception_codes',
             function (Blueprint $table) {
-                $table->unsignedInteger('exception_code', false, true)->nullable()->unique();
+                $table->unsignedInteger('exception_code', false, true)->nullable()->unique('exception_code_indx');
             }
         );
 
         Schema::create(
-            config('railtracker.table_prefix') . 'exception_lines',
+            $tablePrefix . 'exception_lines',
             function (Blueprint $table) {
-                $table->unsignedInteger('exception_line', false, true)->nullable()->unique();
+                $table->unsignedInteger('exception_line', false, true)->nullable()->unique('exception_line_indx');
             }
         );
 
         Schema::create(
-            config('railtracker.table_prefix') . 'exception_class',
+            $tablePrefix . 'exception_class',
             function (Blueprint $table) {
-                $table->string('exception_class', 1280)->nullable()->unique();
+                $table->string('exception_class', 1280)->nullable();//->unique('exception_class_indx');
             }
         );
 
+        DB::statement('CREATE INDEX exception_class_indx ON ' . $tablePrefix . 'exception_class' . ' (exception_class(1280));');
+
+
         Schema::create(
-            config('railtracker.table_prefix') . 'exception_files',
+            $tablePrefix . 'exception_files',
             function (Blueprint $table) {
-                $table->string('exception_file', 1280)->nullable()->unique();
+                $table->string('exception_file', 1280)->nullable();//->unique('exception_file_indx');
             }
         );
 
+        DB::statement('CREATE INDEX exception_file_indx ON ' . $tablePrefix . 'exception_files' . ' (exception_file(1280));');
+
+
         Schema::create(
-            config('railtracker.table_prefix') . 'exception_messages',
+            $tablePrefix . 'exception_messages',
             function (Blueprint $table) {
-                $table->string('exception_message', 65535)->nullable()->unique();
+                $table->string('exception_message', 65535)->nullable();//->unique('exception_message_indx');
             }
         );
 
+        DB::statement('CREATE INDEX exception_message_indx ON ' . $tablePrefix . 'exception_messages' . ' (exception_message(65535));');
+
+
         Schema::create(
-            config('railtracker.table_prefix') . 'exception_traces',
+            $tablePrefix . 'exception_traces',
             function (Blueprint $table) {
-                $table->string('exception_trace', 65535)->nullable()->unique();
+                $table->string('exception_trace', 65535)->nullable();//->unique('exception_trace_indx');
             }
         );
+
+        DB::statement('CREATE INDEX exception_trace_indx ON ' . $tablePrefix . 'exception_traces' . ' (exception_trace(65535));');
     }
+
 
     /**
      * Reverse the migrations.
@@ -243,38 +280,77 @@ class CreateRequestAssociationTables extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'url_protocols');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'url_domains');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'url_paths');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'url_queries');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'methods');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'route_names');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'route_actions');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_kinds');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_models');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_platforms');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'device_versions');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'agent_strings');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'agent_browsers');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'agent_browser_versions');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'language_preferences');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'language_ranges');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_addresses');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_latitudes');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_longitudes');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_country_codes');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_country_names');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_regions');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_cities');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_postal_zip_codes');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_timezones');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'ip_currencies');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'response_status_codes');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_codes');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_lines');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_class');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_files');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_messages');
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'exception_traces');
+        $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
+
+        Schema::dropIfExists($tablePrefix . 'url_protocols');
+        Schema::dropIfExists($tablePrefix . 'url_domains');
+        Schema::dropIfExists($tablePrefix . 'url_paths');
+        Schema::dropIfExists($tablePrefix . 'url_queries');
+        Schema::dropIfExists($tablePrefix . 'methods');
+        Schema::dropIfExists($tablePrefix . 'route_names');
+        Schema::dropIfExists($tablePrefix . 'route_actions');
+        Schema::dropIfExists($tablePrefix . 'device_kinds');
+        Schema::dropIfExists($tablePrefix . 'device_models');
+        Schema::dropIfExists($tablePrefix . 'device_platforms');
+        Schema::dropIfExists($tablePrefix . 'device_versions');
+        Schema::dropIfExists($tablePrefix . 'agent_strings');
+        Schema::dropIfExists($tablePrefix . 'agent_browsers');
+        Schema::dropIfExists($tablePrefix . 'agent_browser_versions');
+        Schema::dropIfExists($tablePrefix . 'language_preferences');
+        Schema::dropIfExists($tablePrefix . 'language_ranges');
+        Schema::dropIfExists($tablePrefix . 'ip_addresses');
+        Schema::dropIfExists($tablePrefix . 'ip_latitudes');
+        Schema::dropIfExists($tablePrefix . 'ip_longitudes');
+        Schema::dropIfExists($tablePrefix . 'ip_country_codes');
+        Schema::dropIfExists($tablePrefix . 'ip_country_names');
+        Schema::dropIfExists($tablePrefix . 'ip_regions');
+        Schema::dropIfExists($tablePrefix . 'ip_cities');
+        Schema::dropIfExists($tablePrefix . 'ip_postal_zip_codes');
+        Schema::dropIfExists($tablePrefix . 'ip_timezones');
+        Schema::dropIfExists($tablePrefix . 'ip_currencies');
+        Schema::dropIfExists($tablePrefix . 'response_status_codes');
+        Schema::dropIfExists($tablePrefix . 'exception_codes');
+        Schema::dropIfExists($tablePrefix . 'exception_lines');
+        Schema::dropIfExists($tablePrefix . 'exception_class');
+        Schema::dropIfExists($tablePrefix . 'exception_files');
+        Schema::dropIfExists($tablePrefix . 'exception_messages');
+        Schema::dropIfExists($tablePrefix . 'exception_traces');
+
+        Schema::table($tablePrefix . 'url_paths', function($table) {
+            $table->dropIndex('url_path_indx');
+        });
+
+        Schema::table($tablePrefix . 'url_queries', function($table) {
+            $table->dropIndex('url_query_indx');
+        });
+
+        Schema::table($tablePrefix . 'route_names', function($table) {
+            $table->dropIndex('route_name_indx');
+        });
+
+        Schema::table($tablePrefix . 'route_actions', function($table) {
+            $table->dropIndex('route_action_indx');
+        });
+
+        Schema::table($tablePrefix . 'agent_strings', function($table) {
+            $table->dropIndex('agent_string_indx');
+        });
+
+        Schema::table($tablePrefix . 'exception_class', function($table) {
+            $table->dropIndex('exception_class_indx');
+        });
+
+        Schema::table($tablePrefix . 'exception_files', function($table) {
+            $table->dropIndex('exception_file_indx');
+        });
+
+        Schema::table($tablePrefix . 'exception_messages', function($table) {
+            $table->dropIndex('exception_message_indx');
+        });
+
+        Schema::table($tablePrefix . 'exception_traces', function($table) {
+            $table->dropIndex('exception_trace_indx');
+        });
+
     }
 }
