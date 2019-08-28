@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class CreateRequestsTable extends Migration
@@ -13,8 +14,11 @@ class CreateRequestsTable extends Migration
      */
     public function up()
     {
+        $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
+        $tableName = $tablePrefix . 'requests';
+
         Schema::create(
-            config('railtracker.table_prefix') . 'requests',
+            $tableName,
             function (Blueprint $table) {
 
                 $table->bigIncrements('id');
@@ -77,13 +81,16 @@ class CreateRequestsTable extends Migration
                  * "32768" is just some arbitrary large value less than MySQL's row limit of 65535 value.
                  * Why "32768" exactly? Because it's a nice round number: 2ⁱ⁵ === 32768 && 8⁵ === 32768
                  */
-                $table->string('exception_message', 32768)->index()->nullable();
-                $table->string('exception_trace', 32768)->index()->nullable();
+                $table->string('exception_message', 32768)->nullable();
+                $table->string('exception_trace', 32768)->nullable();
 
                 $table->dateTime('requested_on', 5)->index();
                 $table->dateTime('responded_on', 5)->index()->nullable();
             }
         );
+
+        DB::statement('CREATE INDEX exception_message_idx ON ' . $tableName . ' (exception_message(500));');
+        DB::statement('CREATE INDEX exception_trace_idx ON ' . $tableName . ' (exception_trace(500));');
     }
 
     /**
@@ -93,6 +100,16 @@ class CreateRequestsTable extends Migration
      */
     public function down()
     {
+        $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
+        $tableName = $tablePrefix . 'requests';
+
         Schema::dropIfExists(config('railtracker.table_prefix') . 'requests');
+
+        Schema::table($tableName, function($table) {
+            $table->dropIndex('exception_message_idx');
+        });
+        Schema::table($tableName, function($table) {
+            $table->dropIndex('exception_trace_idx');
+        });
     }
 }
