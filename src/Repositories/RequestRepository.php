@@ -169,6 +169,30 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'requests',
             'column' => 'responded_on',
         ],
+        'exceptionCode' => [
+            'table' => 'exception_codes',
+            'column' => 'exception_code'
+        ],
+        'exceptionLine' => [
+            'table' => 'exception_lines',
+            'column' => 'exception_line'
+        ],
+        'exceptionClass' => [
+            'table' => 'exception_class',
+            'column' => 'exception_class'
+        ],
+        'exceptionFile' => [
+            'table' => 'exception_files',
+            'column' => 'exception_file'
+        ],
+        'exceptionMessage' => [
+            'table' => 'exception_messages',
+            'column' => 'exception_message'
+        ],
+        'exceptionTrace' => [
+            'table' => 'exception_traces',
+            'column' => 'exception_trace'
+        ],
     ];
 
     /**
@@ -221,6 +245,7 @@ class RequestRepository extends TrackerRepositoryBase
                                             ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
                                             ->insert($columnValues);
                                     } catch (\Exception $exception) {
+                                        error_log($exception);
                                     }
                                 }
 
