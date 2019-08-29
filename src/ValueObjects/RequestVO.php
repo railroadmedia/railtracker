@@ -82,6 +82,7 @@ class RequestVO
 
         // uuid
         $this->uuid = Uuid::uuid4()->toString();
+        self::$UUID = $this->uuid;
 
         // cookie id
         $this->cookieId = $httpRequest->cookie(self::$visitorCookieKey);

@@ -17,6 +17,8 @@ class RailtrackerMiddleware
      */
     private $batchService;
 
+    public static $UUID;
+
     /**
      * RailtrackerMiddleware constructor.
      *
@@ -24,8 +26,7 @@ class RailtrackerMiddleware
      */
     public function __construct(
         BatchService $batchService
-    )
-    {
+    ){
         $this->batchService = $batchService;
     }
 
@@ -62,9 +63,6 @@ class RailtrackerMiddleware
         // send request to cache
         try {
             $requestVO = new RequestVO($request);
-
-            RequestVO::$UUID = $requestVO->uuid;
-
             $this->batchService->storeRequest($requestVO);
         } catch (Exception $exception) {
             error_log($exception);

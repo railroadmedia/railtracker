@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Cache\Repository;
 use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Railroad\Railtracker\Services\BatchService;
 use Railroad\Railtracker\ValueObjects\ExceptionVO;
@@ -31,18 +32,26 @@ class ExceptionTracker extends TrackerBase
     }
 
     /**
+     * @param Request $request
      * @param Exception $exception
      * @return void
      */
-    public function trackException(Exception $exception)
+    public function trackException(Request $request, Exception $exception)
     {
-        if(!empty(RequestVO::$UUID)){
+        if(empty(RequestVO::$UUID)){
             try {
-                $exceptionVO = new ExceptionVO($exception, RequestVO::$UUID);
-                $this->batchService->storeException($exceptionVO);
-            } catch (Exception $exception) {
+                $requestVO = new RequestVO($request);
+                $this->batchService->storeRequest($requestVO);
+            } catch (Exception $e) {
                 error_log($exception);
             }
+        }
+
+        try {
+            $exceptionVO = new ExceptionVO($exception, RequestVO::$UUID);
+            $this->batchService->storeException($exceptionVO);
+        } catch (Exception $exception) {
+            error_log($exception);
         }
     }
 }
