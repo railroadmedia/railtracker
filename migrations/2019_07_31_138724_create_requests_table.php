@@ -88,9 +88,6 @@ class CreateRequestsTable extends Migration
                 $table->dateTime('responded_on', 5)->index()->nullable();
             }
         );
-
-        DB::statement('CREATE INDEX exception_message_idx ON ' . $tableName . ' (exception_message(512));');
-        DB::statement('CREATE INDEX exception_trace_idx ON ' . $tableName . ' (exception_trace(512));');
     }
 
     /**
@@ -101,16 +98,7 @@ class CreateRequestsTable extends Migration
     public function down()
     {
         $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
-        $tableName = $tablePrefix . 'requests';
 
-        Schema::dropIfExists(config('railtracker.table_prefix') . 'requests');
-
-        Schema::table($tableName, function($table) {
-            $table->dropIndex('exception_message_idx');
-        });
-
-        Schema::table($tableName, function($table) {
-            $table->dropIndex('exception_trace_idx');
-        });
+        Schema::dropIfExists($tablePrefix . 'requests');
     }
 }
