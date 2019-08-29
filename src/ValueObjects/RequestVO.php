@@ -57,7 +57,6 @@ class RequestVO
     public $exceptionFile;
     public $exceptionMessage;
     public $exceptionTrace;
-    public $exceptionCreatedAt;
 
     public $requestedOn;
     public $respondedOn;
