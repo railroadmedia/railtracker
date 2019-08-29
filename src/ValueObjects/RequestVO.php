@@ -122,12 +122,19 @@ class RequestVO
         // referer url
         $fullRefererUrl = $httpRequest->headers->get('referer');
 
-        $this->refererUrlProtocol = substr(parse_url($fullRefererUrl)['scheme'], 0, 32);
-        $this->refererUrlDomain = substr(parse_url($fullRefererUrl)['host'], 0, 128);
-        $this->refererUrlPath = !empty(parse_url($fullRefererUrl)['path']) ?
-            substr(parse_url($fullRefererUrl)['path'], 0, 512) : null;
-        $this->refererUrlQuery = !empty(parse_url($fullRefererUrl)['query']) ?
-            substr(parse_url($fullRefererUrl)['query'], 0, 1280) : null;
+        if(!empty($fullRefererUrl)){
+            $this->refererUrlProtocol = substr(parse_url($fullRefererUrl)['scheme'], 0, 32);
+            $this->refererUrlDomain = substr(parse_url($fullRefererUrl)['host'], 0, 128);
+            $this->refererUrlPath = !empty(parse_url($fullRefererUrl)['path']) ?
+                substr(parse_url($fullRefererUrl)['path'], 0, 512) : null;
+            $this->refererUrlQuery = !empty(parse_url($fullRefererUrl)['query']) ?
+                substr(parse_url($fullRefererUrl)['query'], 0, 1280) : null;
+        }else{
+            $this->refererUrlProtocol = '';
+            $this->refererUrlDomain = '';
+            $this->refererUrlPath = '';
+            $this->refererUrlQuery = '';
+        }
 
         // language
         $this->languagePreference = substr($userAgentObject->languages()[0] ?? 'en', 0, 10);
