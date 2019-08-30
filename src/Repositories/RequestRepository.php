@@ -178,7 +178,7 @@ class RequestRepository extends TrackerRepositoryBase
             'column' => 'exception_line'
         ],
         'exceptionClass' => [
-            'table' => 'exception_class',
+            'table' => 'exception_classes',
             'column' => 'exception_class'
         ],
         'exceptionFile' => [
