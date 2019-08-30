@@ -231,8 +231,14 @@ class RequestRepository extends TrackerRepositoryBase
 
                 // we need a use case here since sqlite doesn't support update on duplicate key update
                 if (!$isSqlLite) {
-                    $builder->from(config('railtracker.table_prefix') . $tableAndColumn['table'])
-                        ->insertOrUpdate($dataToInsert);
+                    try{
+                        $builder->from(config('railtracker.table_prefix') . $tableAndColumn['table'])
+                            ->insertOrUpdate($dataToInsert);
+                    }catch(\Exception $exception){
+                        error_log('start 1 --------------------------------------------------------------------------');
+                        error_log($exception);
+                        error_log('end 1 ----------------------------------------------------------------------------');
+                    }
                 }
                 else {
                     $this->databaseManager->connection(config('railtracker.database_connection_name'))
@@ -267,8 +273,26 @@ class RequestRepository extends TrackerRepositoryBase
         foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
             // then populate the requests table
             if (!empty($chunkOfBulkInsertData)) {
-                $builder->from(config('railtracker.table_prefix') . 'requests')
-                    ->insert($chunkOfBulkInsertData);
+
+
+
+                foreach($chunkOfBulkInsertData as $singleItem){
+                    try{
+                        $builder->from(config('railtracker.table_prefix') . 'requests')
+                            ->insertOrUpdate($singleItem);
+                    }catch(\Exception $exception){
+                        error_log($exception);
+                    }
+                }
+
+
+//                try{
+//                    $builder->from(config('railtracker.table_prefix') . 'requests')
+//                        ->insert($chunkOfBulkInsertData);
+//                }catch(\Exception $exception){
+//                    error_log($exception);
+//                }
+
             }
         }
 

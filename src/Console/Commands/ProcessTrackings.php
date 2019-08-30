@@ -123,7 +123,20 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     }
                 }
 
-                $this->batchService->forget($keys);
+                //$this->batchService->forget($keys);
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
 
                 $resultsCounts = $this->processRequests($valuesThisChunk);
 
@@ -184,7 +197,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $exceptionsCount++;
             }
         }
-        $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
+
+//        try{
+            $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
+//        }catch(\Exception $e){
+//            dd(substr($e->getMessage(), 0, 150) . '...');
+//            dd($e->getMessage());
+//        }
+//        dd('SUCCESS!');
 
         $this->updateUsersAnonymousRequests($recordsInDatabase);
 
