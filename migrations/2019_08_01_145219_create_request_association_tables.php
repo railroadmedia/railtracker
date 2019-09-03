@@ -88,6 +88,16 @@ class CreateRequestAssociationTables extends Migration
 
                 $table->dateTime('requested_on', 5)->index();
                 $table->dateTime('responded_on', 5)->index()->nullable();
+
+                // hash city
+
+                $table->string('url_path_hash', 32)->index()->nullable();
+                $table->string('url_query_hash', 32)->index()->nullable();
+                $table->string('route_name_hash', 32)->index()->nullable();
+                $table->string('route_action_hash', 32)->index()->nullable();
+                $table->string('agent_string_hash', 32)->index()->nullable();
+                $table->string('exception_class_hash', 32)->index()->nullable();
+                $table->string('exception_file_hash', 32)->index()->nullable();
             }
         );
 
@@ -319,244 +329,256 @@ class CreateRequestAssociationTables extends Migration
             }
         );
 
+        // -------------------------------------------------------------------------------------------------------------
+        // hash association tables -------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
 
-
-        // ----------------------------------------------------------------------------------------------------
-
-
-
-        /*
-         * A Note About Indexes For Long Text
-         * ----------------------------------
-         * Text columns longer than 191 characters with a unique key must have the unique key defined as below.
-         *
-         * They need a set key length that is within bounds (see stackoverflow.com/q/1814532). Ideally you could do
-         * this by passing an integer as the second param of the `unique()` method, but that's not working (it's a
-         * known and open issue: github.com/laravel/framework/issues/9293).
-         *
-         * I had issues passing with the syntax of the workaround in that discussion, and so did this instead:
-         * stackoverflow.com/q/24792974.
-         *
-         * Jonathan, August 2019
-         */
-
-
-        /* ------------------------------------------------------------------------------------------------------------------
-
-        alter table `railtracker_v3_requests` add constraint `railtracker_v3_requests_url_query_foreign` foreign key (`url_query`) references `railtracker_v3_url_queries` (`url_query`))
-        alter table `railtracker_v3_url_queries` add constraint `railtracker_v3_requests_url_query_foreign` foreign key (`url_query`) references `railtracker_v3_requests` (`url_query`))
-
-        ------------------------------------------------------------------------------------------------------------------ */
-
-# 1
-
-```
-DB::statement(
-    'CREATE UNIQUE INDEX url_path_index ON ' .
-    $tablePrefix . 'url_paths' . ' (url_path(191));'
-);
-```
-
-# 2
-
-```
-DB::statement('ALTER TABLE ' . $tablePrefix . 'url_paths' . ' ADD UNIQUE url_path_index (url_path(191));');
-```
-
-# 3
-
-```
-DB::statement(
-    'ALTER TABLE ' . $tablePrefix . 'url_paths ' .
-    'ADD UNIQUE url_path_index (url_path(191)) ' .
-    'CONSTRAINT railtracker_v3_requests_url_query_foreign FOREIGN KEY (url_path) ' .
-    'REFERENCES railtracker_v3_requests (url_path))'
-);
-```
-
-//        DB::statement(
-//            'CREATE UNIQUE INDEX url_query_index ON ' .
-//            $tablePrefix . 'url_queries' . ' (url_query(191));'
-//        );
-
-        //DB::statement('ALTER TABLE ' . $tablePrefix . 'url_queries' . ' ADD UNIQUE url_query_index (url_query(191));');
-        DB::statement(
-            'ALTER TABLE ' . $tablePrefix . 'url_queries ' .
-            'ADD UNIQUE url_query_index (url_query(191)) ' .
-            'CONSTRAINT railtracker_v3_requests_url_query_foreign FOREIGN KEY (url_query) ' .
-            'REFERENCES railtracker_v3_requests (url_query))'
+        Schema::create(
+            $tablePrefix . 'url_path_hash' . 'es',
+            function (Blueprint $table){
+                $table->string('url_path_hash', 32)->nullable()->unique('url_path_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'url_query_hash' . 'es',
+            function (Blueprint $table){
+                $table->string('url_query_hash', 32)->nullable()->unique('url_query_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'route_name_hash' . 'es',
+            function (Blueprint $table){
+                $table->string('route_name_hash', 32)->nullable()->unique('route_name_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'route_action_hash' . 'es',
+            function (Blueprint $table){
+                $table->string('route_action_hash', 32)->nullable()->unique('route_action_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'agent_string_hash' . 'es',
+            function (Blueprint $table){
+                $table->string('agent_string_hash', 32)->nullable()->unique('agent_string_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'exception_class_hash' . 'es',
+            function (Blueprint $table){
+                $table->string('exception_class_hash', 32)->nullable()->unique('exception_class_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'exception_file_hash' . 'es',
+            function (Blueprint $table){
+                $table->string('exception_file_hash', 32)->nullable()->unique('exception_file_hash_index');
+            }
         );
 
-//        DB::statement(
-//            'CREATE UNIQUE INDEX route_name_index ON ' .
-//            $tablePrefix . 'route_names' . ' (route_name(191));'
-//        );
+        // -------------------------------------------------------------------------------------------------------------
+        // Adding Foreign Keys -----------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------------------
 
-        //DB::statement('ALTER TABLE ' . $tablePrefix . 'route_names' . ' ADD UNIQUE route_name_index (route_name(191));');
-        DB::statement(
-            'ALTER TABLE ' . $tablePrefix . 'route_names ' .
-            'ADD UNIQUE route_name_index (route_name(191)) ' .
-            'CONSTRAINT railtracker_v3_requests_url_query_foreign FOREIGN KEY (route_name) ' .
-            'REFERENCES railtracker_v3_requests (route_name))'
-        );
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('url_protocol')
+            ->references('url_protocol')
+            ->on($tablePrefix . 'url_protocols');});
 
-//        DB::statement(
-//            'CREATE UNIQUE INDEX route_action_index ON ' .
-//            $tablePrefix . 'route_actions' . ' (route_action(191));'
-//        );
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('url_domain')
+            ->references('url_domain')
+            ->on($tablePrefix . 'url_domains');});
 
-        //DB::statement('ALTER TABLE ' . $tablePrefix . 'route_actions' . ' ADD UNIQUE route_action_index (route_action(191));');
-        DB::statement(
-            'ALTER TABLE ' . $tablePrefix . 'route_actions ' .
-            'ADD UNIQUE route_action_index (route_action(191)) ' .
-            'CONSTRAINT railtracker_v3_requests_url_query_foreign FOREIGN KEY (route_action) ' .
-            'REFERENCES railtracker_v3_requests (route_action))'
-        );
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('url_path')
+//            ->references('url_path')
+//            ->on($tablePrefix . 'url_paths');});
 
-//        DB::statement(
-//            'CREATE UNIQUE INDEX agent_string_index ON ' .
-//            $tablePrefix . 'agent_strings' . ' (agent_string(191));'
-//        );
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('url_query')
+//            ->references('url_query')
+//            ->on($tablePrefix . 'url_queries');});
 
-        //DB::statement('ALTER TABLE ' . $tablePrefix . 'agent_strings' . ' ADD UNIQUE agent_string_index (agent_string(191));');
-        DB::statement(
-            'ALTER TABLE ' . $tablePrefix . 'agent_strings ' .
-            'ADD UNIQUE agent_string_index (agent_string(191)) ' .
-            'CONSTRAINT railtracker_v3_requests_url_query_foreign FOREIGN KEY (agent_string) ' .
-            'REFERENCES railtracker_v3_requests (agent_string))'
-        );
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('method')
+            ->references('method')
+            ->on($tablePrefix . 'methods');});
 
-//        DB::statement(
-//            'CREATE UNIQUE INDEX exception_class_index ON ' .
-//            $tablePrefix . 'exception_classes' . ' (exception_class(191));'
-//        );
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('route_name')
+//            ->references('route_name')
+//            ->on($tablePrefix . 'route_names');});
 
-        //DB::statement('ALTER TABLE ' . $tablePrefix . 'exception_classes' . ' ADD UNIQUE exception_class_index (exception_class(191));');
-        DB::statement(
-            'ALTER TABLE ' . $tablePrefix . 'exception_classes ' .
-            'ADD UNIQUE exception_class_index (exception_class(191)) ' .
-            'CONSTRAINT railtracker_v3_requests_url_query_foreign FOREIGN KEY (exception_class) ' .
-            'REFERENCES railtracker_v3_requests (exception_class))'
-        );
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('route_action')
+//            ->references('route_action')
+//            ->on($tablePrefix . 'route_actions');});
 
-//        DB::statement(
-//            'CREATE UNIQUE INDEX exception_file_index ON ' .
-//            $tablePrefix . 'exception_files' . ' (exception_file(191));'
-//        );
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('device_kind')
+            ->references('device_kind')
+            ->on($tablePrefix . 'device_kinds');});
 
-        //DB::statement('ALTER TABLE ' . $tablePrefix . 'exception_files' . ' ADD UNIQUE exception_file_index (exception_file(191));');
-        DB::statement(
-            'ALTER TABLE ' . $tablePrefix . 'exception_files ' .
-            'ADD UNIQUE exception_file_index (exception_file(191)) ' .
-            'CONSTRAINT railtracker_v3_requests_url_query_foreign FOREIGN KEY (exception_file) ' .
-            'REFERENCES railtracker_v3_requests (exception_file))'
-        );
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('device_model')
+            ->references('device_model')
+            ->on($tablePrefix . 'device_models');});
 
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('device_platform')
+            ->references('device_platform')
+            ->on($tablePrefix . 'device_platforms');});
 
-        // ----------------------------------------------------------------------------------------------------
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('device_version')
+            ->references('device_version')
+            ->on($tablePrefix . 'device_versions');});
 
-//        /*
-//         * Adding Foreign Keys
-//         */
-//
-//        $tableConnections = [
-//            [
-//                'col' => 'url_protocol',
-//                'foreignTable' => 'url_protocols',
-//                'foreignColumn' => 'url_protocol',
-//            ],
-////            [
-////                'foreignKey' => '',
-////                'foreignTable' => '',
-////                'foreignColumn' => '',
-////            ],
-//        ];
-//
-//        foreach($tableConnections as $tableConnection){
-//            $tableName = $tablePrefix . 'requests';
-//            $col = $tableConnection['col'];
-//            $foreignTable = $tableConnection['foreignTable'];
-//
-//            Schema::table($tableName, function (Blueprint $table) use ($col, $foreignTable) {
-//                $table->foreign($col)->references($col)->on($foreignTable);
-//            });
-//        }
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('agent_string')
+//            ->references('agent_string')
+//            ->on($tablePrefix . 'agent_strings');});
 
-//        $tableConnections = [
-//            ['column' => 'url_protocol'],
-//            ['column' => 'url_domain'],
-//            ['column' => 'url_path'],
-//            ['column' => 'url_query', 'association_table' => 'url_queries'],
-//            ['column' => 'method'],
-//            ['column' => 'route_name'],
-//            ['column' => 'route_action'],
-//            ['column' => 'device_kind'],
-//            ['column' => 'device_model'],
-//            ['column' => 'device_platform'],
-//            ['column' => 'device_version'],
-//            ['column' => 'agent_string'],
-//            ['column' => 'agent_browser'],
-//            ['column' => 'agent_browser_version'],
-//            ['column' => 'language_preference'],
-//            ['column' => 'language_range'],
-//            ['column' => 'ip_address', 'association_table' => 'ip_addresses'],
-//            ['column' => 'ip_latitude'],
-//            ['column' => 'ip_longitude'],
-//            ['column' => 'ip_country_code'],
-//            ['column' => 'ip_country_name'],
-//            ['column' => 'ip_region'],
-//            ['column' => 'ip_city', 'association_table' => 'ip_cities'],
-//            ['column' => 'ip_postal_zip_code'],
-//            ['column' => 'ip_timezone'],
-//            ['column' => 'ip_currency', 'association_table' => 'ip_currencies'],
-//            ['column' => 'response_status_code'],
-//            ['column' => 'exception_code'],
-//            ['column' => 'exception_line'],
-//            ['column' => 'exception_class', 'association_table' => 'exception_classes'],
-//            ['column' => 'exception_file'],
-//            ['column' => 'exception_message'],
-//            ['column' => 'exception_trace'],
-//        ];
-//
-//        $specialTables = [
-//            'url_paths',
-//            'url_queries',
-//            'route_names',
-//            'route_actions',
-//            'agent_strings',
-//            'exception_classes',
-//            'exception_files',
-//        ];
-//
-//        foreach ($tableConnections as $tableConnection) {
-//            $column = $tableConnection['column'];
-//            $associationTable = $tablePrefix . ($tableConnection['association_table'] ?? $column . 's');
-//            $special = in_array($associationTable, $specialTables);
-//            try {
-//                Schema::table(
-//                    $tablePrefix . 'requests',
-//                    function (Blueprint $table) use ($column, $associationTable, $special) {
-//                        // if ($special) {
-//                        //     $table->foreign($column)->references($column(191))->on($associationTable);
-//                        // } else {
-//                            $table->foreign($column)->references($column)->on($associationTable);
-//                        // }
-//                        //$table->foreign($column)->references($column)->on($associationTable)->onUpdate('cascade');
-//                    }
-//                );
-//            } catch (\Exception $exception) {
-//                error_log('');
-//                error_log('==========================================================================================');
-//                error_log('------------------------------------------------------------------------------------------');
-//                error_log('Failed to make fk-constraint for ' . $column);
-//                error_log($exception);
-//                error_log('------------------------------------------------------------------------------------------');
-//                error_log('==========================================================================================');
-//                error_log('');
-//
-//                dump('Failed to make fk-constraint for ' . $column);
-//            }
-//        }
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('agent_browser')
+            ->references('agent_browser')
+            ->on($tablePrefix . 'agent_browsers');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('agent_browser_version')
+            ->references('agent_browser_version')
+            ->on($tablePrefix . 'agent_browser_versions');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('language_preference')
+            ->references('language_preference')
+            ->on($tablePrefix . 'language_preferences');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('language_range')
+            ->references('language_range')
+            ->on($tablePrefix . 'language_ranges');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_address')
+            ->references('ip_address')
+            ->on($tablePrefix . 'ip_addresses');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_latitude')
+            ->references('ip_latitude')
+            ->on($tablePrefix . 'ip_latitudes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_longitude')
+            ->references('ip_longitude')
+            ->on($tablePrefix . 'ip_longitudes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_country_code')
+            ->references('ip_country_code')
+            ->on($tablePrefix . 'ip_country_codes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_country_name')
+            ->references('ip_country_name')
+            ->on($tablePrefix . 'ip_country_names');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_region')
+            ->references('ip_region')
+            ->on($tablePrefix . 'ip_regions');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_city')
+            ->references('ip_city')
+            ->on($tablePrefix . 'ip_cities');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_postal_zip_code')
+            ->references('ip_postal_zip_code')
+            ->on($tablePrefix . 'ip_postal_zip_codes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_timezone')
+            ->references('ip_timezone')
+            ->on($tablePrefix . 'ip_timezones');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('ip_currency')
+            ->references('ip_currency')
+            ->on($tablePrefix . 'ip_currencies');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('response_status_code')
+            ->references('response_status_code')
+            ->on($tablePrefix . 'response_status_codes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('exception_code')
+            ->references('exception_code')
+            ->on($tablePrefix . 'exception_codes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('exception_line')
+            ->references('exception_line')
+            ->on($tablePrefix . 'exception_lines');});
+
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('exception_class')
+//            ->references('exception_class')
+//            ->on($tablePrefix . 'exception_classes');});
+
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('exception_file')
+//            ->references('exception_file')
+//            ->on($tablePrefix . 'exception_files');});
+
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('exception_message')
+//            ->references('exception_message')
+//            ->on($tablePrefix . 'exception_messages');});
+
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('exception_trace')
+//            ->references('exception_trace')
+//            ->on($tablePrefix . 'exception_traces');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('url_path_hash')
+            ->references('url_path_hash')
+            ->on($tablePrefix . 'url_path_hashes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('url_query_hash')
+            ->references('url_query_hash')
+            ->on($tablePrefix . 'url_query_hashes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('route_name_hash')
+            ->references('route_name_hash')
+            ->on($tablePrefix . 'route_name_hashes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('route_action_hash')
+            ->references('route_action_hash')
+            ->on($tablePrefix . 'route_action_hashes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('agent_string_hash')
+            ->references('agent_string_hash')
+            ->on($tablePrefix . 'agent_string_hashes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('exception_class_hash')
+            ->references('exception_class_hash')
+            ->on($tablePrefix . 'exception_class_hashes');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('exception_file_hash')
+            ->references('exception_file_hash')
+            ->on($tablePrefix . 'exception_file_hashes');});
     }
 
     /**
@@ -576,54 +598,54 @@ DB::statement(
 
         $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
 
-        Schema::table(
-            $tablePrefix . 'url_paths',
-            function ($table) {
-                $table->dropIndex('url_path_index');
-            }
-        );
-
-        Schema::table(
-            $tablePrefix . 'url_queries',
-            function ($table) {
-                $table->dropIndex('url_query_index');
-            }
-        );
-
-        Schema::table(
-            $tablePrefix . 'route_names',
-            function ($table) {
-                $table->dropIndex('route_name_index');
-            }
-        );
-
-        Schema::table(
-            $tablePrefix . 'route_actions',
-            function ($table) {
-                $table->dropIndex('route_action_index');
-            }
-        );
-
-        Schema::table(
-            $tablePrefix . 'agent_strings',
-            function ($table) {
-                $table->dropIndex('agent_string_index');
-            }
-        );
-
-        Schema::table(
-            $tablePrefix . 'exception_classes',
-            function ($table) {
-                $table->dropIndex('exception_class_index');
-            }
-        );
-
-        Schema::table(
-            $tablePrefix . 'exception_files',
-            function ($table) {
-                $table->dropIndex('exception_file_index');
-            }
-        );
+                //        Schema::table(
+                //            $tablePrefix . 'url_paths',
+                //            function ($table) {
+                //                $table->dropIndex('url_path_index');
+                //            }
+                //        );
+                //
+                //        Schema::table(
+                //            $tablePrefix . 'url_queries',
+                //            function ($table) {
+                //                $table->dropIndex('url_query_index');
+                //            }
+                //        );
+                //
+                //        Schema::table(
+                //            $tablePrefix . 'route_names',
+                //            function ($table) {
+                //                $table->dropIndex('route_name_index');
+                //            }
+                //        );
+                //
+                //        Schema::table(
+                //            $tablePrefix . 'route_actions',
+                //            function ($table) {
+                //                $table->dropIndex('route_action_index');
+                //            }
+                //        );
+                //
+                //        Schema::table(
+                //            $tablePrefix . 'agent_strings',
+                //            function ($table) {
+                //                $table->dropIndex('agent_string_index');
+                //            }
+                //        );
+                //
+                //        Schema::table(
+                //            $tablePrefix . 'exception_classes',
+                //            function ($table) {
+                //                $table->dropIndex('exception_class_index');
+                //            }
+                //        );
+                //
+                //        Schema::table(
+                //            $tablePrefix . 'exception_files',
+                //            function ($table) {
+                //                $table->dropIndex('exception_file_index');
+                //            }
+                //        );
 
         Schema::dropIfExists($tablePrefix . 'url_protocols');
         Schema::dropIfExists($tablePrefix . 'url_domains');
@@ -658,5 +680,12 @@ DB::statement(
         Schema::dropIfExists($tablePrefix . 'exception_files');
         Schema::dropIfExists($tablePrefix . 'exception_messages');
         Schema::dropIfExists($tablePrefix . 'exception_traces');
+        Schema::dropIfExists($tablePrefix . 'url_path_hashes');
+        Schema::dropIfExists($tablePrefix . 'url_query_hashes');
+        Schema::dropIfExists($tablePrefix . 'route_name_hashes');
+        Schema::dropIfExists($tablePrefix . 'route_action_hashes');
+        Schema::dropIfExists($tablePrefix . 'agent_string_hashes');
+        Schema::dropIfExists($tablePrefix . 'exception_class_hashes');
+        Schema::dropIfExists($tablePrefix . 'exception_file_hashes');
     }
 }
