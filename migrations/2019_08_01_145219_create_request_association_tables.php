@@ -598,55 +598,6 @@ class CreateRequestAssociationTables extends Migration
 
         $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
 
-                //        Schema::table(
-                //            $tablePrefix . 'url_paths',
-                //            function ($table) {
-                //                $table->dropIndex('url_path_index');
-                //            }
-                //        );
-                //
-                //        Schema::table(
-                //            $tablePrefix . 'url_queries',
-                //            function ($table) {
-                //                $table->dropIndex('url_query_index');
-                //            }
-                //        );
-                //
-                //        Schema::table(
-                //            $tablePrefix . 'route_names',
-                //            function ($table) {
-                //                $table->dropIndex('route_name_index');
-                //            }
-                //        );
-                //
-                //        Schema::table(
-                //            $tablePrefix . 'route_actions',
-                //            function ($table) {
-                //                $table->dropIndex('route_action_index');
-                //            }
-                //        );
-                //
-                //        Schema::table(
-                //            $tablePrefix . 'agent_strings',
-                //            function ($table) {
-                //                $table->dropIndex('agent_string_index');
-                //            }
-                //        );
-                //
-                //        Schema::table(
-                //            $tablePrefix . 'exception_classes',
-                //            function ($table) {
-                //                $table->dropIndex('exception_class_index');
-                //            }
-                //        );
-                //
-                //        Schema::table(
-                //            $tablePrefix . 'exception_files',
-                //            function ($table) {
-                //                $table->dropIndex('exception_file_index');
-                //            }
-                //        );
-
         Schema::dropIfExists($tablePrefix . 'url_protocols');
         Schema::dropIfExists($tablePrefix . 'url_domains');
         Schema::dropIfExists($tablePrefix . 'url_paths');
