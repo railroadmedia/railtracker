@@ -134,12 +134,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
         }
 
         $requestsCount = $resultsCounts['requestsCount'] ?? 0;
-        $exceptionsCount = $resultsCounts['exceptionsCount'] ?? 0;
-        $successfulRequestsCount = $requestsCount - $exceptionsCount;
+        $exceptionsTrackedCount = $resultsCounts['exceptionsTrackedCount'] ?? 0;
+        $successfulRequestsCount = $requestsCount - $exceptionsTrackedCount;
 
         $this->printInfo(
             'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
-            ', ' . $exceptionsCount
+            ', ' . $exceptionsTrackedCount
         );
 
         return true;
@@ -151,7 +151,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     private function processRequests(Collection $objectsFromCache)
     {
-        $exceptionsCount = 0;
+        $exceptionsTrackedCount = 0;
 
         $requestVOs = $objectsFromCache->filter(
             function ($candidate) {
@@ -162,7 +162,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         if ($requestVOs->isEmpty()) {
             return [
                 'requestsCount' => 0,
-                'exceptionsCount' => $exceptionsCount
+                'exceptionsTrackedCount' => $exceptionsTrackedCount
             ];
         }
 
@@ -191,7 +191,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $requestVO->exceptionFileHash = md5($requestVO->exceptionFile);
                 $requestVO->exceptionMessage = $matchingExceptionVO->message;
                 $requestVO->exceptionTrace = $matchingExceptionVO->trace;
-                $exceptionsCount++;
+                $exceptionsTrackedCount++;
             }
         }
 
@@ -212,7 +212,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         return [
             'requestsCount' => count($recordsInDatabase),
-            'exceptionsCount' => $exceptionsCount
+            'exceptionsTrackedCount' => $exceptionsTrackedCount
         ];
     }
 
