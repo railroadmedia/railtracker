@@ -58,6 +58,16 @@ class RequestVO
     public $exceptionMessage;
     public $exceptionTrace;
 
+    public $urlPathHash;
+    public $urlQueryHash;
+    public $refererUrlPathHash;
+    public $refererUrlQueryHash;
+    public $routeNameHash;
+    public $routeActionHash;
+    public $agentStringHash;
+    public $exceptionClassHash;
+    public $exceptionFileHash;
+
     public $requestedOn;
     public $respondedOn;
 
@@ -146,6 +156,14 @@ class RequestVO
         // requested on
         $this->requestedOn = Carbon::now()->format(self::$TIME_FORMAT);
 
+        // set hash fields
+        $this->urlPathHash = md5($this->urlPath);
+        $this->urlQueryHash = md5($this->urlQuery);
+        $this->refererUrlPathHash = md5($this->refererUrlPath);
+        $this->refererUrlQueryHash = md5($this->refererUrlQuery);
+        $this->routeNameHash = md5($this->routeName);
+        $this->routeActionHash = md5($this->routeAction);
+        $this->agentStringHash = md5($this->agentString);
     }
 
     /**
@@ -258,6 +276,16 @@ class RequestVO
             'response_status_code' => $this->responseStatusCode,
             'response_duration_ms' => $this->responseDurationMs,
             'responded_on' => $this->respondedOn,
+
+            'url_path_hash' => $this->urlPathHash,
+            'url_query_hash' => $this->urlQueryHash,
+            'referer_url_path_hash' => $this->refererUrlPathHash,
+            'referer_url_query_hash' => $this->refererUrlQueryHash,
+            'route_name_hash' => $this->routeNameHash,
+            'route_action_hash' => $this->routeActionHash,
+            'agent_string_hash' => $this->agentStringHash,
+            'exception_class_hash' => $this->exceptionClassHash,
+            'exception_file_hash' => $this->exceptionFileHash,
         ];
 
         return $array;

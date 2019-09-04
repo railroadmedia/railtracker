@@ -193,6 +193,42 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'exception_traces',
             'column' => 'exception_trace'
         ],
+        'url_path_hash' => [
+            'table' => 'url_path_hashes',
+            'column' => 'url_path_hash'
+        ],
+        'url_query_hash' => [
+            'table' => 'url_query_hashes',
+            'column' => 'url_query_hash'
+        ],
+        'referer_url_path_hash' => [
+            'table' => 'referer_url_path_hashes',
+            'column' => 'referer_url_path_hash'
+        ],
+        'referer_url_query_hash' => [
+            'table' => 'referer_url_query_hashes',
+            'column' => 'referer_url_query_hash'
+        ],
+        'route_name_hash' => [
+            'table' => 'route_name_hashes',
+            'column' => 'route_name_hash'
+        ],
+        'route_action_hash' => [
+            'table' => 'route_action_hashes',
+            'column' => 'route_action_hash'
+        ],
+        'agent_string_hash' => [
+            'table' => 'agent_string_hashes',
+            'column' => 'agent_string_hash'
+        ],
+        'exception_class_hash' => [
+            'table' => 'exception_class_hashes',
+            'column' => 'exception_class_hash'
+        ],
+        'exception_file_hash' => [
+            'table' => 'exception_file_hashes',
+            'column' => 'exception_file_hash'
+        ],
     ];
 
     /**
@@ -201,13 +237,19 @@ class RequestRepository extends TrackerRepositoryBase
      */
     public function storeRequests(Collection $requestVOs)
     {
-        // first do all the linked data
+        $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
+        $dbConnectionName = config('railtracker.database_connection_name');
+
+        //$foo = $this->databaseManager->connection($dbConnectionName)->query()->select('*')->from('orders')->where('uuid', 'ea026d1f395f717010eac1efe4a9ca7f')->get();
+
+        // --------- Part 1: linked data ---------
+
         $isSqlLite = $this->databaseManager
-                ->connection(config('railtracker.database_connection_name'))
+                ->connection($dbConnectionName)
                 ->getDriverName() == 'sqlite';
 
         $builder = new BulkInsertOrUpdateBuilder(
-            $this->databaseManager->connection(config('railtracker.database_connection_name')),
+            $this->databaseManager->connection($dbConnectionName),
             new BulkInsertOrUpdateMySqlGrammar()
         );
 
@@ -229,39 +271,41 @@ class RequestRepository extends TrackerRepositoryBase
 
             if (!empty($dataToInsert)) {
 
-                // we need a use case here since sqlite doesn't support update on duplicate key update
-                if (!$isSqlLite) {
+                if (!$isSqlLite) { // need use-case here since sqlite doesn't support update on duplicate key update
                     try{
                         $builder->from(config('railtracker.table_prefix') . $tableAndColumn['table'])
                             ->insertOrUpdate($dataToInsert);
-                    }catch(\Exception $exception){
-                        error_log('start 1 --------------------------------------------------------------------------');
-                        error_log($exception);
-                        error_log('end 1 ----------------------------------------------------------------------------');
+                    }catch(\Exception $e){
+                        error_log($e);
+                        dump('Error while writing to association tables ("' . $e->getMessage() . '")');
                     }
-                }
-                else {
-                    $this->databaseManager->connection(config('railtracker.database_connection_name'))
-                        ->transaction(
-                            function () use ($tableAndColumn, $dataToInsert) {
-
-                                foreach ($dataToInsert as $columnValues) {
-                                    try {
-                                        $this->databaseManager->connection(config('railtracker.database_connection_name'))
-                                            ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
-                                            ->insert($columnValues);
-                                    } catch (\Exception $exception) {
-                                        error_log($exception);
-                                    }
+                } else {
+                    $this->databaseManager->connection($dbConnectionName)->transaction(
+                        function () use ($tableAndColumn, $dataToInsert, $dbConnectionName) {
+                            foreach ($dataToInsert as $columnValues) {
+                                try {
+                                    $this->databaseManager->connection($dbConnectionName)
+                                        ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
+                                        ->insert($columnValues);
+                                } catch (\Exception $e) {
+                                    error_log($e);
+                                    dump('Error while writing to association tables ("' . $e->getMessage() . '")');
                                 }
-
                             }
-                        );
+                        }
+                    );
                 }
             }
         }
 
+        // --------- Part 2: populate requests table ---------
+
         $bulkInsertData = [];
+
+//        $builderTwo = new BulkInsertOrUpdateBuilder(                // TRYING CREATING A NEW BUILDER OBJECT
+//            $this->databaseManager->connection($dbConnectionName),  // TRYING CREATING A NEW BUILDER OBJECT
+//            new BulkInsertOrUpdateMySqlGrammar()                    // TRYING CREATING A NEW BUILDER OBJECT
+//        );                                                          // TRYING CREATING A NEW BUILDER OBJECT
 
         /**
          * @var $requestVOs RequestVO[]
@@ -271,36 +315,22 @@ class RequestRepository extends TrackerRepositoryBase
         }
 
         foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
-            // then populate the requests table
             if (!empty($chunkOfBulkInsertData)) {
-
-
-
-                foreach($chunkOfBulkInsertData as $singleItem){
-                    try{
-                        $builder->from(config('railtracker.table_prefix') . 'requests')
-                            ->insertOrUpdate($singleItem);
-                    }catch(\Exception $exception){
-                        error_log($exception);
-                    }
+                try{
+                    $builder->from($table)->insert($chunkOfBulkInsertData);
+//                    $builderTwo->from($table)->insert($chunkOfBulkInsertData); // TRYING CREATING A NEW BUILDER OBJECT
+                }catch(\Exception $e){
+                    error_log($e);
+                    dump('Error while writing to requests table ("' . $e->getMessage() . '")');
                 }
-
-
-//                try{
-//                    $builder->from(config('railtracker.table_prefix') . 'requests')
-//                        ->insert($chunkOfBulkInsertData);
-//                }catch(\Exception $exception){
-//                    error_log($exception);
-//                }
-
             }
         }
 
         $uuids = array_column($chunkOfBulkInsertData ?? [], 'uuid');
 
-        /* is this ok? */
+        // because we cant' get created rows from insert, it seems
         $presumablyCreatedRows = $builder
-                ->from(config('railtracker.table_prefix') . 'requests')
+                ->from($table)
                 ->select()
                 ->whereIn('uuid', $uuids)
                 ->get();
@@ -314,8 +344,11 @@ class RequestRepository extends TrackerRepositoryBase
      */
     public function removeDuplicateVOs(Collection &$requestVOs)
     {
-        $existingRequests = $this->databaseManager->connection(config('railtracker.database_connection_name'))
-            ->table(config('railtracker.table_prefix') . 'requests')
+        $table = config('railtracker.table_prefix') . 'requests';
+        $dbConnectionName = config('railtracker.database_connection_name');
+
+        $existingRequests = $this->databaseManager->connection($dbConnectionName)
+            ->table($table)
             ->whereIn('uuid', $requestVOs->pluck('uuid')->toArray())
             ->get(['uuid'])
             ->keyBy('uuid');
@@ -368,12 +401,15 @@ class RequestRepository extends TrackerRepositoryBase
      */
     public function getMostRecentRequestForEachIpAddress($requestVOs)
     {
+        $table = config('railtracker.table_prefix') . 'requests';
+        $dbConnectionName = config('railtracker.database_connection_name');
+
         foreach($requestVOs as $requestVO){
             $ipAddresses[] = $requestVO->ipAddress;
         }
 
-        $matchingRequests = $this->databaseManager->connection(config('railtracker.database_connection_name'))
-            ->table(config('railtracker.table_prefix') . 'requests')
+        $matchingRequests = $this->databaseManager->connection($dbConnectionName)
+            ->table($table)
             ->whereIn('ip_address', $ipAddresses)
             ->orderBy('requested_on', 'desc')
             ->groupBy('ip_address')

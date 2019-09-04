@@ -110,6 +110,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $keys = $scanResult[1];
 
                 if (empty($keys)) {
+                    $this->printInfo('No keys.');
                     continue;
                 }
 
@@ -122,30 +123,24 @@ class ProcessTrackings extends \Illuminate\Console\Command
                         $valuesThisChunk->push(unserialize($value));
                     }
                 }
+                $this->printInfo('Starting to process ' . $valuesThisChunk->count() . ' items.');
 
-                //$this->batchService->forget($keys);
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
-                //$this->batchService->forget($keys); ------ DO NOT COMMIT ------ DO NOT COMMIT ------
+//                $this->batchService->forget($keys);
 
                 $resultsCounts = $this->processRequests($valuesThisChunk);
-
             } catch (Exception $exception) {
                 error_log($exception);
             }
         }
 
-        $this->printMessage($resultsCounts ?? []);
+        $requestsCount = $resultsCounts['requestsCount'] ?? 0;
+        $exceptionsCount = $resultsCounts['exceptionsCount'] ?? 0;
+        $successfulRequestsCount = $requestsCount - $exceptionsCount;
+
+        $this->printInfo(
+            'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
+            ', ' . $exceptionsCount
+        );
 
         return true;
     }
@@ -191,20 +186,16 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $requestVO->exceptionCode = $matchingExceptionVO->code;
                 $requestVO->exceptionLine = $matchingExceptionVO->line;
                 $requestVO->exceptionClass = $matchingExceptionVO->class;
+                $requestVO->exceptionClassHash = md5($requestVO->exceptionClass);
                 $requestVO->exceptionFile = $matchingExceptionVO->file;
+                $requestVO->exceptionFileHash = md5($requestVO->exceptionFile);
                 $requestVO->exceptionMessage = $matchingExceptionVO->message;
                 $requestVO->exceptionTrace = $matchingExceptionVO->trace;
                 $exceptionsCount++;
             }
         }
 
-//        try{
-            $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
-//        }catch(\Exception $e){
-//            dd(substr($e->getMessage(), 0, 150) . '...');
-//            dd($e->getMessage());
-//        }
-//        dd('SUCCESS!');
+        $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
 
         $this->updateUsersAnonymousRequests($recordsInDatabase);
 
@@ -214,6 +205,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $recordsInDatabase,
             $usersPreviousRequestsByCookieId
         );
+
+        for($i = 1; $i < rand(5,50); $i++){ // todo: REMOVE (this is just so that I can see when there's new logs when using `r logs`, otherwise the new just replaces the old instantly and there's no noticeable visual shift to indicate a change)
+            error_log('');                  // todo: REMOVE
+        }                                   // todo: REMOVE
 
         return [
             'requestsCount' => count($recordsInDatabase),
@@ -298,18 +293,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * @param $resultsCounts
+     * @param $msg
      */
-    public function printMessage($resultsCounts)
+    public function printInfo($msg)
     {
         if (getenv('APP_ENV') !== 'testing') {
-            $requestsCount = $resultsCounts['requestsCount'] ?? 0;
-            $exceptionsCount = $resultsCounts['exceptionsCount'] ?? 0;
-            $successfulRequestsCount = $requestsCount - $exceptionsCount;
-            $this->info(
-                'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
-                ', ' . $exceptionsCount
-            );
+            $this->info($msg);
         }
     }
 
