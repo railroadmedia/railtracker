@@ -120,9 +120,6 @@ class RailtrackerTestCase extends BaseTestCase
      */
     protected function getEnvironmentSetUp($app)
     {
-        $dotenv = new Dotenv(__DIR__ . '/../', '.env.testing');
-        $dotenv->load();
-
         // Setup package config for testing
         $defaultConfig = require(__DIR__ . '/../config/railtracker.php');
 
@@ -159,9 +156,6 @@ class RailtrackerTestCase extends BaseTestCase
         config()->set('railtracker.database_password', 'root');
         config()->set('railtracker.database_in_memory', true);
         config()->set('railtracker.enable_query_log', true);
-
-        // if new packages entities are required for testing, their entity directory/namespace config should be merged here
-        config()->set('railtracker.entities', $defaultConfig['entities']);
 
         // create test users table
         $app['db']->connection()

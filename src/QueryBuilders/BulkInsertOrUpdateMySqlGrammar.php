@@ -27,7 +27,7 @@ class BulkInsertOrUpdateMySqlGrammar extends MySqlGrammar
 
         $parameters = collect($values)->map(
             function ($record) {
-                return '("' . $this->parameterize($record) . '")';
+                return '(' . $this->parameterize($record) . ')';
             }
         )->implode(', ');
 
@@ -40,8 +40,6 @@ class BulkInsertOrUpdateMySqlGrammar extends MySqlGrammar
                 $cols
             )
         );
-
-        $s = "insert into $table ($columns) values $parameters on duplicate key update $updates";
 
         return "insert into $table ($columns) values $parameters on duplicate key update $updates";
     }

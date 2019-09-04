@@ -23,14 +23,6 @@ return [
     'cache_duration' => 60 * 60 * 24 * 30,
     'batch_prefix' => env('RAILTRACKER_BATCH_PREFIX', 'railtracker_batch_'),
 
-    // entities
-    'entities' => [
-        [
-            'path' => __DIR__ . '/../src/Entities',
-            'namespace' => 'Railroad\Railtracker\Entities',
-        ],
-    ],
-
     // exclude request paths
     'exclusion_regex_paths'=> ['/media\-playback\-tracking\/media\-playback\-session*/'],
 

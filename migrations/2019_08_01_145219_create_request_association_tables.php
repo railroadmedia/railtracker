@@ -100,6 +100,7 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('agent_string_hash', 32)->index()->nullable();
                 $table->string('exception_class_hash', 32)->index()->nullable();
                 $table->string('exception_file_hash', 32)->index()->nullable();
+                // todo: do for exception traces, create new table for them as well
             }
         );
 
