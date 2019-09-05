@@ -158,7 +158,7 @@ class RequestRepository extends TrackerRepositoryBase
             'column' => 'response_status_code',
         ],
         'responseDurationMs' => [
-            'table' => 'requests',
+            'table' => 'response_durations',
             'column' => 'response_duration_ms',
         ],
         'requestedOn' => [

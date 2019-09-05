@@ -291,6 +291,13 @@ class CreateRequestAssociationTables extends Migration
             }
         );
 
+        Schema::create(
+            $tablePrefix . 'response_durations',
+            function (Blueprint $table) {
+                $table->unsignedBigInteger('response_duration_ms', false, true)->unique();
+            }
+        );
+
         // exceptions
         Schema::create(
             $tablePrefix . 'exception_codes',
@@ -524,6 +531,11 @@ class CreateRequestAssociationTables extends Migration
             ->on($tablePrefix . 'response_status_codes');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('response_duration_ms')
+            ->references('response_duration_ms')
+            ->on($tablePrefix . 'response_durations');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('exception_code')
             ->references('exception_code')
             ->on($tablePrefix . 'exception_codes');});
@@ -628,6 +640,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::dropIfExists($tablePrefix . 'ip_timezones');
         Schema::dropIfExists($tablePrefix . 'ip_currencies');
         Schema::dropIfExists($tablePrefix . 'response_status_codes');
+        Schema::dropIfExists($tablePrefix . 'response_durations');
         Schema::dropIfExists($tablePrefix . 'exception_codes');
         Schema::dropIfExists($tablePrefix . 'exception_lines');
         Schema::dropIfExists($tablePrefix . 'exception_classes');
