@@ -198,12 +198,8 @@ class RequestRepository extends TrackerRepositoryBase
             'column' => 'url_query_hash'
         ],
         'refererUrlQueryHash' => [
-            'table' => 'referer_url_query_hashes',
-            'column' => 'referer_url_query_hash'
-        ],
-        'routeNameHash' => [
-            'table' => 'route_name_hashes',
-            'column' => 'route_name_hash'
+            'table' => 'url_query_hashes',
+            'column' => 'url_query_hash'
         ],
         'routeActionHash' => [
             'table' => 'route_action_hashes',

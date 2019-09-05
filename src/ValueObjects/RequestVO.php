@@ -111,7 +111,7 @@ class RequestVO
 
         // route
         if (!empty($httpRequest->route())) {
-            $this->routeName = substr($httpRequest->route()->getName(), 0, 840);
+            $this->routeName = substr($httpRequest->route()->getName(), 0, 191);
             $this->routeAction = substr($httpRequest->route()->getActionName(), 0, 840);
         }
 
@@ -277,7 +277,6 @@ class RequestVO
 
             'url_query_hash' => $this->urlQueryHash,
             'referer_url_query_hash' => $this->refererUrlQueryHash,
-            'route_name_hash' => $this->routeNameHash,
             'route_action_hash' => $this->routeActionHash,
             'agent_string_hash' => $this->agentStringHash,
             'exception_class_hash' => $this->exceptionClassHash,

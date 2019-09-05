@@ -42,7 +42,7 @@ class CreateRequestAssociationTables extends Migration
 
                 $table->string('method', 10)->index()->nullable();
 
-                $table->string('route_name', 840)->index()->nullable();
+                $table->string('route_name', 191)->index()->nullable();
                 $table->string('route_action', 840)->index()->nullable();
 
                 $table->string('device_kind', 64)->index()->nullable();
@@ -93,7 +93,6 @@ class CreateRequestAssociationTables extends Migration
 
                 $table->string('url_query_hash', 32)->index()->nullable();
                 $table->string('referer_url_query_hash', 32)->index()->nullable();
-                $table->string('route_name_hash', 32)->index()->nullable();
                 $table->string('route_action_hash', 32)->index()->nullable();
                 $table->string('agent_string_hash', 32)->index()->nullable();
                 $table->string('exception_class_hash', 32)->index()->nullable();
@@ -146,7 +145,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'route_names',
             function (Blueprint $table) {
-                $table->string('route_name', 840)->nullable(); // note: unique index created below
+                $table->string('route_name', 191)->nullable()->unique('route_name');
             }
         );
 
@@ -340,20 +339,6 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('url_query_hash', 32)->nullable()->unique('url_query_hash_index');
             }
         );
-
-        // todo: remove? I don't think we need this
-        Schema::create(
-            $tablePrefix . 'referer_url_query_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('referer_url_query_hash', 32)->nullable()->unique('referer_url_query_hash_index');
-            }
-        );
-        Schema::create(
-            $tablePrefix . 'route_name_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('route_name_hash', 32)->nullable()->unique('route_name_hash_index');
-            }
-        );
         Schema::create(
             $tablePrefix . 'route_action_hash' . 'es',
             function (Blueprint $table){
@@ -428,10 +413,10 @@ class CreateRequestAssociationTables extends Migration
             ->references('method')
             ->on($tablePrefix . 'methods');});
 
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('route_name')
-//            ->references('route_name')
-//            ->on($tablePrefix . 'route_names');});
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('route_name')
+            ->references('route_name')
+            ->on($tablePrefix . 'route_names');});
 
 //        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
 //            ->foreign('route_action')
@@ -575,13 +560,8 @@ class CreateRequestAssociationTables extends Migration
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('referer_url_query_hash')
-            ->references('referer_url_query_hash')
-            ->on($tablePrefix . 'referer_url_query_hashes');});
-
-        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-            ->foreign('route_name_hash')
-            ->references('route_name_hash')
-            ->on($tablePrefix . 'route_name_hashes');});
+            ->references('url_query_hash')
+            ->on($tablePrefix . 'url_query_hashes');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('route_action_hash')
@@ -655,8 +635,6 @@ class CreateRequestAssociationTables extends Migration
         Schema::dropIfExists($tablePrefix . 'exception_messages');
         Schema::dropIfExists($tablePrefix . 'exception_traces');
         Schema::dropIfExists($tablePrefix . 'url_query_hashes');
-        Schema::dropIfExists($tablePrefix . 'referer_url_query_hashes');
-        Schema::dropIfExists($tablePrefix . 'route_name_hashes');
         Schema::dropIfExists($tablePrefix . 'route_action_hashes');
         Schema::dropIfExists($tablePrefix . 'agent_string_hashes');
         Schema::dropIfExists($tablePrefix . 'exception_class_hashes');
