@@ -88,15 +88,15 @@ class RequestRepository extends TrackerRepositoryBase
         'isRobot' => [
             'table' => 'requests',
             'column' => 'is_robot',
-        ], // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//        'refererUrlProtocol' => [ // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//            'table' => 'url_protocols', // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//            'column' => 'url_protocol', // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//        ], // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//        'refererUrlDomain' => [ // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//            'table' => 'url_domains', // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//            'column' => 'url_domain', // todo: re-instate this, but changed so it doesn't break when written to association-tables
-//        ], // todo: re-instate this, but changed so it doesn't break when written to association-tables
+        ],
+        'refererUrlProtocol' => [
+            'table' => 'url_protocols',
+            'column' => 'url_protocol',
+        ],
+        'refererUrlDomain' => [
+            'table' => 'url_domains',
+            'column' => 'url_domain',
+        ],
         'refererUrlPath' => [
             'table' => 'url_paths',
             'column' => 'url_path',
@@ -252,6 +252,7 @@ class RequestRepository extends TrackerRepositoryBase
         );
 
         foreach (self::$requestAttributeTableColumnMap as $attribute => $tableAndColumn) {
+
             if ($tableAndColumn['table'] == 'requests') {
                 continue;
             }
@@ -262,9 +263,13 @@ class RequestRepository extends TrackerRepositoryBase
             $dataToInsert = [];
 
             foreach ($attributes as $attribute) {
-                $dataToInsert[] = [
-                    $tableAndColumn['column'] => $attribute,
-                ];
+                if(!is_null($attribute)){
+                    $dataToInsert[] = [$tableAndColumn['column'] => $attribute];
+                }
+            }
+
+            if(empty($dataToInsert)){
+                continue;
             }
 
             if (!empty($dataToInsert)) {
@@ -295,7 +300,6 @@ class RequestRepository extends TrackerRepositoryBase
 //                }
             }
         }
-
 
         // --------- Part 2: populate requests table ---------
 
