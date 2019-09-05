@@ -88,15 +88,15 @@ class RequestRepository extends TrackerRepositoryBase
         'isRobot' => [
             'table' => 'requests',
             'column' => 'is_robot',
-        ],
-        'refererUrlProtocol' => [
-            'table' => 'url_protocols',
-            'column' => 'url_protocol',
-        ],
-        'refererUrlDomain' => [
-            'table' => 'url_domains',
-            'column' => 'url_domain',
-        ],
+        ], // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//        'refererUrlProtocol' => [ // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//            'table' => 'url_protocols', // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//            'column' => 'url_protocol', // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//        ], // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//        'refererUrlDomain' => [ // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//            'table' => 'url_domains', // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//            'column' => 'url_domain', // todo: re-instate this, but changed so it doesn't break when written to association-tables
+//        ], // todo: re-instate this, but changed so it doesn't break when written to association-tables
         'refererUrlPath' => [
             'table' => 'url_paths',
             'column' => 'url_path',
@@ -193,39 +193,39 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'exception_traces',
             'column' => 'exception_trace'
         ],
-        'url_path_hash' => [
+        'urlPathHash' => [
             'table' => 'url_path_hashes',
             'column' => 'url_path_hash'
         ],
-        'url_query_hash' => [
+        'urlQueryHash' => [
             'table' => 'url_query_hashes',
             'column' => 'url_query_hash'
         ],
-        'referer_url_path_hash' => [
+        'refererUrlPathHash' => [
             'table' => 'referer_url_path_hashes',
             'column' => 'referer_url_path_hash'
         ],
-        'referer_url_query_hash' => [
+        'refererUrlQueryHash' => [
             'table' => 'referer_url_query_hashes',
             'column' => 'referer_url_query_hash'
         ],
-        'route_name_hash' => [
+        'routeNameHash' => [
             'table' => 'route_name_hashes',
             'column' => 'route_name_hash'
         ],
-        'route_action_hash' => [
+        'routeActionHash' => [
             'table' => 'route_action_hashes',
             'column' => 'route_action_hash'
         ],
-        'agent_string_hash' => [
+        'agentStringHash' => [
             'table' => 'agent_string_hashes',
             'column' => 'agent_string_hash'
         ],
-        'exception_class_hash' => [
+        'exceptionClassHash' => [
             'table' => 'exception_class_hashes',
             'column' => 'exception_class_hash'
         ],
-        'exception_file_hash' => [
+        'exceptionFileHash' => [
             'table' => 'exception_file_hashes',
             'column' => 'exception_file_hash'
         ],
@@ -239,8 +239,6 @@ class RequestRepository extends TrackerRepositoryBase
     {
         $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
         $dbConnectionName = config('railtracker.database_connection_name');
-
-        //$foo = $this->databaseManager->connection($dbConnectionName)->query()->select('*')->from('orders')->where('uuid', 'ea026d1f395f717010eac1efe4a9ca7f')->get();
 
         // --------- Part 1: linked data ---------
 
@@ -271,7 +269,7 @@ class RequestRepository extends TrackerRepositoryBase
 
             if (!empty($dataToInsert)) {
 
-                if (!$isSqlLite) { // need use-case here since sqlite doesn't support update on duplicate key update
+//                if (!$isSqlLite) { // need use-case here since sqlite doesn't support update on duplicate key update
                     try{
                         $builder->from(config('railtracker.table_prefix') . $tableAndColumn['table'])
                             ->insertOrUpdate($dataToInsert);
@@ -279,33 +277,29 @@ class RequestRepository extends TrackerRepositoryBase
                         error_log($e);
                         dump('Error while writing to association tables ("' . $e->getMessage() . '")');
                     }
-                } else {
-                    $this->databaseManager->connection($dbConnectionName)->transaction(
-                        function () use ($tableAndColumn, $dataToInsert, $dbConnectionName) {
-                            foreach ($dataToInsert as $columnValues) {
-                                try {
-                                    $this->databaseManager->connection($dbConnectionName)
-                                        ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
-                                        ->insert($columnValues);
-                                } catch (\Exception $e) {
-                                    error_log($e);
-                                    dump('Error while writing to association tables ("' . $e->getMessage() . '")');
-                                }
-                            }
-                        }
-                    );
-                }
+//                } else {
+//                    $this->databaseManager->connection($dbConnectionName)->transaction(
+//                        function () use ($tableAndColumn, $dataToInsert, $dbConnectionName) {
+//                            foreach ($dataToInsert as $columnValues) {
+//                                try {
+//                                    $this->databaseManager->connection($dbConnectionName)
+//                                        ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
+//                                        ->insert($columnValues);
+//                                } catch (\Exception $e) {
+//                                    error_log($e);
+//                                    dump('Error while writing to association tables ("' . $e->getMessage() . '")');
+//                                }
+//                            }
+//                        }
+//                    );
+//                }
             }
         }
+
 
         // --------- Part 2: populate requests table ---------
 
         $bulkInsertData = [];
-
-//        $builderTwo = new BulkInsertOrUpdateBuilder(                // TRYING CREATING A NEW BUILDER OBJECT
-//            $this->databaseManager->connection($dbConnectionName),  // TRYING CREATING A NEW BUILDER OBJECT
-//            new BulkInsertOrUpdateMySqlGrammar()                    // TRYING CREATING A NEW BUILDER OBJECT
-//        );                                                          // TRYING CREATING A NEW BUILDER OBJECT
 
         /**
          * @var $requestVOs RequestVO[]
@@ -315,10 +309,10 @@ class RequestRepository extends TrackerRepositoryBase
         }
 
         foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
+
             if (!empty($chunkOfBulkInsertData)) {
                 try{
-                    $builder->from($table)->insert($chunkOfBulkInsertData);
-//                    $builderTwo->from($table)->insert($chunkOfBulkInsertData); // TRYING CREATING A NEW BUILDER OBJECT
+                    $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);
                 }catch(\Exception $e){
                     error_log($e);
                     dump('Error while writing to requests table ("' . $e->getMessage() . '")');

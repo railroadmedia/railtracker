@@ -120,7 +120,8 @@ class RequestVO
         $this->deviceKind = $this->getDeviceKind($userAgentObject);
         $this->deviceModel = substr($userAgentObject->device(), 0, 64);
         $this->devicePlatform = substr($userAgentObject->platform(), 0, 64);
-        $this->deviceVersion = substr($userAgentObject->version($userAgentObject->platform()), 0, 64);
+        $platform = substr($userAgentObject->version($userAgentObject->platform()), 0, 64);
+        $this->deviceVersion = !empty($platform) ? $platform : null;
         $this->deviceIsMobile = $userAgentObject->isMobile() ? 1 : 0;
 
         // agent
@@ -140,10 +141,10 @@ class RequestVO
             $this->refererUrlQuery = !empty(parse_url($fullRefererUrl)['query']) ?
                 substr(parse_url($fullRefererUrl)['query'], 0, 1280) : null;
         }else{
-            $this->refererUrlProtocol = '';
-            $this->refererUrlDomain = '';
-            $this->refererUrlPath = '';
-            $this->refererUrlQuery = '';
+            $this->refererUrlProtocol = null;
+            $this->refererUrlDomain = null;
+            $this->refererUrlPath = null;
+            $this->refererUrlQuery = null;
         }
 
         // language
@@ -243,7 +244,7 @@ class RequestVO
             'device_model' => $this->deviceModel,
             'device_platform' => $this->devicePlatform,
             'device_version' => $this->deviceVersion,
-            'device_is_mobile' => (string) $this->deviceIsMobile,
+            'device_is_mobile' => $this->deviceIsMobile,
             'agent_string' => $this->agentString,
             'agent_browser' => $this->agentBrowser,
             'agent_browser_version' => $this->agentBrowserVersion,
@@ -254,8 +255,8 @@ class RequestVO
             'language_preference' => $this->languagePreference,
             'language_range' => $this->languageRange,
             'ip_address' => $this->ipAddress,
-            'ip_latitude' => (string) $this->ipLatitude,
-            'ip_longitude' => (string) $this->ipLongitude,
+            'ip_latitude' => $this->ipLatitude,
+            'ip_longitude' => $this->ipLongitude,
             'ip_country_code' => $this->ipCountryCode,
             'ip_country_name' => $this->ipCountryName,
             'ip_region' => $this->ipRegion,
@@ -263,7 +264,7 @@ class RequestVO
             'ip_postal_zip_code' => $this->ipPostalZipCode,
             'ip_timezone' => $this->ipTimezone,
             'ip_currency' => $this->ipCurrency,
-            'is_robot' => (string) $this->isRobot,
+            'is_robot' => $this->isRobot,
 
             'exception_code' => $this->exceptionCode,
             'exception_line' => $this->exceptionLine,

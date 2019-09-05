@@ -125,7 +125,27 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 }
                 $this->printInfo('Starting to process ' . $valuesThisChunk->count() . ' items.');
 
-//                $this->batchService->forget($keys);
+// ==================== TOGGLE forget keys =====================
+//     ================ TOGGLE forget keys =================
+//         ============ TOGGLE forget keys =============
+//             ======== TOGGLE forget keys =========
+//                 ==== TOGGLE forget keys =====
+//                    ======================
+//                        ==============
+//                            ======
+//                               =
+
+                $this->batchService->forget($keys);
+
+//                               =
+//                            ======
+//                        ==============
+//                    ======================
+//                 ==== TOGGLE forget keys =====
+//             ======== TOGGLE forget keys =========
+//         ============ TOGGLE forget keys =============
+//     ================ TOGGLE forget keys =================
+// ==================== TOGGLE forget keys =====================
 
                 $resultsCounts = $this->processRequests($valuesThisChunk);
             } catch (Exception $exception) {
@@ -197,6 +217,20 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $recordsInDatabase = $this->requestRepository->storeRequests($requestVOs);
 
+        dump('======================================================');
+        dump('======================================================');
+        dump('$recordsInDatabase in ProcessTrackings@processRequests');
+        dump('======================================================');
+        dump($recordsInDatabase);
+        dump('======================== fin =========================');
+        dump('======================================================');
+        die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die();
+        die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die();
+        die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die();
+        die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die();
+        die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die(); die();
+
+
         $this->updateUsersAnonymousRequests($recordsInDatabase);
 
         $usersPreviousRequestsByCookieId = $this->findUsersPreviousByRequestCookieId($requestVOs);
@@ -215,10 +249,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
             'exceptionsTrackedCount' => $exceptionsTrackedCount
         ];
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // NEW -------------------------------------------------------------------------------------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * @param Collection|RequestVO[] $requests

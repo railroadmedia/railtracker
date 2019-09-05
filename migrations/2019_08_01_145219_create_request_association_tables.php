@@ -35,8 +35,8 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('url_path', 512)->index()->nullable();
                 $table->string('url_query', 1280)->index()->nullable();
 
-                $table->string('referer_url_protocol', 32)->index();
-                $table->string('referer_url_domain', 128)->index();
+                $table->string('referer_url_protocol', 32)->index()->nullable();
+                $table->string('referer_url_domain', 128)->index()->nullable();
                 $table->string('referer_url_path', 512)->index()->nullable();
                 $table->string('referer_url_query', 1280)->index()->nullable();
 
