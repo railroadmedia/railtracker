@@ -58,9 +58,7 @@ class RequestVO
     public $exceptionMessage;
     public $exceptionTrace;
 
-    public $urlPathHash;
     public $urlQueryHash;
-    public $refererUrlPathHash;
     public $refererUrlQueryHash;
     public $routeNameHash;
     public $routeActionHash;
@@ -84,6 +82,7 @@ class RequestVO
      */
     public function __construct(Request $httpRequest)
     {
+
         $userAgentObject = new Agent($httpRequest->server->all());
 
         // start time in microseconds
@@ -104,7 +103,7 @@ class RequestVO
 
         $this->urlProtocol = substr(parse_url($fullUrl)['scheme'], 0, 32);
         $this->urlDomain = substr(parse_url($fullUrl)['host'], 0, 128);
-        $this->urlPath = !empty(parse_url($fullUrl)['path']) ? substr(parse_url($fullUrl)['path'], 0, 512) : null;
+        $this->urlPath = !empty(parse_url($fullUrl)['path']) ? substr(parse_url($fullUrl)['path'], 0, 191) : '/';
         $this->urlQuery = !empty(parse_url($fullUrl)['query']) ? substr(parse_url($fullUrl)['query'], 0, 1280) : null;
 
         // method
@@ -137,7 +136,7 @@ class RequestVO
             $this->refererUrlProtocol = substr(parse_url($fullRefererUrl)['scheme'], 0, 32);
             $this->refererUrlDomain = substr(parse_url($fullRefererUrl)['host'], 0, 128);
             $this->refererUrlPath = !empty(parse_url($fullRefererUrl)['path']) ?
-                substr(parse_url($fullRefererUrl)['path'], 0, 512) : null;
+                substr(parse_url($fullRefererUrl)['path'], 0, 191) : '/';
             $this->refererUrlQuery = !empty(parse_url($fullRefererUrl)['query']) ?
                 substr(parse_url($fullRefererUrl)['query'], 0, 1280) : null;
         }else{
@@ -158,9 +157,7 @@ class RequestVO
         $this->requestedOn = Carbon::now()->format(self::$TIME_FORMAT);
 
         // set hash fields
-        $this->urlPathHash = md5($this->urlPath);
         $this->urlQueryHash = md5($this->urlQuery);
-        $this->refererUrlPathHash = md5($this->refererUrlPath);
         $this->refererUrlQueryHash = md5($this->refererUrlQuery);
         $this->routeNameHash = md5($this->routeName);
         $this->routeActionHash = md5($this->routeAction);
@@ -278,9 +275,7 @@ class RequestVO
             'response_duration_ms' => $this->responseDurationMs,
             'responded_on' => $this->respondedOn,
 
-            'url_path_hash' => $this->urlPathHash,
             'url_query_hash' => $this->urlQueryHash,
-            'referer_url_path_hash' => $this->refererUrlPathHash,
             'referer_url_query_hash' => $this->refererUrlQueryHash,
             'route_name_hash' => $this->routeNameHash,
             'route_action_hash' => $this->routeActionHash,

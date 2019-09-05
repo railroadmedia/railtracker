@@ -193,17 +193,9 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'exception_traces',
             'column' => 'exception_trace'
         ],
-        'urlPathHash' => [
-            'table' => 'url_path_hashes',
-            'column' => 'url_path_hash'
-        ],
         'urlQueryHash' => [
             'table' => 'url_query_hashes',
             'column' => 'url_query_hash'
-        ],
-        'refererUrlPathHash' => [
-            'table' => 'referer_url_path_hashes',
-            'column' => 'referer_url_path_hash'
         ],
         'refererUrlQueryHash' => [
             'table' => 'referer_url_query_hashes',

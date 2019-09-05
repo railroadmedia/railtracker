@@ -32,12 +32,12 @@ class CreateRequestAssociationTables extends Migration
 
                 $table->string('url_protocol', 32)->index();
                 $table->string('url_domain', 128)->index();
-                $table->string('url_path', 512)->index()->nullable();
+                $table->string('url_path', 191)->index();
                 $table->string('url_query', 1280)->index()->nullable();
 
                 $table->string('referer_url_protocol', 32)->index()->nullable();
                 $table->string('referer_url_domain', 128)->index()->nullable();
-                $table->string('referer_url_path', 512)->index()->nullable();
+                $table->string('referer_url_path', 191)->index()->nullable();
                 $table->string('referer_url_query', 1280)->index()->nullable();
 
                 $table->string('method', 10)->index()->nullable();
@@ -91,9 +91,7 @@ class CreateRequestAssociationTables extends Migration
 
                 // hash city
 
-                $table->string('url_path_hash', 32)->index()->nullable();
                 $table->string('url_query_hash', 32)->index()->nullable();
-                $table->string('referer_url_path_hash', 32)->index()->nullable();
                 $table->string('referer_url_query_hash', 32)->index()->nullable();
                 $table->string('route_name_hash', 32)->index()->nullable();
                 $table->string('route_action_hash', 32)->index()->nullable();
@@ -124,7 +122,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'url_paths',
             function (Blueprint $table) {
-                $table->string('url_path', 512)->nullable(); // note: unique index created below
+                $table->string('url_path', 191)->unique('url_path_index');;
             }
         );
 
@@ -337,23 +335,13 @@ class CreateRequestAssociationTables extends Migration
         // -------------------------------------------------------------------------------------------------------------
 
         Schema::create(
-            $tablePrefix . 'url_path_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('url_path_hash', 32)->nullable()->unique('url_path_hash_index');
-            }
-        );
-        Schema::create(
             $tablePrefix . 'url_query_hash' . 'es',
             function (Blueprint $table){
                 $table->string('url_query_hash', 32)->nullable()->unique('url_query_hash_index');
             }
         );
-        Schema::create(
-            $tablePrefix . 'referer_url_path_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('referer_url_path_hash', 32)->nullable()->unique('referer_url_path_hash_index');
-            }
-        );
+
+        // todo: remove? I don't think we need this
         Schema::create(
             $tablePrefix . 'referer_url_query_hash' . 'es',
             function (Blueprint $table){
@@ -401,17 +389,37 @@ class CreateRequestAssociationTables extends Migration
             ->on($tablePrefix . 'url_protocols');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('referer_url_protocol')
+            ->references('url_protocol')
+            ->on($tablePrefix . 'url_protocols');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('url_domain')
             ->references('url_domain')
             ->on($tablePrefix . 'url_domains');});
 
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('url_path')
-//            ->references('url_path')
-//            ->on($tablePrefix . 'url_paths');});
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('referer_url_domain')
+            ->references('url_domain')
+            ->on($tablePrefix . 'url_domains');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('url_path')
+            ->references('url_path')
+            ->on($tablePrefix . 'url_paths');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('referer_url_path')
+            ->references('url_path')
+            ->on($tablePrefix . 'url_paths');});
 
 //        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
 //            ->foreign('url_query')
+//            ->references('url_query')
+//            ->on($tablePrefix . 'url_queries');});
+
+//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+//            ->foreign('referer_url_query')
 //            ->references('url_query')
 //            ->on($tablePrefix . 'url_queries');});
 
@@ -539,7 +547,7 @@ class CreateRequestAssociationTables extends Migration
             ->foreign('exception_line')
             ->references('exception_line')
             ->on($tablePrefix . 'exception_lines');});
-
+        
 //        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
 //            ->foreign('exception_class')
 //            ->references('exception_class')
@@ -561,19 +569,9 @@ class CreateRequestAssociationTables extends Migration
 //            ->on($tablePrefix . 'exception_traces');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-            ->foreign('url_path_hash')
-            ->references('url_path_hash')
-            ->on($tablePrefix . 'url_path_hashes');});
-
-        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('url_query_hash')
             ->references('url_query_hash')
             ->on($tablePrefix . 'url_query_hashes');});
-
-        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-            ->foreign('referer_url_path_hash')
-            ->references('referer_url_path_hash')
-            ->on($tablePrefix . 'referer_url_path_hashes');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('referer_url_query_hash')
@@ -656,9 +654,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::dropIfExists($tablePrefix . 'exception_files');
         Schema::dropIfExists($tablePrefix . 'exception_messages');
         Schema::dropIfExists($tablePrefix . 'exception_traces');
-        Schema::dropIfExists($tablePrefix . 'url_path_hashes');
         Schema::dropIfExists($tablePrefix . 'url_query_hashes');
-        Schema::dropIfExists($tablePrefix . 'referer_url_path_hashes');
         Schema::dropIfExists($tablePrefix . 'referer_url_query_hashes');
         Schema::dropIfExists($tablePrefix . 'route_name_hashes');
         Schema::dropIfExists($tablePrefix . 'route_action_hashes');
