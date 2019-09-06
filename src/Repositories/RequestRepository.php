@@ -13,164 +13,260 @@ class RequestRepository extends TrackerRepositoryBase
     private static $BULK_INSERT_CHUNK_SIZE = 20;
 
     private static $requestAttributeTableColumnMap = [
-        'urlProtocol' => [
-            'table' => 'url_protocols',
-            'column' => 'url_protocol',
+        'url_protocols' => [
+            [
+                'property' => 'urlProtocol',
+                'column' => 'url_protocol'
+            ],
+            [
+                'property' => 'refererUrlProtocol',
+                'column' => 'url_protocol'
+            ]
         ],
-        'urlDomain' => [
-            'table' => 'url_domains',
-            'column' => 'url_domain',
+        'url_domains' => [
+            [
+                'property' => 'urlDomain',
+                'column' => 'url_domain'
+            ],
+            [
+                'property' => 'refererUrlDomain',
+                'column' => 'url_domain'
+            ]
         ],
-        'urlPath' => [
-            'table' => 'url_paths',
-            'column' => 'url_path',
+        'url_paths' => [
+            [
+                'property' => 'urlPath',
+                'column' => 'url_path'
+            ],
+            [
+                'property' => 'refererUrlPath',
+                'column' => 'url_path'
+            ]
         ],
-        'method' => [
-            'table' => 'methods',
-            'column' => 'method',
+        'methods' => [
+            [
+                'property' => 'method',
+                'column' => 'method'
+            ]
         ],
-        'routeName' => [
-            'table' => 'route_names',
-            'column' => 'route_name',
+        'route_names' => [
+            [
+                'property' => 'routeName',
+                'column' => 'route_name'
+            ]
         ],
-        'deviceKind' => [
-            'table' => 'device_kinds',
-            'column' => 'device_kind',
+        'device_kinds' => [
+            [
+                'property' => 'deviceKind',
+                'column' => 'device_kind'
+            ]
         ],
-        'deviceModel' => [
-            'table' => 'device_models',
-            'column' => 'device_model',
+        'device_models' => [
+            [
+                'property' => 'deviceModel',
+                'column' => 'device_model'
+            ]
         ],
-        'devicePlatform' => [
-            'table' => 'device_platforms',
-            'column' => 'device_platform',
+        'device_platforms' => [
+            [
+                'property' => 'devicePlatform',
+                'column' => 'device_platform'
+            ]
         ],
-        'deviceVersion' => [
-            'table' => 'device_versions',
-            'column' => 'device_version',
+        'device_versions' => [
+            [
+                'property' => 'deviceVersion',
+                'column' => 'device_version'
+            ]
         ],
-        'agentBrowser' => [
-            'table' => 'agent_browsers',
-            'column' => 'agent_browser',
+        'agent_browsers' => [
+            [
+                'property' => 'agentBrowser',
+                'column' => 'agent_browser'
+            ]
         ],
-        'agentBrowserVersion' => [
-            'table' => 'agent_browser_versions',
-            'column' => 'agent_browser_version',
+        'agent_browser_versions' => [
+            [
+                'property' => 'agentBrowserVersion',
+                'column' => 'agent_browser_version'
+            ]
         ],
-        'refererUrlProtocol' => [
-            'table' => 'url_protocols',
-            'column' => 'url_protocol',
+        'language_preferences' => [
+            [
+                'property' => 'languagePreference',
+                'column' => 'language_preference'
+            ]
         ],
-        'refererUrlDomain' => [
-            'table' => 'url_domains',
-            'column' => 'url_domain',
+        'language_ranges' => [
+            [
+                'property' => 'languageRange',
+                'column' => 'language_range'
+            ]
         ],
-        'refererUrlPath' => [
-            'table' => 'url_paths',
-            'column' => 'url_path',
+        'ip_addresses' => [
+            [
+                'property' => 'ipAddress',
+                'column' => 'ip_address'
+            ]
         ],
-        'refererUrlQuery' => [
-            'table' => 'url_queries',
-            'column' => 'url_query',
+        'ip_latitudes' => [
+            [
+                'property' => 'ipLatitude',
+                'column' => 'ip_latitude'
+            ]
         ],
-        'languagePreference' => [
-            'table' => 'language_preferences',
-            'column' => 'language_preference',
+        'ip_longitudes' => [
+            [
+                'property' => 'ipLongitude',
+                'column' => 'ip_longitude'
+            ]
         ],
-        'languageRange' => [
-            'table' => 'language_ranges',
-            'column' => 'language_range',
+        'ip_country_codes' => [
+            [
+                'property' => 'ipCountryCode',
+                'column' => 'ip_country_code'
+            ]
         ],
-        'ipAddress' => [
-            'table' => 'ip_addresses',
-            'column' => 'ip_address',
+        'ip_country_names' => [
+            [
+                'property' => 'ipCountryName',
+                'column' => 'ip_country_name'
+            ]
         ],
-        'ipLatitude' => [
-            'table' => 'ip_latitudes',
-            'column' => 'ip_latitude',
+        'ip_regions' => [
+            [
+                'property' => 'ipRegion',
+                'column' => 'ip_region'
+            ]
         ],
-        'ipLongitude' => [
-            'table' => 'ip_longitudes',
-            'column' => 'ip_longitude',
+        'ip_cities' => [
+            [
+                'property' => 'ipCity',
+                'column' => 'ip_city'
+            ]
         ],
-        'ipCountryCode' => [
-            'table' => 'ip_country_codes',
-            'column' => 'ip_country_code',
+        'ip_postal_zip_codes' => [
+            [
+                'property' => 'ipPostalZipCode',
+                'column' => 'ip_postal_zip_code'
+            ]
         ],
-        'ipCountryName' => [
-            'table' => 'ip_country_names',
-            'column' => 'ip_country_name',
+        'ip_timezones' => [
+            [
+                'property' => 'ipTimezone',
+                'column' => 'ip_timezone'
+            ]
         ],
-        'ipRegion' => [
-            'table' => 'ip_regions',
-            'column' => 'ip_region',
+        'ip_currencies' => [
+            [
+                'property' => 'ipCurrency',
+                'column' => 'ip_currency'
+            ]
         ],
-        'ipCity' => [
-            'table' => 'ip_cities',
-            'column' => 'ip_city',
+        'response_status_codes' => [
+            [
+                'property' => 'responseStatusCode',
+                'column' => 'response_status_code'
+            ]
         ],
-        'ipPostalZipCode' => [
-            'table' => 'ip_postal_zip_codes',
-            'column' => 'ip_postal_zip_code',
+        'response_durations' => [
+            [
+                'property' => 'responseDurationMs',
+                'column' => 'response_duration_ms'
+            ]
         ],
-        'ipTimezone' => [
-            'table' => 'ip_timezones',
-            'column' => 'ip_timezone',
+        'exception_codes' => [
+            [
+                'property' => 'exceptionCode',
+                'column' => 'exception_code'
+            ]
         ],
-        'ipCurrency' => [
-            'table' => 'ip_currencies',
-            'column' => 'ip_currency',
-        ],
-        'responseStatusCode' => [
-            'table' => 'response_status_codes',
-            'column' => 'response_status_code',
-        ],
-        'responseDurationMs' => [
-            'table' => 'response_durations',
-            'column' => 'response_duration_ms',
-        ],
-        'exceptionCode' => [
-            'table' => 'exception_codes',
-            'column' => 'exception_code'
-        ],
-        'exceptionLine' => [
-            'table' => 'exception_lines',
-            'column' => 'exception_line'
+        'exception_lines' => [
+            [
+                'property' => 'exceptionLine',
+                'column' => 'exception_line'
+            ]
         ],
 
-        // hashed long strings
+        // long strings requiring hashes
 
-        'urlQueryHash' => [
-            'table' => 'url_queries',
-            'column' => 'url_query_hash'
+        'url_queries' => [
+            [
+                'property' => 'urlQuery',
+                'column' => 'url_query',
+            ],
+            [
+                'property' => 'urlQueryHash',
+                'column' => 'url_query_hash',
+            ],
+            [
+                'property' => 'refererUrlQuery',
+                'column' => 'url_query'
+            ],
+            [
+                'property' => 'refererUrlQueryHash',
+                'column' => 'url_query_hash'
+            ],
         ],
-        'refererUrlQueryHash' => [
-            'table' => 'url_queries',
-            'column' => 'url_query_hash'
+        'route_actions' => [
+            [
+                'property' => 'routeAction',
+                'column' => 'route_action'
+            ],
+            [
+                'property' => 'routeActionHash',
+                'column' => 'route_action_hash',
+            ],
         ],
-        'routeActionHash' => [
-            'table' => 'route_actions',
-            'column' => 'route_action_hash'
+        'agent_strings' => [
+            [
+                'property' => 'agentString',
+                'column' => 'agent_string'
+            ],
+            [
+                'property' => 'agentStringHash',
+                'column' => 'agent_string_hash',
+            ],
         ],
-        'agentStringHash' => [
-            'table' => 'agent_strings',
-            'column' => 'agent_string_hash'
+        'exception_classes' => [
+            [
+                'property' => 'exceptionClass',
+                'column' => 'exception_class'
+            ],
+            [
+                'property' => 'exceptionClassHash',
+                'column' => 'exception_class_hash',
+            ],
         ],
-        'exceptionClassHash' => [
-            'table' => 'exception_classes',
-            'column' => 'exception_class_hash'
+        'exception_files' => [
+            [
+                'property' => 'exceptionFile',
+                'column' => 'exception_file'
+            ],
+            [
+                'property' => 'exceptionFileHash',
+                'column' => 'exception_file_hash',
+            ],
         ],
-        'exceptionFileHash' => [
-            'table' => 'exception_files',
-            'column' => 'exception_file_hash'
+        'exception_messages' => [
+            [
+                'property' => 'exceptionMessage',
+                'column' => 'exception_message'
+            ],
+            [
+                'property' => 'exceptionMessageHash',
+                'column' => 'exception_message_hash',
+            ],
         ],
-        'exceptionMessageHash' => [
-            'table' => 'exception_messages',
-            'column' => 'exception_message_hash'
-        ],
-        'exceptionTraceHash' => [
-            'table' => 'exception_traces',
-            'column' => 'exception_trace_hash'
+        'exception_traces' => [
+            [
+                'property' => 'exceptionTrace',
+                'column' => 'exception_trace'
+            ],
+            [
+                'property' => 'exceptionTraceHash',
+                'column' => 'exception_trace_hash',
+            ],
         ],
     ];
 
@@ -194,55 +290,50 @@ class RequestRepository extends TrackerRepositoryBase
             new BulkInsertOrUpdateMySqlGrammar()
         );
 
-        foreach (self::$requestAttributeTableColumnMap as $attribute => $tableAndColumn) {
+        foreach (self::$requestAttributeTableColumnMap as $table => $propertiesAndColumns) {
 
-            if ($tableAndColumn['table'] == 'requests') {
-                continue;
-            }
-
-            $attributes = $requestVOs->pluck($attribute)->unique();
-
-            // create the bulk update array
-            $dataToInsert = [];
-
-            foreach ($attributes as $attribute) {
-                if(!is_null($attribute)){
-                    $dataToInsert[] = [$tableAndColumn['column'] => $attribute];
+            $dataToInsert = $requestVOs->map(function($requestV0) use ($propertiesAndColumns){
+                foreach($propertiesAndColumns as $propertyAndColumn){
+                    $property = $propertyAndColumn['property'];
+                    $column = $propertyAndColumn['column'];
+                    $tableSpecificPropertiesFromOneRequest[$column] = $requestV0->$property;
                 }
-            }
+                return $tableSpecificPropertiesFromOneRequest ?? [];
+            })->toArray();
 
-            if(empty($dataToInsert)){
-                continue;
-            }
+            if(empty($dataToInsert)) continue;
 
-            if (!empty($dataToInsert)) {
-
-//                if (!$isSqlLite) { // need use-case here since sqlite doesn't support update on duplicate key update
-                    try{
-                        $builder->from(config('railtracker.table_prefix') . $tableAndColumn['table'])
-                            ->insertOrUpdate($dataToInsert);
-                    }catch(\Exception $e){
-                        error_log($e);
-                        dump('Error while writing to association tables ("' . $e->getMessage() . '")');
-                    }
-//                } else {
-//                    $this->databaseManager->connection($dbConnectionName)->transaction(
-//                        function () use ($tableAndColumn, $dataToInsert, $dbConnectionName) {
-//                            foreach ($dataToInsert as $columnValues) {
-//                                try {
-//                                    $this->databaseManager->connection($dbConnectionName)
-//                                        ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
-//                                        ->insert($columnValues);
-//                                } catch (\Exception $e) {
-//                                    error_log($e);
-//                                    dump('Error while writing to association tables ("' . $e->getMessage() . '")');
-//                                }
+            if (!$isSqlLite) { // need use-case here since sqlite doesn't support update on duplicate key update
+                try{
+                    $builder->from(config('railtracker.table_prefix') . $table)
+                        ->insertOrUpdate($dataToInsert);
+                }catch(\Exception $e){
+                    error_log($e);
+                    dump('Error while writing to association tables ("' . $e->getMessage() . '")');
+                }
+            } else {
+                $this->databaseManager->connection($dbConnectionName)->transaction(
+                    // todo: fix
+//                    function () use ($tableAndColumn, $dataToInsert, $dbConnectionName) {
+//                        foreach ($dataToInsert as $columnValues) {
+//                            try {
+//                                $this->databaseManager->connection($dbConnectionName)
+//                                    ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
+//                                    ->insert($columnValues);
+//                            } catch (\Exception $e) {
+//                                error_log($e);
+//                                dump('Error while writing to association tables ("' . $e->getMessage() . '")');
 //                            }
 //                        }
-//                    );
-//                }
+//                    }
+                );
             }
         }
+
+        dd('PICK UP HERE'); // todo: pick up here
+        dd('PICK UP HERE'); // todo: pick up here
+        dd('PICK UP HERE'); // todo: pick up here
+        dd('PICK UP HERE'); // todo: pick up here
 
         // --------- Part 2: populate requests table ---------
 
