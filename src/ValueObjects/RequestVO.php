@@ -65,6 +65,8 @@ class RequestVO
     public $agentStringHash;
     public $exceptionClassHash;
     public $exceptionFileHash;
+    public $exceptionMessageHash;
+    public $exceptionTraceHash;
 
     public $requestedOn;
     public $respondedOn;
@@ -281,6 +283,8 @@ class RequestVO
             'agent_string_hash' => $this->agentStringHash,
             'exception_class_hash' => $this->exceptionClassHash,
             'exception_file_hash' => $this->exceptionFileHash,
+            'exception_message_hash' => $this->exceptionMessageHash,
+            'exception_trace_hash' => $this->exceptionTraceHash,
         ];
 
         return $array;

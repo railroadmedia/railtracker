@@ -33,7 +33,6 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('url_protocol', 32)->index();
                 $table->string('url_domain', 128)->index();
                 $table->string('url_path', 191)->index();
-                $table->string('url_query', 1280)->index()->nullable();
 
                 $table->string('referer_url_protocol', 32)->index()->nullable();
                 $table->string('referer_url_domain', 128)->index()->nullable();
@@ -43,7 +42,6 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('method', 10)->index()->nullable();
 
                 $table->string('route_name', 191)->index()->nullable();
-                $table->string('route_action', 840)->index()->nullable();
 
                 $table->string('device_kind', 64)->index()->nullable();
                 $table->string('device_model', 64)->index()->nullable();
@@ -51,7 +49,6 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('device_version', 64)->index()->nullable();
                 $table->boolean('device_is_mobile')->index();
 
-                $table->string('agent_string', 560)->index()->nullable();
                 $table->string('agent_browser', 64)->index()->nullable();
                 $table->string('agent_browser_version', 64)->index()->nullable();
 
@@ -76,20 +73,11 @@ class CreateRequestAssociationTables extends Migration
 
                 $table->unsignedInteger('exception_code', false, true)->index()->nullable();
                 $table->unsignedInteger('exception_line', false, true)->index()->nullable();
-                $table->string('exception_class', 1024)->index()->nullable();
-                $table->string('exception_file', 1024)->index()->nullable();
-
-                /*
-                 * "32768" is just some arbitrary large value less than MySQL's row limit of 65535 value.
-                 * Why "32768" exactly? Because it's a nice round number: 2ⁱ⁵ === 32768 && 8⁵ === 32768
-                 */
-                $table->string('exception_message', 32768)->nullable();
-                $table->string('exception_trace', 32768)->nullable();
 
                 $table->dateTime('requested_on', 5)->index();
                 $table->dateTime('responded_on', 5)->index()->nullable();
 
-                // hash city
+                // hashed long strings
 
                 $table->string('url_query_hash', 32)->index()->nullable();
                 $table->string('referer_url_query_hash', 32)->index()->nullable();
@@ -97,7 +85,8 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('agent_string_hash', 32)->index()->nullable();
                 $table->string('exception_class_hash', 32)->index()->nullable();
                 $table->string('exception_file_hash', 32)->index()->nullable();
-                // todo: do for exception traces, create new table for them as well
+                $table->string('exception_message_hash', 32)->index()->nullable();
+                $table->string('exception_trace_hash', 32)->index()->nullable();
             }
         );
 
@@ -125,13 +114,6 @@ class CreateRequestAssociationTables extends Migration
             }
         );
 
-        Schema::create(
-            $tablePrefix . 'url_queries',
-            function (Blueprint $table) {
-                $table->string('url_query', 1280)->nullable(); // note: unique index created below
-            }
-        );
-
         // method
         Schema::create(
             $tablePrefix . 'methods',
@@ -140,7 +122,6 @@ class CreateRequestAssociationTables extends Migration
             }
         );
 
-
         // route
         Schema::create(
             $tablePrefix . 'route_names',
@@ -148,14 +129,6 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('route_name', 191)->nullable()->unique('route_name');
             }
         );
-
-        Schema::create(
-            $tablePrefix . 'route_actions',
-            function (Blueprint $table) {
-                $table->string('route_action', 840)->nullable(); // note: unique index created below
-            }
-        );
-
 
         // device
         Schema::create(
@@ -182,15 +155,6 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('device_version', 64)->nullable()->unique('device_version_index');
             }
         );
-
-        // agent
-        Schema::create(
-            $tablePrefix . 'agent_strings',
-            function (Blueprint $table) {
-                $table->string('agent_string', 560)->nullable(); // note: unique index created below
-            }
-        );
-
 
         Schema::create(
             $tablePrefix . 'agent_browsers',
@@ -311,69 +275,65 @@ class CreateRequestAssociationTables extends Migration
                 $table->unsignedInteger('exception_line', false, true)->nullable()->unique('exception_line_index');
             }
         );
+
+        // hashed long strings
+
+        /*
+         * RE exception_message and exception_trace; MySQL's row limit is 65535 bytes. Give 256 bytes for hash column,
+         * 65535 - 256 = 65279
+         */
+
+        Schema::create(
+            $tablePrefix . 'url_queries',
+            function (Blueprint $table){
+                $table->string('url_query', 1280)->index(); // todo: set index length?
+                $table->string('url_query_hash', 32)->unique('url_query_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'route_actions',
+            function (Blueprint $table){
+                $table->string('route_action', 840)->index(); // todo: set index length?
+                $table->string('route_action_hash', 32)->unique('route_action_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'agent_strings',
+            function (Blueprint $table){
+                $table->string('agent_string', 560)->index(); // todo: set index length?
+                $table->string('agent_string_hash', 32)->unique('agent_string_hash_index');
+            }
+        );
         Schema::create(
             $tablePrefix . 'exception_classes',
-            function (Blueprint $table) {
-                $table->string('exception_class', 1024)->nullable(); // note: unique index created below
+            function (Blueprint $table){
+                $table->string('exception_class', 1024)->index(); // todo: set index length?
+                $table->string('exception_class_hash', 32)->unique('exception_class_hash_index');
             }
         );
         Schema::create(
             $tablePrefix . 'exception_files',
-            function (Blueprint $table) {
-                $table->string('exception_file', 1024)->nullable(); // note: unique index created below
+            function (Blueprint $table){
+                $table->string('exception_file', 1024)->index(); // todo: set index length?
+                $table->string('exception_file_hash', 32)->unique('exception_file_hash_index');
             }
         );
         Schema::create(
             $tablePrefix . 'exception_messages',
-            function (Blueprint $table) {
-                $table->string('exception_message', 32768)->nullable();
+            function (Blueprint $table){
+                $table->string('exception_message', 65279); // todo: set index length?
+                $table->string('exception_message_hash', 32)->unique('exception_message_hash_index');
             }
         );
         Schema::create(
             $tablePrefix . 'exception_traces',
-            function (Blueprint $table) {
-                $table->string('exception_trace', 32768)->nullable();
+            function (Blueprint $table){
+                $table->string('exception_trace', 65279); // todo: set index length?
+                $table->string('exception_trace_hash', 32)->unique('exception_trace_hash_index');
             }
         );
 
-        // -------------------------------------------------------------------------------------------------------------
-        // hash association tables -------------------------------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
-
-        Schema::create(
-            $tablePrefix . 'url_query_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('url_query_hash', 32)->nullable()->unique('url_query_hash_index');
-            }
-        );
-        Schema::create(
-            $tablePrefix . 'route_action_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('route_action_hash', 32)->nullable()->unique('route_action_hash_index');
-            }
-        );
-        Schema::create(
-            $tablePrefix . 'agent_string_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('agent_string_hash', 32)->nullable()->unique('agent_string_hash_index');
-            }
-        );
-        Schema::create(
-            $tablePrefix . 'exception_class_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('exception_class_hash', 32)->nullable()->unique('exception_class_hash_index');
-            }
-        );
-        Schema::create(
-            $tablePrefix . 'exception_file_hash' . 'es',
-            function (Blueprint $table){
-                $table->string('exception_file_hash', 32)->nullable()->unique('exception_file_hash_index');
-            }
-        );
-
-        // -------------------------------------------------------------------------------------------------------------
         // Adding Foreign Keys -----------------------------------------------------------------------------------------
-        // -------------------------------------------------------------------------------------------------------------
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('url_protocol')
@@ -405,16 +365,6 @@ class CreateRequestAssociationTables extends Migration
             ->references('url_path')
             ->on($tablePrefix . 'url_paths');});
 
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('url_query')
-//            ->references('url_query')
-//            ->on($tablePrefix . 'url_queries');});
-
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('referer_url_query')
-//            ->references('url_query')
-//            ->on($tablePrefix . 'url_queries');});
-
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('method')
             ->references('method')
@@ -424,11 +374,6 @@ class CreateRequestAssociationTables extends Migration
             ->foreign('route_name')
             ->references('route_name')
             ->on($tablePrefix . 'route_names');});
-
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('route_action')
-//            ->references('route_action')
-//            ->on($tablePrefix . 'route_actions');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('device_kind')
@@ -449,11 +394,6 @@ class CreateRequestAssociationTables extends Migration
             ->foreign('device_version')
             ->references('device_version')
             ->on($tablePrefix . 'device_versions');});
-
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('agent_string')
-//            ->references('agent_string')
-//            ->on($tablePrefix . 'agent_strings');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('agent_browser')
@@ -544,56 +484,48 @@ class CreateRequestAssociationTables extends Migration
             ->foreign('exception_line')
             ->references('exception_line')
             ->on($tablePrefix . 'exception_lines');});
-        
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('exception_class')
-//            ->references('exception_class')
-//            ->on($tablePrefix . 'exception_classes');});
 
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('exception_file')
-//            ->references('exception_file')
-//            ->on($tablePrefix . 'exception_files');});
-
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('exception_message')
-//            ->references('exception_message')
-//            ->on($tablePrefix . 'exception_messages');});
-
-//        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
-//            ->foreign('exception_trace')
-//            ->references('exception_trace')
-//            ->on($tablePrefix . 'exception_traces');});
+        // hashed long strings
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('url_query_hash')
             ->references('url_query_hash')
-            ->on($tablePrefix . 'url_query_hashes');});
+            ->on($tablePrefix . 'url_queries');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('referer_url_query_hash')
             ->references('url_query_hash')
-            ->on($tablePrefix . 'url_query_hashes');});
+            ->on($tablePrefix . 'url_queries');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('route_action_hash')
             ->references('route_action_hash')
-            ->on($tablePrefix . 'route_action_hashes');});
+            ->on($tablePrefix . 'route_actions');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('agent_string_hash')
             ->references('agent_string_hash')
-            ->on($tablePrefix . 'agent_string_hashes');});
+            ->on($tablePrefix . 'agent_strings');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('exception_class_hash')
             ->references('exception_class_hash')
-            ->on($tablePrefix . 'exception_class_hashes');});
+            ->on($tablePrefix . 'exception_classes');});
 
         Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
             ->foreign('exception_file_hash')
             ->references('exception_file_hash')
-            ->on($tablePrefix . 'exception_file_hashes');});
+            ->on($tablePrefix . 'exception_files');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('exception_message_hash')
+            ->references('exception_message_hash')
+            ->on($tablePrefix . 'exception_messages');});
+
+        Schema::table($tablePrefix . 'requests', function (Blueprint $table) use ($tablePrefix){$table
+            ->foreign('exception_trace_hash')
+            ->references('exception_trace_hash')
+            ->on($tablePrefix . 'exception_traces');});
     }
 
     /**
@@ -616,15 +548,12 @@ class CreateRequestAssociationTables extends Migration
         Schema::dropIfExists($tablePrefix . 'url_protocols');
         Schema::dropIfExists($tablePrefix . 'url_domains');
         Schema::dropIfExists($tablePrefix . 'url_paths');
-        Schema::dropIfExists($tablePrefix . 'url_queries');
         Schema::dropIfExists($tablePrefix . 'methods');
         Schema::dropIfExists($tablePrefix . 'route_names');
-        Schema::dropIfExists($tablePrefix . 'route_actions');
         Schema::dropIfExists($tablePrefix . 'device_kinds');
         Schema::dropIfExists($tablePrefix . 'device_models');
         Schema::dropIfExists($tablePrefix . 'device_platforms');
         Schema::dropIfExists($tablePrefix . 'device_versions');
-        Schema::dropIfExists($tablePrefix . 'agent_strings');
         Schema::dropIfExists($tablePrefix . 'agent_browsers');
         Schema::dropIfExists($tablePrefix . 'agent_browser_versions');
         Schema::dropIfExists($tablePrefix . 'language_preferences');
@@ -643,14 +572,12 @@ class CreateRequestAssociationTables extends Migration
         Schema::dropIfExists($tablePrefix . 'response_durations');
         Schema::dropIfExists($tablePrefix . 'exception_codes');
         Schema::dropIfExists($tablePrefix . 'exception_lines');
+        Schema::dropIfExists($tablePrefix . 'url_queries');
+        Schema::dropIfExists($tablePrefix . 'route_actions');
+        Schema::dropIfExists($tablePrefix . 'agent_strings');
         Schema::dropIfExists($tablePrefix . 'exception_classes');
         Schema::dropIfExists($tablePrefix . 'exception_files');
         Schema::dropIfExists($tablePrefix . 'exception_messages');
         Schema::dropIfExists($tablePrefix . 'exception_traces');
-        Schema::dropIfExists($tablePrefix . 'url_query_hashes');
-        Schema::dropIfExists($tablePrefix . 'route_action_hashes');
-        Schema::dropIfExists($tablePrefix . 'agent_string_hashes');
-        Schema::dropIfExists($tablePrefix . 'exception_class_hashes');
-        Schema::dropIfExists($tablePrefix . 'exception_file_hashes');
     }
 }

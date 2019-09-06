@@ -13,18 +13,6 @@ class RequestRepository extends TrackerRepositoryBase
     private static $BULK_INSERT_CHUNK_SIZE = 20;
 
     private static $requestAttributeTableColumnMap = [
-        'uuid' => [
-            'table' => 'requests',
-            'column' => 'uuid',
-        ],
-        'cookieId' => [
-            'table' => 'requests',
-            'column' => 'cookie_id',
-        ],
-        'userId' => [
-            'table' => 'requests',
-            'column' => 'user_id',
-        ],
         'urlProtocol' => [
             'table' => 'url_protocols',
             'column' => 'url_protocol',
@@ -37,10 +25,6 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'url_paths',
             'column' => 'url_path',
         ],
-        'urlQuery' => [
-            'table' => 'url_queries',
-            'column' => 'url_query',
-        ],
         'method' => [
             'table' => 'methods',
             'column' => 'method',
@@ -48,10 +32,6 @@ class RequestRepository extends TrackerRepositoryBase
         'routeName' => [
             'table' => 'route_names',
             'column' => 'route_name',
-        ],
-        'routeAction' => [
-            'table' => 'route_actions',
-            'column' => 'route_action',
         ],
         'deviceKind' => [
             'table' => 'device_kinds',
@@ -69,14 +49,6 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'device_versions',
             'column' => 'device_version',
         ],
-        'deviceIsMobile' => [
-            'table' => 'requests',
-            'column' => 'device_is_mobile',
-        ],
-        'agentString' => [
-            'table' => 'agent_strings',
-            'column' => 'agent_string',
-        ],
         'agentBrowser' => [
             'table' => 'agent_browsers',
             'column' => 'agent_browser',
@@ -84,10 +56,6 @@ class RequestRepository extends TrackerRepositoryBase
         'agentBrowserVersion' => [
             'table' => 'agent_browser_versions',
             'column' => 'agent_browser_version',
-        ],
-        'isRobot' => [
-            'table' => 'requests',
-            'column' => 'is_robot',
         ],
         'refererUrlProtocol' => [
             'table' => 'url_protocols',
@@ -161,14 +129,6 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'response_durations',
             'column' => 'response_duration_ms',
         ],
-        'requestedOn' => [
-            'table' => 'requests',
-            'column' => 'requested_on',
-        ],
-        'respondedOn' => [
-            'table' => 'requests',
-            'column' => 'responded_on',
-        ],
         'exceptionCode' => [
             'table' => 'exception_codes',
             'column' => 'exception_code'
@@ -177,45 +137,40 @@ class RequestRepository extends TrackerRepositoryBase
             'table' => 'exception_lines',
             'column' => 'exception_line'
         ],
-        'exceptionClass' => [
-            'table' => 'exception_classes',
-            'column' => 'exception_class'
-        ],
-        'exceptionFile' => [
-            'table' => 'exception_files',
-            'column' => 'exception_file'
-        ],
-        'exceptionMessage' => [
-            'table' => 'exception_messages',
-            'column' => 'exception_message'
-        ],
-        'exceptionTrace' => [
-            'table' => 'exception_traces',
-            'column' => 'exception_trace'
-        ],
+
+        // hashed long strings
+
         'urlQueryHash' => [
-            'table' => 'url_query_hashes',
+            'table' => 'url_queries',
             'column' => 'url_query_hash'
         ],
         'refererUrlQueryHash' => [
-            'table' => 'url_query_hashes',
+            'table' => 'url_queries',
             'column' => 'url_query_hash'
         ],
         'routeActionHash' => [
-            'table' => 'route_action_hashes',
+            'table' => 'route_actions',
             'column' => 'route_action_hash'
         ],
         'agentStringHash' => [
-            'table' => 'agent_string_hashes',
+            'table' => 'agent_strings',
             'column' => 'agent_string_hash'
         ],
         'exceptionClassHash' => [
-            'table' => 'exception_class_hashes',
+            'table' => 'exception_classes',
             'column' => 'exception_class_hash'
         ],
         'exceptionFileHash' => [
-            'table' => 'exception_file_hashes',
+            'table' => 'exception_files',
             'column' => 'exception_file_hash'
+        ],
+        'exceptionMessageHash' => [
+            'table' => 'exception_messages',
+            'column' => 'exception_message_hash'
+        ],
+        'exceptionTraceHash' => [
+            'table' => 'exception_traces',
+            'column' => 'exception_trace_hash'
         ],
     ];
 

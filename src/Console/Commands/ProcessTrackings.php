@@ -182,15 +182,24 @@ class ProcessTrackings extends \Illuminate\Console\Command
         foreach($requestVOs as $requestVO){ /** @var RequestVO $requestVO */
             $uuid = $requestVO->uuid;
             if(!empty($exceptionVOs[$uuid])){
+
                 $matchingExceptionVO = $exceptionVOs[$uuid];
+
                 $requestVO->exceptionCode = $matchingExceptionVO->code;
                 $requestVO->exceptionLine = $matchingExceptionVO->line;
+
                 $requestVO->exceptionClass = $matchingExceptionVO->class;
                 $requestVO->exceptionClassHash = md5($requestVO->exceptionClass);
+
                 $requestVO->exceptionFile = $matchingExceptionVO->file;
                 $requestVO->exceptionFileHash = md5($requestVO->exceptionFile);
+
                 $requestVO->exceptionMessage = $matchingExceptionVO->message;
+                $requestVO->exceptionMessageHash = md5($requestVO->exceptionMessage);
+
                 $requestVO->exceptionTrace = $matchingExceptionVO->trace;
+                $requestVO->exceptionTraceHash = md5($requestVO->exceptionTrace);
+
                 $exceptionsTrackedCount++;
             }
         }
