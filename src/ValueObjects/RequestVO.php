@@ -84,7 +84,6 @@ class RequestVO
      */
     public function __construct(Request $httpRequest)
     {
-
         $userAgentObject = new Agent($httpRequest->server->all());
 
         // start time in microseconds
@@ -159,11 +158,14 @@ class RequestVO
         $this->requestedOn = Carbon::now()->format(self::$TIME_FORMAT);
 
         // set hash fields
-        $this->urlQueryHash = md5($this->urlQuery);
-        $this->refererUrlQueryHash = md5($this->refererUrlQuery);
-        $this->routeNameHash = md5($this->routeName);
-        $this->routeActionHash = md5($this->routeAction);
-        $this->agentStringHash = md5($this->agentString);
+        $setHashUnlessNull = function($value){
+            return !empty($value) ? md5($value) : null;
+        };
+        $this->urlQueryHash         = $setHashUnlessNull($this->urlQuery);
+        $this->refererUrlQueryHash  = $setHashUnlessNull($this->refererUrlQuery);
+        $this->routeNameHash        = $setHashUnlessNull($this->routeName);
+        $this->routeActionHash      = $setHashUnlessNull($this->routeAction);
+        $this->agentStringHash      = $setHashUnlessNull($this->agentString);
     }
 
     /**
