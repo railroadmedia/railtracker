@@ -169,8 +169,6 @@ class RequestRepository extends TrackerRepositoryBase
         foreach (self::$rowsToInsertByTable as $table => $rowsToInsert) {
             $dataToInsert = [];
 
-            dump('=========================' . $table . '==========================');
-
             foreach($requestVOs as $requestVO){
 
                 //if($table === 'exception_codes'){
