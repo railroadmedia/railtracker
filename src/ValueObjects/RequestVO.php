@@ -205,8 +205,8 @@ class RequestVO
      */
     protected function getClientIp(Request $request)
     {
-        if (!empty(config('railtracker.ip-api.test-ip'))) {
-            return config('railtracker.ip-api.test-ip');
+        if (!empty(config('railtracker.test-ip'))) {
+            return config('railtracker.test-ip');
         }
 
         if (!empty($request->server('HTTP_X_ORIGINAL_FORWARDED_FOR'))) {
