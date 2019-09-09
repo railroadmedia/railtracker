@@ -230,6 +230,15 @@ class RequestVO
      */
     public function returnArrayForDatabaseInteraction()
     {
+        /*
+         * Note that url_query, route_action, agent_string, referer_url_query, exception_class, exception_file,
+         * exception_message, and exception_trace are not included. They're too long to index, and thus cannot be
+         * linked via a foreign key constraint. Thus, in the requests table, we save them as a hash linked to a table
+         * that more more efficiently contains the full value (because the hashes are a unique index in those tables)
+         *
+         * Jonathan, September 2019
+         */
+
         $array = [
             'uuid' => $this->uuid,
             'cookie_id' => $this->cookieId,
@@ -237,22 +246,18 @@ class RequestVO
             'url_protocol' => $this->urlProtocol,
             'url_domain' => $this->urlDomain,
             'url_path' => $this->urlPath,
-            'url_query' => $this->urlQuery,
             'method' => $this->method,
             'route_name' => $this->routeName,
-            'route_action' => $this->routeAction,
             'device_kind' => $this->deviceKind,
             'device_model' => $this->deviceModel,
             'device_platform' => $this->devicePlatform,
             'device_version' => $this->deviceVersion,
             'device_is_mobile' => $this->deviceIsMobile,
-            'agent_string' => $this->agentString,
             'agent_browser' => $this->agentBrowser,
             'agent_browser_version' => $this->agentBrowserVersion,
             'referer_url_protocol' => $this->refererUrlProtocol,
             'referer_url_domain' => $this->refererUrlDomain,
             'referer_url_path' => $this->refererUrlPath,
-            'referer_url_query' => $this->refererUrlQuery,
             'language_preference' => $this->languagePreference,
             'language_range' => $this->languageRange,
             'ip_address' => $this->ipAddress,
@@ -269,10 +274,6 @@ class RequestVO
 
             'exception_code' => $this->exceptionCode,
             'exception_line' => $this->exceptionLine,
-            'exception_class' => $this->exceptionClass,
-            'exception_file' => $this->exceptionFile,
-            'exception_message' => $this->exceptionMessage,
-            'exception_trace' => $this->exceptionTrace,
 
             'requested_on' => $this->requestedOn,
             'response_status_code' => $this->responseStatusCode,

@@ -37,7 +37,6 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('referer_url_protocol', 32)->index()->nullable();
                 $table->string('referer_url_domain', 128)->index()->nullable();
                 $table->string('referer_url_path', 191)->index()->nullable();
-                $table->string('referer_url_query', 1280)->index()->nullable();
 
                 $table->string('method', 10)->index()->nullable();
 
@@ -110,7 +109,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'url_paths',
             function (Blueprint $table) {
-                $table->string('url_path', 191)->unique('url_path_index');;
+                $table->string('url_path', 191)->unique('url_path_index');
             }
         );
 
@@ -118,7 +117,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'methods',
             function (Blueprint $table) {
-                $table->string('method', 10)->nullable()->unique('method_index');
+                $table->string('method', 10)->unique('method_index');
             }
         );
 
@@ -126,7 +125,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'route_names',
             function (Blueprint $table) {
-                $table->string('route_name', 191)->nullable()->unique('route_name');
+                $table->string('route_name', 191)->unique('route_name_index');
             }
         );
 
@@ -140,32 +139,32 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'device_models',
             function (Blueprint $table) {
-                $table->string('device_model', 64)->nullable()->unique('device_model_index');
+                $table->string('device_model', 64)->unique('device_model_index');
             }
         );
         Schema::create(
             $tablePrefix . 'device_platforms',
             function (Blueprint $table) {
-                $table->string('device_platform', 64)->nullable()->unique('device_platform_index');
+                $table->string('device_platform', 64)->unique('device_platform_index');
             }
         );
         Schema::create(
             $tablePrefix . 'device_versions',
             function (Blueprint $table) {
-                $table->string('device_version', 64)->nullable()->unique('device_version_index');
+                $table->string('device_version', 64)->unique('device_version_index');
             }
         );
 
         Schema::create(
             $tablePrefix . 'agent_browsers',
             function (Blueprint $table) {
-                $table->string('agent_browser', 64)->nullable()->unique('agent_browser_index');
+                $table->string('agent_browser', 64)->unique('agent_browser_index');
             }
         );
         Schema::create(
             $tablePrefix . 'agent_browser_versions',
             function (Blueprint $table) {
-                $table->string('agent_browser_version', 64)->nullable()->unique('agent_browser_version_index');
+                $table->string('agent_browser_version', 64)->unique('agent_browser_version_index');
             }
         );
 
@@ -173,13 +172,13 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'language_preferences',
             function (Blueprint $table) {
-                $table->string('language_preference', 10)->nullable()->unique('language_preference_index');
+                $table->string('language_preference', 10)->unique('language_preference_index');
             }
         );
         Schema::create(
             $tablePrefix . 'language_ranges',
             function (Blueprint $table) {
-                $table->string('language_range', 64)->nullable()->unique('language_range_index');
+                $table->string('language_range', 64)->unique('language_range_index');
             }
         );
 
@@ -187,61 +186,61 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_addresses',
             function (Blueprint $table) {
-                $table->string('ip_address', 128)->nullable()->unique('ip_address_index');
+                $table->string('ip_address', 128)->unique('ip_address_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_latitudes',
             function (Blueprint $table) {
-                $table->decimal('ip_latitude', 10, 8)->nullable()->unique('ip_latitude_index');
+                $table->decimal('ip_latitude', 10, 8)->unique('ip_latitude_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_longitudes',
             function (Blueprint $table) {
-                $table->decimal('ip_longitude', 10, 8)->nullable()->unique('ip_longitude_index');
+                $table->decimal('ip_longitude', 10, 8)->unique('ip_longitude_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_country_codes',
             function (Blueprint $table) {
-                $table->string('ip_country_code', 6)->nullable()->unique('ip_country_code_index');
+                $table->string('ip_country_code', 6)->unique('ip_country_code_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_country_names',
             function (Blueprint $table) {
-                $table->string('ip_country_name', 128)->nullable()->unique('ip_country_name_index');
+                $table->string('ip_country_name', 128)->unique('ip_country_name_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_regions',
             function (Blueprint $table) {
-                $table->string('ip_region', 128)->nullable()->unique('ip_region_index');
+                $table->string('ip_region', 128)->unique('ip_region_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_cities',
             function (Blueprint $table) {
-                $table->string('ip_city', 128)->nullable()->unique('ip_city_index');
+                $table->string('ip_city', 128)->unique('ip_city_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_postal_zip_codes',
             function (Blueprint $table) {
-                $table->string('ip_postal_zip_code', 16)->nullable()->unique('ip_postal_zip_code_index');
+                $table->string('ip_postal_zip_code', 16)->unique('ip_postal_zip_code_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_timezones',
             function (Blueprint $table) {
-                $table->string('ip_timezone', 64)->nullable()->unique('ip_timezone_index');
+                $table->string('ip_timezone', 64)->unique('ip_timezone_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_currencies',
             function (Blueprint $table) {
-                $table->string('ip_currency', 16)->nullable()->unique('ip_currency_index');
+                $table->string('ip_currency', 16)->unique('ip_currency_index');
             }
         );
 
@@ -249,9 +248,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'response_status_codes',
             function (Blueprint $table) {
-                $table->unsignedInteger('response_status_code', false, true)->nullable()->unique(
-                    'response_status_code_index'
-                );
+                $table->unsignedInteger('response_status_code', false, true)->unique('response_status_code_index');
             }
         );
 
@@ -266,13 +263,13 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_codes',
             function (Blueprint $table) {
-                $table->unsignedInteger('exception_code', false, true)->nullable()->unique('exception_code_index');
+                $table->unsignedInteger('exception_code', false, true)->unique('exception_code_index');
             }
         );
         Schema::create(
             $tablePrefix . 'exception_lines',
             function (Blueprint $table) {
-                $table->unsignedInteger('exception_line', false, true)->nullable()->unique('exception_line_index');
+                $table->unsignedInteger('exception_line', false, true)->unique('exception_line_index');
             }
         );
 
@@ -541,10 +538,6 @@ class CreateRequestAssociationTables extends Migration
 
         Schema::dropIfExists($tablePrefix . 'requests');
 
-        // associations tables =========================================================================================
-
-        $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
-
         Schema::dropIfExists($tablePrefix . 'url_protocols');
         Schema::dropIfExists($tablePrefix . 'url_domains');
         Schema::dropIfExists($tablePrefix . 'url_paths');
@@ -572,6 +565,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::dropIfExists($tablePrefix . 'response_durations');
         Schema::dropIfExists($tablePrefix . 'exception_codes');
         Schema::dropIfExists($tablePrefix . 'exception_lines');
+
         Schema::dropIfExists($tablePrefix . 'url_queries');
         Schema::dropIfExists($tablePrefix . 'route_actions');
         Schema::dropIfExists($tablePrefix . 'agent_strings');

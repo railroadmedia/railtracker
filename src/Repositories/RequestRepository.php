@@ -12,260 +12,137 @@ class RequestRepository extends TrackerRepositoryBase
 {
     private static $BULK_INSERT_CHUNK_SIZE = 20;
 
-    private static $requestAttributeTableColumnMap = [
+    private static $rowsToInsertByTable = [
         'url_protocols' => [
-            [
-                'property' => 'urlProtocol',
-                'column' => 'url_protocol'
-            ],
-            [
-                'property' => 'refererUrlProtocol',
-                'column' => 'url_protocol'
-            ]
+            ['url_protocol' => 'urlProtocol'],
         ],
         'url_domains' => [
-            [
-                'property' => 'urlDomain',
-                'column' => 'url_domain'
-            ],
-            [
-                'property' => 'refererUrlDomain',
-                'column' => 'url_domain'
-            ]
+            ['url_domain' => 'urlDomain'],
         ],
         'url_paths' => [
-            [
-                'property' => 'urlPath',
-                'column' => 'url_path'
-            ],
-            [
-                'property' => 'refererUrlPath',
-                'column' => 'url_path'
-            ]
+            ['url_path' => 'urlPath'],
+            ['referer_url_path' => 'refererUrlPath'],
         ],
         'methods' => [
-            [
-                'property' => 'method',
-                'column' => 'method'
-            ]
+            ['method' => 'method'],
         ],
         'route_names' => [
-            [
-                'property' => 'routeName',
-                'column' => 'route_name'
-            ]
+            ['route_name' => 'routeName'],
         ],
         'device_kinds' => [
-            [
-                'property' => 'deviceKind',
-                'column' => 'device_kind'
-            ]
+            ['device_kind' => 'deviceKind'],
         ],
         'device_models' => [
-            [
-                'property' => 'deviceModel',
-                'column' => 'device_model'
-            ]
+            ['device_model' => 'deviceModel'],
         ],
         'device_platforms' => [
-            [
-                'property' => 'devicePlatform',
-                'column' => 'device_platform'
-            ]
+            ['device_platform' => 'devicePlatform'],
         ],
         'device_versions' => [
-            [
-                'property' => 'deviceVersion',
-                'column' => 'device_version'
-            ]
+            ['device_version' => 'deviceVersion'],
         ],
         'agent_browsers' => [
-            [
-                'property' => 'agentBrowser',
-                'column' => 'agent_browser'
-            ]
+            ['agent_browser' => 'agentBrowser'],
         ],
         'agent_browser_versions' => [
-            [
-                'property' => 'agentBrowserVersion',
-                'column' => 'agent_browser_version'
-            ]
+            ['agent_browser_version' => 'agentBrowserVersion'],
         ],
         'language_preferences' => [
-            [
-                'property' => 'languagePreference',
-                'column' => 'language_preference'
-            ]
+            ['language_preference' => 'languagePreference'],
         ],
         'language_ranges' => [
-            [
-                'property' => 'languageRange',
-                'column' => 'language_range'
-            ]
+            ['language_range' => 'languageRange'],
         ],
         'ip_addresses' => [
-            [
-                'property' => 'ipAddress',
-                'column' => 'ip_address'
-            ]
+            ['ip_address' => 'ipAddress'],
         ],
         'ip_latitudes' => [
-            [
-                'property' => 'ipLatitude',
-                'column' => 'ip_latitude'
-            ]
+            ['ip_latitude' => 'ipLatitude'],
         ],
         'ip_longitudes' => [
-            [
-                'property' => 'ipLongitude',
-                'column' => 'ip_longitude'
-            ]
+            ['ip_longitude' => 'ipLongitude'],
         ],
         'ip_country_codes' => [
-            [
-                'property' => 'ipCountryCode',
-                'column' => 'ip_country_code'
-            ]
+            ['ip_country_code' => 'ipCountryCode'],
         ],
         'ip_country_names' => [
-            [
-                'property' => 'ipCountryName',
-                'column' => 'ip_country_name'
-            ]
+            ['ip_country_name' => 'ipCountryName'],
         ],
         'ip_regions' => [
-            [
-                'property' => 'ipRegion',
-                'column' => 'ip_region'
-            ]
+            ['ip_region' => 'ipRegion'],
         ],
         'ip_cities' => [
-            [
-                'property' => 'ipCity',
-                'column' => 'ip_city'
-            ]
+            ['ip_city' => 'ipCity'],
         ],
         'ip_postal_zip_codes' => [
-            [
-                'property' => 'ipPostalZipCode',
-                'column' => 'ip_postal_zip_code'
-            ]
+            ['ip_postal_zip_code' => 'ipPostalZipCode'],
         ],
         'ip_timezones' => [
-            [
-                'property' => 'ipTimezone',
-                'column' => 'ip_timezone'
-            ]
+            ['ip_timezone' => 'ipTimezone'],
         ],
         'ip_currencies' => [
-            [
-                'property' => 'ipCurrency',
-                'column' => 'ip_currency'
-            ]
+            ['ip_currency' => 'ipCurrency'],
         ],
         'response_status_codes' => [
-            [
-                'property' => 'responseStatusCode',
-                'column' => 'response_status_code'
-            ]
+            ['response_status_code' => 'responseStatusCode'],
         ],
         'response_durations' => [
-            [
-                'property' => 'responseDurationMs',
-                'column' => 'response_duration_ms'
-            ]
+            ['response_duration_ms' => 'responseDurationMs'],
         ],
         'exception_codes' => [
-            [
-                'property' => 'exceptionCode',
-                'column' => 'exception_code'
-            ]
+            ['exception_code' => 'exceptionCode'],
         ],
         'exception_lines' => [
-            [
-                'property' => 'exceptionLine',
-                'column' => 'exception_line'
-            ]
+            ['exception_line' => 'exceptionLine'],
         ],
 
         // long strings requiring hashes
 
-        'url_queries' => [
-            [
-                'property' => 'urlQuery',
-                'column' => 'url_query',
+        'url_queries' => [ // table
+            [ // a row
+                'url_query' => 'urlQuery',
+                'url_query_hash' => 'urlQueryHash',
             ],
-            [
-                'property' => 'urlQueryHash',
-                'column' => 'url_query_hash',
-            ],
-            [
-                'property' => 'refererUrlQuery',
-                'column' => 'url_query'
-            ],
-            [
-                'property' => 'refererUrlQueryHash',
-                'column' => 'url_query_hash'
+            [ // another row
+                'url_query' => 'refererUrlQuery',
+                'url_query_hash' => 'refererUrlQueryHash',
             ],
         ],
+
         'route_actions' => [
             [
-                'property' => 'routeAction',
-                'column' => 'route_action'
-            ],
-            [
-                'property' => 'routeActionHash',
-                'column' => 'route_action_hash',
+                'route_action' => 'routeAction',
+                'route_action_hash' => 'routeActionHash',
             ],
         ],
         'agent_strings' => [
             [
-                'property' => 'agentString',
-                'column' => 'agent_string'
-            ],
-            [
-                'property' => 'agentStringHash',
-                'column' => 'agent_string_hash',
+                'agent_string' => 'agentString',
+                'agent_string_hash' => 'agentStringHash',
             ],
         ],
         'exception_classes' => [
             [
-                'property' => 'exceptionClass',
-                'column' => 'exception_class'
-            ],
-            [
-                'property' => 'exceptionClassHash',
-                'column' => 'exception_class_hash',
+                'exception_class' => 'exceptionClass',
+                'exception_class_hash' => 'exceptionClassHash',
             ],
         ],
         'exception_files' => [
             [
-                'property' => 'exceptionFile',
-                'column' => 'exception_file'
-            ],
-            [
-                'property' => 'exceptionFileHash',
-                'column' => 'exception_file_hash',
+                'exception_file' => 'exceptionFile',
+                'exception_file_hash' => 'exceptionFileHash',
             ],
         ],
         'exception_messages' => [
             [
-                'property' => 'exceptionMessage',
-                'column' => 'exception_message'
-            ],
-            [
-                'property' => 'exceptionMessageHash',
-                'column' => 'exception_message_hash',
+                'exception_message' => 'exceptionMessage',
+                'exception_message_hash' => 'exceptionMessageHash',
             ],
         ],
         'exception_traces' => [
             [
-                'property' => 'exceptionTrace',
-                'column' => 'exception_trace'
-            ],
-            [
-                'property' => 'exceptionTraceHash',
-                'column' => 'exception_trace_hash',
+                'exception_trace' => 'exceptionTrace',
+                'exception_trace_hash' => 'exceptionTraceHash',
             ],
         ],
     ];
@@ -276,7 +153,6 @@ class RequestRepository extends TrackerRepositoryBase
      */
     public function storeRequests(Collection $requestVOs)
     {
-        $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
         $dbConnectionName = config('railtracker.database_connection_name');
 
         // --------- Part 1: linked data ---------
@@ -290,16 +166,38 @@ class RequestRepository extends TrackerRepositoryBase
             new BulkInsertOrUpdateMySqlGrammar()
         );
 
-        foreach (self::$requestAttributeTableColumnMap as $table => $propertiesAndColumns) {
+        foreach (self::$rowsToInsertByTable as $table => $rowsToInsert) {
+            $dataToInsert = [];
 
-            $dataToInsert = $requestVOs->map(function($requestV0) use ($propertiesAndColumns){
-                foreach($propertiesAndColumns as $propertyAndColumn){
-                    $property = $propertyAndColumn['property'];
-                    $column = $propertyAndColumn['column'];
-                    $tableSpecificPropertiesFromOneRequest[$column] = $requestV0->$property;
+            dump('=========================' . $table . '==========================');
+
+            foreach($requestVOs as $requestVO){
+
+                //if($table === 'exception_codes'){
+                //    dump('-----------' . $requestVO->uuid . '-----------');
+                //}
+
+                foreach($rowsToInsert as $mappings){
+                    $row = [];
+                    foreach($mappings as $column => $property){
+                        /*
+                         * integer 0 is a valid exception code, but will fail if passed to empty(), thus, explicitly
+                         * allow.
+                         */
+                        $specialException = ($table === 'exception_codes') && ($requestVO->$property === 0);
+
+                        if(!empty($requestVO->$property) || $specialException){
+                            //if($table === 'exception_codes'){
+                            //    dump($requestVO->$property);
+                            //}
+                            $row[$column] = $requestVO->$property;
+                        }
+                    }
+                    if(!empty($row)){
+                        $dataToInsert[] = $row;
+                    }
                 }
-                return $tableSpecificPropertiesFromOneRequest ?? [];
-            })->toArray();
+            }
 
             if(empty($dataToInsert)) continue;
 
@@ -330,11 +228,6 @@ class RequestRepository extends TrackerRepositoryBase
             }
         }
 
-        dd('PICK UP HERE'); // todo: pick up here
-        dd('PICK UP HERE'); // todo: pick up here
-        dd('PICK UP HERE'); // todo: pick up here
-        dd('PICK UP HERE'); // todo: pick up here
-
         // --------- Part 2: populate requests table ---------
 
         $bulkInsertData = [];
@@ -346,15 +239,15 @@ class RequestRepository extends TrackerRepositoryBase
             $bulkInsertData[] = $requestVO->returnArrayForDatabaseInteraction();
         }
 
-        foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
+        $table = config('railtracker.table_prefix') . 'requests';
 
-            if (!empty($chunkOfBulkInsertData)) {
-                try{
-                    $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);
-                }catch(\Exception $e){
-                    error_log($e);
-                    dump('Error while writing to requests table ("' . $e->getMessage() . '")');
-                }
+        foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
+            if (empty($chunkOfBulkInsertData)) continue;
+            try{
+                $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);
+            }catch(\Exception $e){
+                error_log($e);
+                dump('Error while writing to requests table ("' . $e->getMessage() . '")');
             }
         }
 
@@ -438,6 +331,10 @@ class RequestRepository extends TrackerRepositoryBase
 
         foreach($requestVOs as $requestVO){
             $ipAddresses[] = $requestVO->ipAddress;
+        }
+
+        if(empty($ipAddresses)){
+            return collect([]);
         }
 
         $matchingRequests = $this->databaseManager->connection($dbConnectionName)
