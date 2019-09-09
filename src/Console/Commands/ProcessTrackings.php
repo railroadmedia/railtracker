@@ -260,12 +260,26 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $timeOfPreviousRequest = $previousRequest->requested_on;
             }
 
+            $agentString = $this->databaseManager
+                ->table(config('railtracker.table_prefix') . 'agent_strings')
+                ->select()
+                ->where(['agent_string_hash' => $requestRecord->agent_string_hash])
+                ->get()
+                ->first();
+
+            try{
+                $agentString = $agentString->agent_string_hash;
+            }catch(\Exception $exception){
+                error_log('Failed to get agent string from hash');
+                error_log($exception);
+            }
+
             event(
                 new RequestTracked(
                     $requestRecord->id,
                     $requestRecord->user_id,
                     $requestRecord->ip_address,
-                    $requestRecord->agent_string,
+                    $agentString,
                     $requestRecord->requested_on,
                     $timeOfPreviousRequest ?? null
                 )
