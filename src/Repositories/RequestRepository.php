@@ -15,13 +15,15 @@ class RequestRepository extends TrackerRepositoryBase
     private static $rowsToInsertByTable = [
         'url_protocols' => [
             ['url_protocol' => 'urlProtocol'],
+            ['url_protocol' => 'refererUrlProtocol'],
         ],
         'url_domains' => [
             ['url_domain' => 'urlDomain'],
+            ['url_domain' => 'refererUrlDomain'],
         ],
         'url_paths' => [
             ['url_path' => 'urlPath'],
-            ['referer_url_path' => 'refererUrlPath'],
+            ['url_path' => 'refererUrlPath'],
         ],
         'methods' => [
             ['method' => 'method'],
