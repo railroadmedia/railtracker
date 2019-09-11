@@ -157,11 +157,10 @@ class RequestRepository extends TrackerRepositoryBase
     {
         $dbConnectionName = config('railtracker.database_connection_name');
 
-        // --------- Part 1: linked data ---------
+        // MySQL supports update-on-duplicate-key-update, SQLite does not
+        $isMySql = $this->databaseManager->connection($dbConnectionName)->getDriverName() == 'mysql';
 
-        $isSqlLite = $this->databaseManager
-                ->connection($dbConnectionName)
-                ->getDriverName() == 'sqlite';
+        // --------- Part 1: linked data ---------
 
         $builder = new BulkInsertOrUpdateBuilder(
             $this->databaseManager->connection($dbConnectionName),
@@ -177,19 +176,19 @@ class RequestRepository extends TrackerRepositoryBase
                 //    dump('-----------' . $requestVO->uuid . '-----------');
                 //}
 
+                if($table === 'exception_messages'){
+                    $stopHere = true;
+                }
+
                 foreach($rowsToInsert as $mappings){
                     $row = [];
                     foreach($mappings as $column => $property){
                         /*
-                         * integer 0 is a valid exception code, but will fail if passed to empty(), thus, explicitly
-                         * allow.
+                         * empty(0) returns true, but 0 is valid exception code, thus here explicitly allow
                          */
                         $specialException = ($table === 'exception_codes') && ($requestVO->$property === 0);
 
                         if(!empty($requestVO->$property) || $specialException){
-                            //if($table === 'exception_codes'){
-                            //    dump($requestVO->$property);
-                            //}
                             $row[$column] = $requestVO->$property;
                         }
                     }
@@ -201,7 +200,7 @@ class RequestRepository extends TrackerRepositoryBase
 
             if(empty($dataToInsert)) continue;
 
-            if (!$isSqlLite) { // need use-case here since sqlite doesn't support update on duplicate key update
+            if ($isMySql) {
                 try{
                     $builder->from(config('railtracker.table_prefix') . $table)
                         ->insertOrUpdate($dataToInsert);
@@ -209,22 +208,23 @@ class RequestRepository extends TrackerRepositoryBase
                     error_log($e);
                     dump('Error while writing to association tables ("' . $e->getMessage() . '")');
                 }
-            } else {
-                $this->databaseManager->connection($dbConnectionName)->transaction(
-                    // todo: fix
-//                    function () use ($tableAndColumn, $dataToInsert, $dbConnectionName) {
-//                        foreach ($dataToInsert as $columnValues) {
-//                            try {
-//                                $this->databaseManager->connection($dbConnectionName)
-//                                    ->table(config('railtracker.table_prefix') . $tableAndColumn['table'])
-//                                    ->insert($columnValues);
-//                            } catch (\Exception $e) {
-//                                error_log($e);
-//                                dump('Error while writing to association tables ("' . $e->getMessage() . '")');
-//                            }
-//                        }
-//                    }
-                );
+            } else {  // need use-case here since sqlite doesn't support update on duplicate key update
+                foreach ($dataToInsert as $columnValues) {
+                    try {
+                        $results = $this->databaseManager->connection($dbConnectionName)
+                            ->table(config('railtracker.table_prefix') . $table)
+                            ->where($columnValues)
+                            ->get();
+                        if($results->isEmpty()){
+                            $this->databaseManager->connection($dbConnectionName)
+                                ->table(config('railtracker.table_prefix') . $table)
+                                ->insert($columnValues);
+                        }
+                    } catch (\Exception $e) {
+                        error_log($e);
+                        dump('Error while writing to association tables ("' . $e->getMessage() . '")');
+                    }
+                }
             }
         }
 
@@ -242,9 +242,15 @@ class RequestRepository extends TrackerRepositoryBase
         $table = config('railtracker.table_prefix') . 'requests';
 
         foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
+
             if (empty($chunkOfBulkInsertData)) continue;
+
             try{
-                $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);
+                if ($isMySql) {
+                    $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);
+                }else{
+                    $builder->from($table)->insert($chunkOfBulkInsertData);
+                }
             }catch(\Exception $e){
                 error_log($e);
                 dump('Error while writing to requests table ("' . $e->getMessage() . '")');
