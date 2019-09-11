@@ -172,14 +172,6 @@ class RequestRepository extends TrackerRepositoryBase
 
             foreach($requestVOs as $requestVO){
 
-                //if($table === 'exception_codes'){
-                //    dump('-----------' . $requestVO->uuid . '-----------');
-                //}
-
-                if($table === 'exception_messages'){
-                    $stopHere = true;
-                }
-
                 foreach($rowsToInsert as $mappings){
                     $row = [];
                     foreach($mappings as $column => $property){

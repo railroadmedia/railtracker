@@ -13,7 +13,6 @@ class RequestTrackerTest extends RailtrackerTestCase
     {
         $requests = collect();
         $expected = collect();
-        $outputKeyedByIp = [];
 
         $input = IpDataApiStubDataProvider::$INPUT;
         $output = IpDataApiStubDataProvider::output();
