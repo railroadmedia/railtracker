@@ -188,17 +188,25 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $requestVO->exceptionCode = $matchingExceptionVO->code;
                 $requestVO->exceptionLine = $matchingExceptionVO->line;
 
-                $requestVO->exceptionClass = $matchingExceptionVO->class;
-                $requestVO->exceptionClassHash = md5($requestVO->exceptionClass);
+                if(!empty($matchingExceptionVO->class)){
+                    $requestVO->exceptionClass = $matchingExceptionVO->class;
+                    $requestVO->exceptionClassHash = md5($requestVO->exceptionClass);
+                }
 
-                $requestVO->exceptionFile = $matchingExceptionVO->file;
-                $requestVO->exceptionFileHash = md5($requestVO->exceptionFile);
+                if(!empty($matchingExceptionVO->file)){
+                    $requestVO->exceptionFile = $matchingExceptionVO->file;
+                    $requestVO->exceptionFileHash = md5($requestVO->exceptionFile);
+                }
 
-                $requestVO->exceptionMessage = $matchingExceptionVO->message;
-                $requestVO->exceptionMessageHash = md5($requestVO->exceptionMessage);
+                if(!empty($matchingExceptionVO->message)){
+                    $requestVO->exceptionMessage = $matchingExceptionVO->message;
+                    $requestVO->exceptionMessageHash = md5($requestVO->exceptionMessage);
+                }
 
-                $requestVO->exceptionTrace = $matchingExceptionVO->trace;
-                $requestVO->exceptionTraceHash = md5($requestVO->exceptionTrace);
+                if(!empty($matchingExceptionVO->trace)){
+                    $requestVO->exceptionTrace = $matchingExceptionVO->trace;
+                    $requestVO->exceptionTraceHash = md5($requestVO->exceptionTrace);
+                }
 
                 $exceptionsTrackedCount++;
             }
