@@ -66,5 +66,4 @@ class AnonymousRequestsStressTest extends RailtrackerTestCase
 
         $this->assertLessThan(1, $tEnd);
     }
-
 }

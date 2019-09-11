@@ -243,7 +243,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
             [
-                'url_query' => 'test=1&test2=as7da98dsda3-23f23',
+                'url_query_hash' => md5('test=1&test2=as7da98dsda3-23f23'),
             ]
         );
     }
@@ -259,7 +259,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
             [
-                'url_query' => null,
+                'url_query_hash' => null,
             ]
         );
     }
@@ -277,7 +277,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
             [
-                'url_path' => null,
+                'url_path' => '/',
             ]
         );
     }
@@ -352,7 +352,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
             [
-                'route_action' => $routeAction,
+                'route_action_hash' => md5($routeAction),
             ]
         );
 
@@ -369,6 +369,13 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'route_actions',
             [
                 'route_action' => $routeAction,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            config('railtracker.table_prefix') . 'route_actions',
+            [
+                'route_action_hash' => md5($routeAction),
             ]
         );
     }
@@ -416,6 +423,13 @@ class RequestTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
+            config('railtracker.table_prefix') . 'agent_strings',
+            [
+                'agent_string_hash' => md5(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10)
+            ]
+        );
+
+        $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'agent_browsers',
             [
                 'agent_browser' => 'Chrome'
@@ -434,7 +448,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'requests',
             [
-                'agent_string' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10
+                'agent_string_hash' => md5(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10)
             ]
         );
 
@@ -613,40 +627,28 @@ class RequestTrackerTest extends RailtrackerTestCase
             [
                 'id' => '1',
                 'uuid' => \Railroad\Railtracker\ValueObjects\RequestVO::$UUID,
-                'user_id' => 1,
                 'cookie_id' => null,
-
+                'user_id' => '1',
                 'url_protocol' => 'https',
                 'url_domain' => 'www.testing.com',
                 'url_path' => '/',
-                'url_query' => 'test=1',
-
+                'referer_url_protocol' => 'http',
+                'referer_url_domain' => 'www.referer-testing.com',
+                'referer_url_path' => '/',
                 'method' => 'GET',
                 'route_name' => null,
-                'route_action' => null,
-
                 'device_kind' => 'desktop',
                 'device_model' => 'WebKit',
                 'device_platform' => 'Windows',
                 'device_version' => '10.0',
                 'device_is_mobile' => '0',
-
-                'agent_string' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' .
-                    'Chrome/58.0.3029.110 Safari/537.36',
                 'agent_browser' => 'Chrome',
                 'agent_browser_version' => '58.0.3029.110',
-
-                'referer_url_protocol' => 'http',
-                'referer_url_domain' => 'www.referer-testing.com',
-                'referer_url_path' => '/',
-                'referer_url_query' => 'test=2',
-
                 'language_preference' => 'en-gb',
                 'language_range' => 'en-gb,en-us,en',
-
                 'ip_address' => '183.22.98.51',
-                'ip_latitude' => '',
-                'ip_longitude' => '',
+                'ip_latitude' => null,
+                'ip_longitude' => null,
                 'ip_country_code' => null,
                 'ip_country_name' => null,
                 'ip_region' => null,
@@ -654,9 +656,22 @@ class RequestTrackerTest extends RailtrackerTestCase
                 'ip_postal_zip_code' => null,
                 'ip_timezone' => null,
                 'ip_currency' => null,
-
                 'is_robot' => '0',
+                'response_status_code' => '200',
+                //'response_duration_ms' => '',
+                'exception_code' => null,
+                'exception_line' => null,
                 'requested_on' => Carbon::now()->format('Y-m-d H:i:s.u'),
+                //'responded_on' => '',
+                'url_query_hash' => md5('test=1'),
+                'referer_url_query_hash' => md5('test=2'),
+                'route_action_hash' => null,
+                'agent_string_hash' => md5('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, ' .
+                    'like Gecko) Chrome/58.0.3029.110 Safari/537.36'),
+                'exception_class_hash' => null,
+                'exception_file_hash' => null,
+                'exception_message_hash' => null,
+                'exception_trace_hash' => null,
             ]
         );
 
@@ -681,6 +696,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'url_queries',
             [
                 'url_query' => 'test=1',
+                'url_query_hash' => md5('test=1'),
             ]
         );
 
@@ -693,21 +709,6 @@ class RequestTrackerTest extends RailtrackerTestCase
 
         // ----------------------------------------------------
 
-
-        $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'route_names',
-            [
-                'route_name' => null,
-            ]
-        );
-
-        $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'route_actions',
-            [
-                'route_action' => null,
-            ]
-        );
-
         $this->assertDatabaseMissing(
             config('railtracker.table_prefix') . 'route_names',
             [
@@ -719,6 +720,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'route_actions',
             [
                 'route_action' => 'TestController@test',
+                'route_action_hash' => md5('TestController@test'),
             ]
         );
 
@@ -734,7 +736,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'agent_strings',
             [
-                'agent_string' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10
+                'agent_string' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
+                'agent_string_hash' => md5(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10)
             ]
         );
 
@@ -850,40 +853,29 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'requests',
             [
                 'id' => '1',
-                //'uuid' => \Railroad\Railtracker\ValueObjects\RequestVO::$UUID,  // todo: why can't we get uuid here?
-                'user_id' => 1,
+                'uuid' => \Railroad\Railtracker\ValueObjects\RequestVO::$UUID,
                 'cookie_id' => null,
-
+                'user_id' => '1',
                 'url_protocol' => 'https',
                 'url_domain' => 'www.testing.com',
                 'url_path' => $path,
-                'url_query' => $query,
-
+                'referer_url_protocol' => 'http',
+                'referer_url_domain' => 'www.referer-testing.com',
+                'referer_url_path' => '/',
                 'method' => 'GET',
                 'route_name' => $routeName,
-                'route_action' => $routeAction,
-
                 'device_kind' => 'desktop',
                 'device_model' => 'WebKit',
                 'device_platform' => 'Windows',
                 'device_version' => '10.0',
                 'device_is_mobile' => '0',
-
-                'agent_string' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
                 'agent_browser' => 'Chrome',
                 'agent_browser_version' => '58.0.3029.110',
-
-                'referer_url_protocol' => 'http',
-                'referer_url_domain' => 'www.referer-testing.com',
-                'referer_url_path' => '/',
-                'referer_url_query' => 'test=2',
-
                 'language_preference' => 'en-gb',
                 'language_range' => 'en-gb,en-us,en',
-
                 'ip_address' => $clientIp,
-                'ip_latitude' => '',
-                'ip_longitude' => '',
+                'ip_latitude' => null,
+                'ip_longitude' => null,
                 'ip_country_code' => null,
                 'ip_country_name' => null,
                 'ip_region' => null,
@@ -891,14 +883,23 @@ class RequestTrackerTest extends RailtrackerTestCase
                 'ip_postal_zip_code' => null,
                 'ip_timezone' => null,
                 'ip_currency' => null,
-
                 'is_robot' => '0',
+                'response_status_code' => '200',
+//                'response_duration_ms' => '',
+                'exception_code' => null,
+                'exception_line' => null,
                 'requested_on' => Carbon::now()->format('Y-m-d H:i:s.u'),
+//                'responded_on' => '',
+                'url_query_hash' => md5($query),
+                'referer_url_query_hash' => md5('test=2'),
+                'route_action_hash' => md5($routeAction),
+                'agent_string_hash' => md5(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10),
+                'exception_class_hash' => null,
+                'exception_file_hash' => null,
+                'exception_message_hash' => null,
+                'exception_trace_hash' => null,
             ]
         );
-
-        // ----------------------------------------------------
-        // ----------------------------------------------------
 
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'url_domains',
@@ -918,6 +919,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'url_queries',
             [
                 'url_query' => $query,
+                'url_query_hash' => md5($query),
             ]
         );
 
@@ -941,6 +943,7 @@ class RequestTrackerTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'route_actions',
             [
                 'route_action' => $routeAction,
+                'route_action_hash' => md5($routeAction)
             ]
         );
 
@@ -956,7 +959,8 @@ class RequestTrackerTest extends RailtrackerTestCase
         $this->assertDatabaseHas(
             config('railtracker.table_prefix') . 'agent_strings',
             [
-                'agent_string' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10
+                'agent_string' => RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10,
+                'agent_string_hash' => md5(RailtrackerTestCase::USER_AGENT_CHROME_WINDOWS_10)
             ]
         );
 
@@ -1019,8 +1023,6 @@ class RequestTrackerTest extends RailtrackerTestCase
                 'language_range' => 'en-gb,en-us,en',
             ]
         );
-
-        // ----------------------------------------------------
     }
 
     public function test_cookie_is_saved_on_request_for_visitor()
@@ -1562,17 +1564,18 @@ class RequestTrackerTest extends RailtrackerTestCase
                 "protocol" => "https",
                 "domain" => "www.testing.com",
                 "path" => "/test/path/1",
-                "query" => "test1=2&test2=3",
+                "query" => md5('test1=2&test2=3'),
                 "route_name" => "test.route.name",
-                "route_action" => "TestController@test",
-                "agent" => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+                "route_action_hash" => md5("TestController@test"),
+                "agent_hash" => md5('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like ' .
+                    'Gecko) Chrome/58.0.3029.110 Safari/537.36'),
                 "agent_browser" => "Chrome",
                 "agent_browser_version" => "58.0.3029.110",
                 "device_type" => "desktop",
                 "device_model" => "WebKit",
                 "device_platform" => "Windows",
                 "device_platform_version" => "10.0",
-                "device_is_mobile" => false,
+                "device_is_mobile" => '0',
                 "language_preference" => "en-gb",
                 "language_range" => "en-gb,en-us,en",
             ],
@@ -1580,10 +1583,10 @@ class RequestTrackerTest extends RailtrackerTestCase
                 'protocol' => $result->url_protocol,
                 "domain" => $result->url_domain,
                 "path" => $result->url_path,
-                "query" => $result->url_query,
+                "query" => $result->url_query_hash,
                 "route_name" => $result->route_name,
-                "route_action" => $result->route_action,
-                "agent" => $result->agent_string,
+                "route_action_hash" => $result->route_action_hash,
+                "agent_hash" => $result->agent_string_hash,
                 "agent_browser" => $result->agent_browser,
                 "agent_browser_version" => $result->agent_browser_version,
                 "device_type" => $result->device_kind,
@@ -1653,10 +1656,11 @@ class RequestTrackerTest extends RailtrackerTestCase
                     "protocol" => "https",
                     "domain" => "www.testing.com",
                     "path" => "/test/path/" . $expectedInResultsSet[$i],
-                    "query" => "test1=2&test2=3",
+                    "query_hash" => md5('test1=2&test2=3'),
                     "route_name" => "test.route.name",
-                    "route_action" => "TestController@test",
-                    "agent" => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+                    "route_action_hash" => md5("TestController@test"),
+                    "agent_hash" => md5('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' .
+                        'Chrome/58.0.3029.110 Safari/537.36'),
                     "agent_browser" => "Chrome",
                     "agent_browser_version" => "58.0.3029.110",
                     "device_type" => "desktop",
@@ -1670,10 +1674,10 @@ class RequestTrackerTest extends RailtrackerTestCase
                     'protocol' => $result->url_protocol,
                     "domain" => $result->url_domain,
                     "path" => $result->url_path,
-                    "query" => $result->url_query,
+                    "query_hash" => $result->url_query_hash,
                     "route_name" => $result->route_name,
-                    "route_action" => $result->route_action,
-                    "agent" => $result->agent_string,
+                    "route_action_hash" => $result->route_action_hash,
+                    "agent_hash" => $result->agent_string_hash,
                     "agent_browser" => $result->agent_browser,
                     "agent_browser_version" => $result->agent_browser_version,
                     "device_type" => $result->device_kind,
@@ -1710,6 +1714,7 @@ class RequestTrackerTest extends RailtrackerTestCase
         }
 
         foreach($output as $singleOutput){
+
             $this->assertDatabaseHas(
                 config('railtracker.table_prefix') . 'requests',
                 [
@@ -1758,19 +1763,23 @@ class RequestTrackerTest extends RailtrackerTestCase
                 ]
             );
 
-            $this->assertDatabaseHas(
-                config('railtracker.table_prefix') . 'ip_regions',
-                [
-                    'ip_region' => $singleOutput['region_code'],
-                ]
-            );
+            if(!empty($singleOutput['region_code'])){
+                $this->assertDatabaseHas(
+                    config('railtracker.table_prefix') . 'ip_regions',
+                    [
+                        'ip_region' => $singleOutput['region_code'],
+                    ]
+                );
+            }
 
-            $this->assertDatabaseHas(
-                config('railtracker.table_prefix') . 'ip_cities',
-                [
-                    'ip_city' => $singleOutput['city'],
-                ]
-            );
+            if(!empty($singleOutput['city'])){
+                $this->assertDatabaseHas(
+                    config('railtracker.table_prefix') . 'ip_cities',
+                    [
+                        'ip_city' => $singleOutput['city'],
+                    ]
+                );
+            }
         }
     }
 }

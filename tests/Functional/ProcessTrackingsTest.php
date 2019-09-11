@@ -3,9 +3,6 @@
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 use Carbon\Carbon;
 
-// from ExceptionTrackerTest
-// todo: organize|cull|tidy|whatever
-
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
@@ -93,9 +90,12 @@ class ProcessTrackingsTest extends RailtrackerTestCase
             config('railtracker.table_prefix') . 'requests',
             [
                 'id' => 1,
-                'exception_class' => "Symfony\\Component\\HttpKernel\\Exception\\NotFoundHttpException",
-                'response_status_code' => 404
+                'exception_class_hash' => md5('Symfony\\Component\\HttpKernel\\Exception\\NotFoundHttpException'),
+                'response_status_code' => '404',
             ]
         );
     }
+
+
+
 }
