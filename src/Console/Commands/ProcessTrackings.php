@@ -96,6 +96,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
     {
         $redisIterator = null;
 
+        $exceptionsTrackedCount = 0;
+        $successfulRequestsCount = 0;
+
         while ($redisIterator !== 0) {
 
             try {
@@ -106,11 +109,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
                             'COUNT' => config('railtracker.scan-size', 1000)
                         ]
                     );
+
                 $redisIterator = (integer)$scanResult[0];
                 $keys = $scanResult[1];
 
                 if (empty($keys)) {
-                    $this->printInfo('No keys.');
+                    $this->printInfo('Nothing to process. Exiting now.');
                     continue;
                 }
 
@@ -123,19 +127,26 @@ class ProcessTrackings extends \Illuminate\Console\Command
                         $valuesThisChunk->push(unserialize($value));
                     }
                 }
+
                 $this->printInfo('Starting to process ' . $valuesThisChunk->count() . ' items.');
 
                 $this->batchService->forget($keys);
 
-                $resultsCounts = $this->processRequests($valuesThisChunk);
+                try{
+                    $resultsCount = $this->processRequests($valuesThisChunk);
+                }catch(\Exception $e){
+                    dump($e->getMessage());
+                }
+
+                if(!empty($resultsCount)){
+                    $totalRequestsCount = $resultsCount['requestsCount'];
+                    $exceptionsTrackedCount = $exceptionsTrackedCount + $resultsCount['exceptionsTrackedCount'];
+                    $successfulRequestsCount = $successfulRequestsCount + $totalRequestsCount - $exceptionsTrackedCount;
+                }
             } catch (Exception $exception) {
                 error_log($exception);
             }
         }
-
-        $requestsCount = $resultsCounts['requestsCount'] ?? 0;
-        $exceptionsTrackedCount = $resultsCounts['exceptionsTrackedCount'] ?? 0;
-        $successfulRequestsCount = $requestsCount - $exceptionsTrackedCount;
 
         $this->printInfo(
             'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
