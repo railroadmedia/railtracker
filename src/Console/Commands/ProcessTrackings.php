@@ -114,7 +114,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $keys = $scanResult[1];
 
                 if (empty($keys)) {
-                    $this->printInfo('Nothing to process. Exiting now.');
                     continue;
                 }
 
@@ -139,9 +138,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 }
 
                 if(!empty($resultsCount)){
-                    $totalRequestsCount = $resultsCount['requestsCount'];
+                    $totalRequestsCount =  $resultsCount['requestsCount'];
                     $exceptionsTrackedCount = $exceptionsTrackedCount + $resultsCount['exceptionsTrackedCount'];
-                    $successfulRequestsCount = $successfulRequestsCount + $totalRequestsCount - $exceptionsTrackedCount;
+                    $successfulRequestsCount =
+                        $successfulRequestsCount + $totalRequestsCount - $resultsCount['exceptionsTrackedCount'];
                 }
             } catch (Exception $exception) {
                 error_log($exception);
