@@ -38,15 +38,6 @@ class ExceptionTracker extends TrackerBase
      */
     public function trackException(Request $request, Exception $exception)
     {
-        if(empty(RequestVO::$UUID)){
-            try {
-                $requestVO = new RequestVO($request);
-                $this->batchService->storeRequest($requestVO);
-            } catch (Exception $e) {
-                error_log($exception);
-            }
-        }
-
         try {
             $exceptionVO = new ExceptionVO($exception, RequestVO::$UUID);
             $this->batchService->storeException($exceptionVO);
