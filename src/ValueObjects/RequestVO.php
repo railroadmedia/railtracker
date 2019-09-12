@@ -83,6 +83,22 @@ class RequestVO
      */
     public function __construct(Request $httpRequest)
     {
+        /* - - - - - - - - - - - - - - - - - - - -
+            all fields nullable *except* these:
+                1. uuid
+                2. url_protocol
+                3. url_domain
+                4. url_path
+                5. device_is_mobile
+                6. is_robot
+                7. requested_on
+         - - - - - - - - - - - - - - - - - - - - */
+
+        // todo
+//        $setUnlessNull = function($value, $maxLength){
+//            return !empty($value) ? substr($value, 0, $maxLength) : null;
+//        };
+
         $userAgentObject = new Agent($httpRequest->server->all());
 
         // start time in microseconds
@@ -101,57 +117,122 @@ class RequestVO
         // url
         $fullUrl = $httpRequest->fullUrl();
 
+        if(empty($fullUrl)) {
+            $msg = 'Url not available in RequestVO constructor. (Request object: ' .
+                var_export($httpRequest, true) . ')';
+            error_log($msg);
+            throw new \Exception($msg);
+        }
+
         $this->urlProtocol = substr(parse_url($fullUrl)['scheme'], 0, 32);
         $this->urlDomain = substr(parse_url($fullUrl)['host'], 0, 128);
         $this->urlPath = !empty(parse_url($fullUrl)['path']) ? substr(parse_url($fullUrl)['path'], 0, 191) : '/';
         $this->urlQuery = !empty(parse_url($fullUrl)['query']) ? substr(parse_url($fullUrl)['query'], 0, 1280) : null;
 
         // method
-        $this->method = substr($httpRequest->method(), 0, 10);
+        if(!empty($httpRequest->method())){
+            $this->method = substr($httpRequest->method(), 0, 10);
+        }
 
         // route
         if (!empty($httpRequest->route())) {
-            $this->routeName = substr($httpRequest->route()->getName(), 0, 191);
-            $this->routeAction = substr($httpRequest->route()->getActionName(), 0, 840);
+            if(!empty($httpRequest->route()->getName())){
+                $this->routeName = substr($httpRequest->route()->getName(), 0, 191);
+            }
+            if(!empty($httpRequest->route()->getActionName())){
+                $this->routeAction = substr($httpRequest->route()->getActionName(), 0, 840);
+            }
         }
 
         // device
-        $this->deviceKind = $this->getDeviceKind($userAgentObject);
-        $this->deviceModel = substr($userAgentObject->device(), 0, 64);
-        $this->devicePlatform = substr($userAgentObject->platform(), 0, 64);
-        $platform = substr($userAgentObject->version($userAgentObject->platform()), 0, 64);
-        $this->deviceVersion = !empty($platform) ? $platform : null;
-        $this->deviceIsMobile = $userAgentObject->isMobile() ? 1 : 0;
+        if(!empty($this->getDeviceKind($userAgentObject))){
+            $this->deviceKind = $this->getDeviceKind($userAgentObject);
+        }
+
+        if(!empty($userAgentObject->device())){
+            $this->deviceModel = substr($userAgentObject->device(), 0, 64);
+        }
+        if(!empty($userAgentObject->platform())){
+            $this->devicePlatform = substr($userAgentObject->platform(), 0, 64);
+        }
+
+        if(!empty($userAgentObject->version($userAgentObject->platform()))){
+            $platform = substr($userAgentObject->version($userAgentObject->platform()), 0, 64);
+            $this->deviceVersion = !empty($platform) ? $platform : null;
+        }
+
+        if(is_bool($userAgentObject->isMobile())) {
+            $this->deviceIsMobile = $userAgentObject->isMobile() ? 1 : 0;
+        }else{
+            error_log(
+                '"$userAgentObject->isMobile()" is not a boolean in RequestVO constructor. We\'ll set it as true ' .
+                'here (Request object: ' . var_export($httpRequest, true) . ')'
+            );
+            $this->deviceIsMobile = 1;
+        }
 
         // agent
-        $this->agentString = substr($userAgentObject->getUserAgent() ?: 'Other', 0, 560);
-        $this->agentBrowser = substr($userAgentObject->browser(), 0, 64);
-        $this->agentBrowserVersion = substr($userAgentObject->version($userAgentObject->browser()), 0, 64);
-        $this->isRobot = $userAgentObject->isRobot() ? 1 : 0;
+        if(!empty($userAgentObject->getUserAgent())){
+            $this->agentString = substr($userAgentObject->getUserAgent() ?: 'Other', 0, 560);
+        }
+        if(!empty($userAgentObject->browser())){
+            $this->agentBrowser = substr($userAgentObject->browser(), 0, 64);
+        }
+        if(!empty($userAgentObject->version($userAgentObject->browser()))){
+            $this->agentBrowserVersion = substr($userAgentObject->version($userAgentObject->browser()), 0, 64);
+        }
 
-        // referer url
-        $fullRefererUrl = $httpRequest->headers->get('referer');
-
-        if(!empty($fullRefererUrl)){
-            $this->refererUrlProtocol = substr(parse_url($fullRefererUrl)['scheme'], 0, 32);
-            $this->refererUrlDomain = substr(parse_url($fullRefererUrl)['host'], 0, 128);
-            $this->refererUrlPath = !empty(parse_url($fullRefererUrl)['path']) ?
-                substr(parse_url($fullRefererUrl)['path'], 0, 191) : '/';
-            $this->refererUrlQuery = !empty(parse_url($fullRefererUrl)['query']) ?
-                substr(parse_url($fullRefererUrl)['query'], 0, 1280) : null;
+        if(is_bool($userAgentObject->isRobot())) {
+            $this->isRobot = $userAgentObject->isRobot() ? 1 : 0;
         }else{
-            $this->refererUrlProtocol = null;
-            $this->refererUrlDomain = null;
-            $this->refererUrlPath = null;
-            $this->refererUrlQuery = null;
+            error_log(
+                '"$userAgentObject->isRobot()" is not a boolean in RequestVO constructor. We\'ll set it as false ' .
+                'here (Request object: ' . var_export($httpRequest, true) . ')'
+            );
+            $this->isRobot = 0;
+        }
+
+        if(!empty($httpRequest->headers->get('referer'))){
+
+            $fullRefererUrl = $httpRequest->headers->get('referer');
+
+            if(!empty($fullRefererUrl)){
+                if(!empty(parse_url($fullRefererUrl)['scheme'])){
+                    $this->refererUrlProtocol = substr(parse_url($fullRefererUrl)['scheme'], 0, 32);
+                }
+                if(!empty(parse_url($fullRefererUrl)['host'])){
+                    $this->refererUrlDomain = substr(parse_url($fullRefererUrl)['host'], 0, 128);
+                }
+                if(!empty(parse_url($fullRefererUrl)['path'])){
+                   $this->refererUrlPath = !empty(parse_url($fullRefererUrl)['path']) ?
+                    substr(parse_url($fullRefererUrl)['path'], 0, 191) : '/';
+                }
+                if(!empty(parse_url($fullRefererUrl)['query'])){
+                   $this->refererUrlQuery = !empty(parse_url($fullRefererUrl)['query']) ?
+                    substr(parse_url($fullRefererUrl)['query'], 0, 1280) : null;
+                }
+            }else{
+                $this->refererUrlProtocol = null;
+                $this->refererUrlDomain = null;
+                $this->refererUrlPath = null;
+                $this->refererUrlQuery = null;
+            }
         }
 
         // language
-        $this->languagePreference = substr($userAgentObject->languages()[0] ?? 'en', 0, 10);
-        $this->languageRange = substr(implode(',', $userAgentObject->languages()), 0, 64);
+
+        if(!empty($userAgentObject->languages()[0])){
+            $this->languagePreference = substr($userAgentObject->languages()[0] ?? 'en', 0, 10);
+        }
+
+        if(!empty($userAgentObject->languages())){
+            $this->languageRange = substr(implode(',', $userAgentObject->languages()), 0, 64);
+        }
 
         // ip address
-        $this->ipAddress = $this->getClientIp($httpRequest);
+        if(!empty($this->getClientIp($httpRequest))){
+            $this->ipAddress = $this->getClientIp($httpRequest);
+        }
 
         // requested on
         $this->requestedOn = Carbon::now()->format(self::$TIME_FORMAT);
@@ -160,6 +241,7 @@ class RequestVO
         $setHashUnlessNull = function($value){
             return !empty($value) ? md5($value) : null;
         };
+
         $this->urlQueryHash         = $setHashUnlessNull($this->urlQuery);
         $this->refererUrlQueryHash  = $setHashUnlessNull($this->refererUrlQuery);
         $this->routeActionHash      = $setHashUnlessNull($this->routeAction);
