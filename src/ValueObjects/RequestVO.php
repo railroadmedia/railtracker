@@ -60,7 +60,6 @@ class RequestVO
 
     public $urlQueryHash;
     public $refererUrlQueryHash;
-    public $routeNameHash;
     public $routeActionHash;
     public $agentStringHash;
     public $exceptionClassHash;
@@ -163,7 +162,6 @@ class RequestVO
         };
         $this->urlQueryHash         = $setHashUnlessNull($this->urlQuery);
         $this->refererUrlQueryHash  = $setHashUnlessNull($this->refererUrlQuery);
-        $this->routeNameHash        = $setHashUnlessNull($this->routeName);
         $this->routeActionHash      = $setHashUnlessNull($this->routeAction);
         $this->agentStringHash      = $setHashUnlessNull($this->agentString);
     }
