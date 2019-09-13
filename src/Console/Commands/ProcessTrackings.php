@@ -148,10 +148,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
         }
 
-        $this->printInfo(
-            'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
-            ', ' . $exceptionsTrackedCount
-        );
+        // todo: repair|replace
+//        $this->printInfo(
+//            'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
+//            ', ' . $exceptionsTrackedCount
+//        );
+        $this->printInfo('Processing completed.');
 
         return true;
     }
