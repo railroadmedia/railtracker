@@ -25,9 +25,7 @@ class RailtrackerServiceProvider extends ServiceProvider
         try{
             $this->setupConfig();
         }catch(\Exception $exception){
-            error_log($exception->getMessage());
-            var_dump($exception->getMessage());
-            die();
+            error_log($exception);
         }
 
         $this->publishes(
