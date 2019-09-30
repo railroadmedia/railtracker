@@ -14,7 +14,7 @@ class CreateRequestAssociationTables extends Migration
      */
     public function up()
     {
-        // requests tables =============================================================================================
+        // requests table =============================================================================================
 
         $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker3_';
         $tableName = $tablePrefix . 'requests';
@@ -538,9 +538,7 @@ class CreateRequestAssociationTables extends Migration
      */
     public function down()
     {
-        // requests tables =============================================================================================
-
-        $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker_';
+        $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker3_';
 
         Schema::dropIfExists($tablePrefix . 'requests');
 

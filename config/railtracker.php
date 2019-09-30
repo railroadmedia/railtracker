@@ -17,6 +17,9 @@ return [
 
     'table_prefix' => 'railtracker_',
 
+    'media_playback_types' => env('MEDIA_PLAYBACK_TYPES', 'media_playback_types'),
+    'media_playback_sessions' => env('MEDIA_PLAYBACK_SESSIONS', 'media_playback_sessions'),
+
     // cache
     'redis_host' => 'redis',
     'redis_port' => 6379,
