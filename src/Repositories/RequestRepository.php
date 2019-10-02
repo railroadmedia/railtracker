@@ -337,9 +337,10 @@ class RequestRepository extends TrackerRepositoryBase
 
         $matchingRequests = $this->databaseManager->connection($dbConnectionName)
             ->table($table)
+            ->select(['ip_address'])
             ->whereIn('ip_address', $ipAddresses)
             ->orderBy('requested_on', 'desc')
-            ->groupBy('ip_address')
+            ->groupBy(['ip_address', 'requested_on'])
             ->get();
 
         return $matchingRequests;
