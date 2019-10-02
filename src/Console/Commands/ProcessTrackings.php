@@ -421,7 +421,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $requestVO->ipLongitude = $dbRowWithIpData->ip_longitude ?? null;
                 $requestVO->ipCountryCode = $dbRowWithIpData->ip_country_code ?? null;
                 $requestVO->ipCountryName = $dbRowWithIpData->ip_country_name ?? null;
-                $requestVO->ipRegion = $dbRowWithIpData->ip_region_name ?? null;
+                $requestVO->ipRegion = $dbRowWithIpData->ip_region ?? null;
                 $requestVO->ipCity = $dbRowWithIpData->ip_city ?? null;
                 $requestVO->ipPostalZipCode = $dbRowWithIpData->ip_postal_zip_code ?? null;
                 $requestVO->ipTimezone = $dbRowWithIpData->ip_timezone ?? null;
@@ -481,11 +481,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $ipAddress = $requestVO->ipAddress;
         $matchingRequestsForIpAddress = $matchingRequests->where('ip_address', $ipAddress);
 
-        if($matchingRequestsForIpAddress->count() > 1){
-            error_log('There should only be one.');
-        }
-
         return $matchingRequestsForIpAddress;
     }
-
 }
