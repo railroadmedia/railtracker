@@ -15,10 +15,10 @@ return [
     'enable_query_log_dumper' => false,
     'data_mode' => 'host', // 'host' or 'client', hosts do the db migrations, clients do not
 
-    'table_prefix' => 'railtracker_',
-
-    'media_playback_types' => env('MEDIA_PLAYBACK_TYPES', 'media_playback_types'),
-    'media_playback_sessions' => env('MEDIA_PLAYBACK_SESSIONS', 'media_playback_sessions'),
+    'table_prefix' => 'railtracker3_',
+    'table_prefix_media_playback_tracking' => 'railtracker3_',
+    'media_playback_types_table' => 'media_playback_types',
+    'media_playback_sessions_table' => 'media_playback_sessions',
 
     // cache
     'redis_host' => 'redis',

@@ -24,36 +24,40 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
         array $mediaIds,
         $userId
     ) {
-        $rows = $this->databaseManager->connection()->table('railtracker_media_playback_sessions')
+        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking') ?? 'railtracker3_';
+        $typesTable  = $tablePrefix . config('railtracker.media_playback_types', 'media_playback_types');
+        $sessionsTable = $tablePrefix . config('railtracker.media_playback_sessions', 'media_playback_sessions');
+
+        $rows = $this->databaseManager->connection()->table($sessionsTable)
             ->leftJoin(
-                'railtracker_media_playback_types',
-                function (JoinClause $join) {
+                $typesTable,
+                function (JoinClause $join) use ($typesTable, $sessionsTable){
                     return $join->on(
-                        'railtracker_media_playback_types.id',
+                        $typesTable . '.id',
                         '=',
-                        'railtracker_media_playback_sessions.type_id'
+                        $sessionsTable . '.type_id'
                     );
                 }
             )
-            ->whereIn('railtracker_media_playback_sessions.media_id', $mediaIds)
-            ->where('railtracker_media_playback_types.type', $mediaType)
-            ->where('railtracker_media_playback_types.category', $mediaCategory)
-            ->where('railtracker_media_playback_sessions.user_id', $userId)
+            ->whereIn($sessionsTable. '.media_id', $mediaIds)
+            ->where($typesTable . '.type', $mediaType)
+            ->where($typesTable . '.category', $mediaCategory)
+            ->where($sessionsTable . '.user_id', $userId)
             ->whereNotNull('last_updated_on')
             ->select(
                 [
-                    'railtracker_media_playback_sessions.media_id as media_id',
-                    'railtracker_media_playback_sessions.current_second as current_second',
+                    $sessionsTable . '.media_id as media_id',
+                    $sessionsTable . '.current_second as current_second',
                     $this->databaseManager->connection()->raw(
-                        'MAX(railtracker_media_playback_sessions.last_updated_on) as last_updated_on'
+                        'MAX(' . $sessionsTable . '.last_updated_on) as last_updated_on'
                     ),
                 ]
             )
             ->groupBy(
                 [
                     'last_updated_on',
-                    'railtracker_media_playback_sessions.media_id',
-                    'railtracker_media_playback_sessions.current_second'
+                    $sessionsTable . '.media_id',
+                    $sessionsTable . '.current_second'
                 ]
             )
             ->get();
@@ -71,20 +75,24 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
      */
     public function sumTotalPlayed($userId, $mediaId, $mediaTypeId)
     {
-        return $this->databaseManager->connection()->table('railtracker_media_playback_sessions')
+        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking') ?? 'railtracker3_';
+        $typesTable  = $tablePrefix . config('railtracker.media_playback_types', 'media_playback_types');
+        $sessionsTable = $tablePrefix . config('railtracker.media_playback_sessions', 'media_playback_sessions');
+
+        return $this->databaseManager->connection()->table($sessionsTable)
             ->leftJoin(
-                'railtracker_media_playback_types',
-                function (JoinClause $join) {
+                $typesTable,
+                function (JoinClause $join) use ($typesTable, $sessionsTable){
                     return $join->on(
-                        'railtracker_media_playback_types.id',
+                        $typesTable . '.id',
                         '=',
-                        'railtracker_media_playback_sessions.type_id'
+                        $sessionsTable . '.type_id'
                     );
                 }
             )
             ->where('user_id', $userId)
-            ->where('railtracker_media_playback_sessions.media_id', $mediaId)
-            ->where('railtracker_media_playback_types.id', $mediaTypeId)
+            ->where($sessionsTable . '.media_id', $mediaId)
+            ->where($typesTable . '.id', $mediaTypeId)
             ->sum('seconds_played');
     }
 }
