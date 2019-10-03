@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +14,7 @@ class CreateRequestAssociationTables extends Migration
      */
     public function up()
     {
-        // requests table =============================================================================================
+        // requests tables =============================================================================================
 
         $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker3_';
         $tableName = $tablePrefix . 'requests';
@@ -57,7 +56,7 @@ class CreateRequestAssociationTables extends Migration
 
                 $table->string('ip_address', 128)->index()->nullable();
                 $table->decimal('ip_latitude', 10, 8)->index()->nullable();
-                $table->decimal('ip_longitude', 11, 8)->index()->nullable();
+                $table->decimal('ip_longitude', 10, 8)->index()->nullable();
                 $table->string('ip_country_code', 6)->index()->nullable();
                 $table->string('ip_country_name', 128)->index()->nullable();
                 $table->string('ip_region', 128)->index()->nullable();
@@ -197,7 +196,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_longitudes',
             function (Blueprint $table) {
-                $table->decimal('ip_longitude', 11, 8)->unique('ip_longitude_index');
+                $table->decimal('ip_longitude', 10, 8)->unique('ip_longitude_index');
             }
         );
         Schema::create(
@@ -279,121 +278,55 @@ class CreateRequestAssociationTables extends Migration
          * 65535 - 256 = 65279
          */
 
-        $dbConnectionName = config('railtracker.database_connection_name');
-
-        // MySQL supports update-on-duplicate-key-update, SQLite does not
-        $isMySql = app(DatabaseManager::class)->connection($dbConnectionName)->getDriverName() == 'mysql';
-
-        if($isMySql){
-            Schema::create(
-                $tablePrefix . 'url_queries',
-                function (Blueprint $table){
-                    $table->string('url_query', 1280);
-                    $table->index([DB::raw('url_query(191)')]);
-                    $table->string('url_query_hash', 32)->unique('url_query_hash_index');
-                }
-            );
-
-            Schema::create(
-                $tablePrefix . 'route_actions',
-                function (Blueprint $table){
-                    $table->string('route_action', 840);
-                    $table->index([DB::raw('route_action(191)')]);
-                    $table->string('route_action_hash', 32)->unique('route_action_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'agent_strings',
-                function (Blueprint $table){
-                    $table->string('agent_string', 560);
-                    $table->index([DB::raw('agent_string(191)')]);
-                    $table->string('agent_string_hash', 32)->unique('agent_string_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_classes',
-                function (Blueprint $table){
-                    $table->string('exception_class', 1024);
-                    $table->index([DB::raw('exception_class(191)')]);
-                    $table->string('exception_class_hash', 32)->unique('exception_class_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_files',
-                function (Blueprint $table){
-                    $table->string('exception_file', 1024);
-                    $table->index([DB::raw('exception_file(191)')]);
-                    $table->string('exception_file_hash', 32)->unique('exception_file_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_messages',
-                function (Blueprint $table){
-                    $table->text('exception_message', 65279);
-                    $table->index([DB::raw('exception_message(191)')]);
-                    $table->string('exception_message_hash', 32)->unique('exception_message_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_traces',
-                function (Blueprint $table){
-                    $table->text('exception_trace', 65279);
-                    $table->index([DB::raw('exception_trace(191)')]);
-                    $table->string('exception_trace_hash', 32)->unique('exception_trace_hash_index');
-                }
-            );
-        }else{
-            Schema::create(
-                $tablePrefix . 'url_queries',
-                function (Blueprint $table){
-                    $table->string('url_query', 1280)->index();
-                    $table->string('url_query_hash', 32)->unique('url_query_hash_index');
-                }
-            );
-
-            Schema::create(
-                $tablePrefix . 'route_actions',
-                function (Blueprint $table){
-                    $table->string('route_action', 840)->index();
-                    $table->string('route_action_hash', 32)->unique('route_action_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'agent_strings',
-                function (Blueprint $table){
-                    $table->string('agent_string', 560)->index();
-                    $table->string('agent_string_hash', 32)->unique('agent_string_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_classes',
-                function (Blueprint $table){
-                    $table->string('exception_class', 1024)->index();
-                    $table->string('exception_class_hash', 32)->unique('exception_class_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_files',
-                function (Blueprint $table){
-                    $table->string('exception_file', 1024)->index();
-                    $table->string('exception_file_hash', 32)->unique('exception_file_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_messages',
-                function (Blueprint $table){
-                    $table->text('exception_message', 65279)->index();
-                    $table->string('exception_message_hash', 32)->unique('exception_message_hash_index');
-                }
-            );
-            Schema::create(
-                $tablePrefix . 'exception_traces',
-                function (Blueprint $table){
-                    $table->text('exception_trace', 65279)->index();
-                    $table->string('exception_trace_hash', 32)->unique('exception_trace_hash_index');
-                }
-            );
-        }
+        Schema::create(
+            $tablePrefix . 'url_queries',
+            function (Blueprint $table){
+                $table->string('url_query', 1280)->index(); // todo: set index length?
+                $table->string('url_query_hash', 32)->unique('url_query_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'route_actions',
+            function (Blueprint $table){
+                $table->string('route_action', 840)->index(); // todo: set index length?
+                $table->string('route_action_hash', 32)->unique('route_action_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'agent_strings',
+            function (Blueprint $table){
+                $table->string('agent_string', 560)->index(); // todo: set index length?
+                $table->string('agent_string_hash', 32)->unique('agent_string_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'exception_classes',
+            function (Blueprint $table){
+                $table->string('exception_class', 1024)->index(); // todo: set index length?
+                $table->string('exception_class_hash', 32)->unique('exception_class_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'exception_files',
+            function (Blueprint $table){
+                $table->string('exception_file', 1024)->index(); // todo: set index length?
+                $table->string('exception_file_hash', 32)->unique('exception_file_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'exception_messages',
+            function (Blueprint $table){
+                $table->string('exception_message', 65279); // todo: set index length?
+                $table->string('exception_message_hash', 32)->unique('exception_message_hash_index');
+            }
+        );
+        Schema::create(
+            $tablePrefix . 'exception_traces',
+            function (Blueprint $table){
+                $table->string('exception_trace', 65279); // todo: set index length?
+                $table->string('exception_trace_hash', 32)->unique('exception_trace_hash_index');
+            }
+        );
 
         // Adding Foreign Keys -----------------------------------------------------------------------------------------
 
