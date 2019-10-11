@@ -460,9 +460,30 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
         });
 
-        // merge and return
-
+        // merge
         $requestVOsWithGeoIpData = $requestVOsRequiringApiQuery->merge($requestVOsNotRequiringApiCall);
+
+        // set IP fields to null if they are an empty string
+        $ipFields = [
+            'ipAddress',
+            'ipLatitude',
+            'ipLongitude',
+            'ipCountryCode',
+            'ipCountryName',
+            'ipRegion',
+            'ipCity',
+            'ipPostalZipCode',
+            'ipTimezone',
+            'ipCurrency',
+        ];
+
+        foreach ($requestVOsWithGeoIpData as $requestVO) {
+            foreach ($ipFields as $ipField) {
+                if (empty($requestVO->$ipField)) {
+                    $requestVO->$ipField = null;
+                }
+            }
+        }
 
         return $requestVOsWithGeoIpData;
     }
