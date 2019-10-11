@@ -34,4 +34,10 @@ return [
 
     // ip_data_api
     'ip_data_api_key' => env('IP_DATA_API_KEY')
+
+    // toggle to test ip-data api on local
+    //'test-ip' => '108.172.176.221',
+    //'test-ip' => '129.80.245.100',
+    //'test-ip' => '52.152.91.149',
+    //'test-ip' => '156.184.155.130',
 ];
