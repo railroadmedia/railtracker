@@ -337,33 +337,27 @@ class RequestRepository extends TrackerRepositoryBase
 
         $matchingRequests = $this->databaseManager->connection($dbConnectionName)
             ->table($table)
-            ->select([
-                'ip_address',
-                'ip_latitude',
-                'ip_longitude',
-                'ip_country_code',
-                'ip_country_name',
-                'ip_region',
-                'ip_city',
-                'ip_postal_zip_code',
-                'ip_timezone',
-                'ip_currency',
-            ])
+            ->select(
+                [
+                    $this->databaseManager->raw('MAX(requested_on) as requested_on'),
+                    $this->databaseManager->raw('MAX(ip_address) as ip_address'),
+                    $this->databaseManager->raw('MAX(ip_latitude) as ip_latitude'),
+                    $this->databaseManager->raw('MAX(ip_longitude) as ip_longitude'),
+                    $this->databaseManager->raw('MAX(ip_country_code) as ip_country_code'),
+                    $this->databaseManager->raw('MAX(ip_country_name) as ip_country_name'),
+                    $this->databaseManager->raw('MAX(ip_region) as ip_region'),
+                    $this->databaseManager->raw('MAX(ip_city) as ip_city'),
+                    $this->databaseManager->raw('MAX(ip_postal_zip_code) as ip_postal_zip_code'),
+                    $this->databaseManager->raw('MAX(ip_timezone) as ip_timezone'),
+                    $this->databaseManager->raw('MAX(ip_currency) as ip_currency'),
+                ]
+            )
             ->whereIn('ip_address', $ipAddresses)
-            ->orderBy('requested_on', 'desc')
-            ->groupBy([
-                'requested_on',
-                'ip_address',
-                'ip_latitude',
-                'ip_longitude',
-                'ip_country_code',
-                'ip_country_name',
-                'ip_region',
-                'ip_city',
-                'ip_postal_zip_code',
-                'ip_timezone',
-                'ip_currency',
-            ])
+            ->groupBy(
+                [
+                    'ip_address',
+                ]
+            )
             ->get();
 
         return $matchingRequests;
