@@ -355,11 +355,7 @@ class RequestRepository extends TrackerRepositoryBase
                 ]
             )
             ->whereIn('ip_address', $ipAddresses)
-            ->groupBy(
-                [
-                    'ip_address',
-                ]
-            )
+            ->groupBy(['ip_address'])
             ->get();
 
         return $matchingRequests;
