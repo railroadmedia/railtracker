@@ -10,6 +10,8 @@ namespace Railroad\Railtracker\Services;
  */
 class IpDataApiSdkService
 {
+    private static $apiBulkLimit = 100;
+
     /**
      * @param array $ips
      * @return array|bool
@@ -20,20 +22,24 @@ class IpDataApiSdkService
             return [];
         }
 
-        $ips = array_values($ips);
+        $chunksOfIps = array_chunk($ips, self::$apiBulkLimit);
 
-        try{
-            $response = $this->curl(json_encode($ips));
-        }catch(\Exception $exception){
-            error_log($exception);
-            return false;
-        }
+        foreach($chunksOfIps as $chunkOfIps){
+            $ipsInCurrentChunk = array_values($chunkOfIps);
 
-        $response = json_decode($response);
+            try{
+                $response = $this->curl(json_encode($ipsInCurrentChunk));
+            }catch(\Exception $exception){
+                error_log($exception);
+                return false;
+            }
 
-        if (is_array($response)) {
-            foreach($response as $r){
-                $responseAllArrays[] = (array) $r;
+            $response = json_decode($response);
+
+            if (is_array($response)) {
+                foreach($response as $r){
+                    $responseAllArrays[] = (array) $r;
+                }
             }
         }
 
