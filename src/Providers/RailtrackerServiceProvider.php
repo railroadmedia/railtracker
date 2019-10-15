@@ -6,6 +6,7 @@ use Doctrine\Common\Cache\RedisCache;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Railroad\Railtracker\Console\Commands\FixDuplicates;
 use Railroad\Railtracker\Console\Commands\EmptyLocalCache;
+use Railroad\Railtracker\Console\Commands\FixMissingIpData;
 use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Console\Commands\ReHashExistingData;
@@ -62,6 +63,7 @@ class RailtrackerServiceProvider extends ServiceProvider
             EmptyLocalCache::class,
             ReHashExistingData::class,
             FixDuplicates::class,
+            FixMissingIpData::class,
         ]);
     }
 }
