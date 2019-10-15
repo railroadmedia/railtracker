@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class ExtendIpLocationColumnsInRequestsTable extends Migration
@@ -37,6 +38,8 @@ class ExtendIpLocationColumnsInRequestsTable extends Migration
         $tableName = $tablePrefix . 'requests';
 
         Schema::disableForeignKeyConstraints();
+
+        DB::table($tableName)->truncate();
 
         Schema::table($tableName, function (Blueprint $table) {
             $table->decimal('ip_latitude', 10, 8)->change();

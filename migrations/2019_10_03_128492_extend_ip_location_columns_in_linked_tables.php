@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class ExtendIpLocationColumnsInLinkedTables extends Migration
@@ -38,6 +39,9 @@ class ExtendIpLocationColumnsInLinkedTables extends Migration
         $tablePrefix = config('railtracker.table_prefix') ?? 'railtracker3_';
 
         Schema::disableForeignKeyConstraints();
+
+        DB::table($tablePrefix . 'ip_latitudes')->truncate();
+        DB::table($tablePrefix . 'ip_longitudes')->truncate();
 
         Schema::table($tablePrefix . 'ip_latitudes', function (Blueprint $table) {
             $table->decimal('ip_latitude', 10, 8)->change();
