@@ -213,7 +213,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         $batchPrefix = 'railtracker_testing_' . $time . '_';
 
-        $app['config']->set('railtracker.batch_prefix', $batchPrefix);
+        $app['config']->set('railtracker.batch-prefix', $batchPrefix);
 
         config()->set('railtracker.ip_data_api_key', env('IP_DATA_API_KEY'));
 
