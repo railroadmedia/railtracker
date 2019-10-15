@@ -324,6 +324,8 @@ class RequestRepository extends TrackerRepositoryBase
      */
     public function getMostRecentRequestForEachIpAddress($requestVOs)
     {
+        $ipAddresses = [];
+
         $table = config('railtracker.table_prefix') . 'requests';
         $dbConnectionName = config('railtracker.database_connection_name');
 
