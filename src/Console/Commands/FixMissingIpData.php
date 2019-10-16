@@ -66,25 +66,25 @@ class FixMissingIpData extends \Illuminate\Console\Command
 
         $rowIdsKeyedByIpAddress = [];
 
-        $rows[] = $this->databaseManager
-                ->table($table)
-                ->select('id', 'ip_address')
-                ->where(['ip_longitude' => null, 'ip_latitude' => null])
-                ->groupBy('ip_address', 'id')
-                ->orderBy('id')
-                ->chunk(2, function($ip_addresses) use ($rowIdsKeyedByIpAddress){
-                    $rowIdsKeyedByIpAddress[] = $this->fillForIpAddresses($ip_addresses);
-                });
+        $updates = $this->databaseManager
+            ->table($table)
+            ->select('id', 'ip_address')
+            ->where(['ip_longitude' => null, 'ip_latitude' => null])
+            ->groupBy('ip_address', 'id')
+            ->orderBy('id')
+            ->chunk(2, function($ip_addresses) use ($rowIdsKeyedByIpAddress){
+                $rowIdsKeyedByIpAddress[] = $this->fillForIpAddresses($ip_addresses);
+            });
 
-        dd($rowIdsKeyedByIpAddress);
-
-//        $this->info(count($rowIdsKeyedByIpAddress) . ' rows updated.');
+        $this->info(count($updates) . ' updates');
 
         return true;
     }
 
     private function fillForIpAddresses($rowsRequiringData)
     {
+        $updates = [];
+
         $idsByIpAddress = [];
         foreach($rowsRequiringData as $row){
             $idsByIpAddress[$row->ip_address][] = $row->id;
@@ -137,7 +137,7 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 if($alreadyExists) continue;
 
                 try{
-                    $this->databaseManager->table($table)->updateOrInsert([$column => $valuesToInsert]);
+                    $updates[] = $this->databaseManager->table($table)->updateOrInsert([$column => $valuesToInsert]);
                 }catch(\Exception $exception){
                     error_log($exception);
                     $this->info(
@@ -153,6 +153,6 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 ->update($dataForUpdate);
         }
 
-        return ;
+        return $updates;
     }
 }
