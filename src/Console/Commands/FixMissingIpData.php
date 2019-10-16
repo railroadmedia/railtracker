@@ -64,37 +64,50 @@ class FixMissingIpData extends \Illuminate\Console\Command
     {
         $table = config('railtracker.table_prefix') . 'requests';
 
-        $rowIdsKeyedByIpAddress = [];
+        $updates = [];
 
-        $updates = $this->databaseManager
+        /*
+         * All output lines that start with "(csvForTable)," can be copied to "donatstudios.com/CsvToMarkdownTable" for
+         * beautification to a markdown table.
+         */
+        $this->info('(csvForTable),chunk size,request table updates,association tables updates');
+
+        $this->databaseManager
             ->table($table)
             ->select('id', 'ip_address')
             ->where(['ip_longitude' => null, 'ip_latitude' => null])
             ->groupBy('ip_address', 'id')
             ->orderBy('id')
-            ->chunk(2, function($ip_addresses) use ($rowIdsKeyedByIpAddress){
-                $rowIdsKeyedByIpAddress[] = $this->fillForIpAddresses($ip_addresses);
+            ->chunkById(100, function($ip_addresses) use ($updates){
+                $updateStatusInfo = $this->fillForIpAddresses($ip_addresses);
+                $this->info(
+                    '(csvForTable),' .
+                    count($ip_addresses) . ',' .
+                    $updateStatusInfo['requestTableUpdatesCount'] . ',' .
+                    $updateStatusInfo['associationTableUpdateCount']
+                );
             });
-
-        $this->info(count($updates) . ' updates');
 
         return true;
     }
 
     private function fillForIpAddresses($rowsRequiringData)
     {
-        $updates = [];
-
         $idsByIpAddress = [];
+        $associationTableUpdateCount = 0;
+
         foreach($rowsRequiringData as $row){
             $idsByIpAddress[$row->ip_address][] = $row->id;
         }
+
         $ipData = $this->ipDataApiSdkService->bulkRequest(array_keys($idsByIpAddress));
 
         // Uncomment ↓ to see "total number of requests made by your API key in the last 24 hrs. Updates once a minute."
         //$this->info('API requests in past 24h: ' . end($ipData)['count'] ?? null);
 
         foreach($idsByIpAddress as $ipAddress => $rowIds){
+
+            $updates = [];
 
             // find relevant ip data
             $relevantIpData = null;
@@ -103,6 +116,8 @@ class FixMissingIpData extends \Illuminate\Console\Command
                     $relevantIpData = $candidate;
                 };
             }
+
+            if(empty($relevantIpData)) continue;
 
             // prepare ip data for db insertion
             $dataForUpdate = [
@@ -147,12 +162,17 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 }
             }
 
+            $associationTableUpdateCount += count($updates);
+
             // then update requests table
-            $this->databaseManager->table(config('railtracker.table_prefix') . 'requests')
+            $requestTableUpdates[] = $this->databaseManager->table(config('railtracker.table_prefix') . 'requests')
                 ->wherein('id', $rowIds)
                 ->update($dataForUpdate);
         }
 
-        return $updates;
+        return [
+            'requestTableUpdatesCount' => count($requestTableUpdates ?? []),
+            'associationTableUpdateCount' => $associationTableUpdateCount,
+        ];
     }
 }
