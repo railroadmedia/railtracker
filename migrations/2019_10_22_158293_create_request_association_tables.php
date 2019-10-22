@@ -55,8 +55,8 @@ class CreateRequestAssociationTables extends Migration
                 $table->string('language_range', 64)->index()->nullable();
 
                 $table->string('ip_address', 128)->index()->nullable();
-                $table->decimal('ip_latitude', 10, 8)->index()->nullable();
-                $table->decimal('ip_longitude', 10, 8)->index()->nullable();
+                $table->decimal('ip_latitude', 11, 8)->index()->nullable();
+                $table->decimal('ip_longitude', 11, 8)->index()->nullable();
                 $table->string('ip_country_code', 6)->index()->nullable();
                 $table->string('ip_country_name', 128)->index()->nullable();
                 $table->string('ip_region', 128)->index()->nullable();
@@ -70,7 +70,7 @@ class CreateRequestAssociationTables extends Migration
                 $table->unsignedInteger('response_status_code', false, true)->index()->nullable();
                 $table->unsignedBigInteger('response_duration_ms', false, true)->index()->nullable();
 
-                $table->unsignedInteger('exception_code', false, true)->index()->nullable();
+                $table->string('exception_code', 16)->index()->nullable();
                 $table->unsignedInteger('exception_line', false, true)->index()->nullable();
 
                 $table->dateTime('requested_on', 5)->index();
@@ -190,13 +190,13 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_latitudes',
             function (Blueprint $table) {
-                $table->decimal('ip_latitude', 10, 8)->unique('ip_latitude_index');
+                $table->decimal('ip_latitude', 11, 8)->unique('ip_latitude_index');
             }
         );
         Schema::create(
             $tablePrefix . 'ip_longitudes',
             function (Blueprint $table) {
-                $table->decimal('ip_longitude', 10, 8)->unique('ip_longitude_index');
+                $table->decimal('ip_longitude', 11, 8)->unique('ip_longitude_index');
             }
         );
         Schema::create(
@@ -261,7 +261,7 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_codes',
             function (Blueprint $table) {
-                $table->unsignedInteger('exception_code', false, true)->unique('exception_code_index');
+                $table->string('exception_code', 16)->unique('exception_code_index');
             }
         );
         Schema::create(
