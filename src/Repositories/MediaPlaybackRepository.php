@@ -24,7 +24,7 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
         array $mediaIds,
         $userId
     ) {
-        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking') ?? 'railtracker3_';
+        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking');
         $typesTable  = $tablePrefix . config('railtracker.media_playback_types', 'media_playback_types');
         $sessionsTable = $tablePrefix . config('railtracker.media_playback_sessions', 'media_playback_sessions');
 
@@ -75,7 +75,7 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
      */
     public function sumTotalPlayed($userId, $mediaId, $mediaTypeId)
     {
-        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking') ?? 'railtracker3_';
+        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking');
         $typesTable  = $tablePrefix . config('railtracker.media_playback_types', 'media_playback_types');
         $sessionsTable = $tablePrefix . config('railtracker.media_playback_sessions', 'media_playback_sessions');
 

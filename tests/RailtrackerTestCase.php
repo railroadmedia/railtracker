@@ -202,8 +202,8 @@ class RailtrackerTestCase extends BaseTestCase
             ]
         );
 
-        $app['config']->set('railtracker.table_prefix', 'railtracker3_');
-        $app['config']->set('railtracker.table_prefix_media_playback_tracking', 'railtracker3_');
+        $app['config']->set('railtracker.table_prefix', 'railtracker4_');
+        $app['config']->set('railtracker.table_prefix_media_playback_tracking', 'railtracker4_');
         $app['config']->set('railtracker.media_playback_types_table', 'media_playback_types');
         $app['config']->set('railtracker.media_playback_sessions_table', 'media_playback_sessions');
 

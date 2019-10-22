@@ -13,7 +13,7 @@ class CreateMediaTrackingTables extends Migration
      */
     public function up()
     {
-        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking') ?? 'railtracker3_';
+        $tablePrefix = config('railtracker.table_prefix_media_playback_tracking');
 
         $mediaPlaybackTypesTable = $tablePrefix .
             config('railtracker.media_playback_types_table', 'media_playback_types');
