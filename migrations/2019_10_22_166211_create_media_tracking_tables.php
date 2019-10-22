@@ -25,6 +25,9 @@ class CreateMediaTrackingTables extends Migration
             Schema::create(
                 $mediaPlaybackTypesTable,
                 function (Blueprint $table) {
+                    $table->charset = 'utf8mb4';
+                    $table->collation = 'utf8mb4_unicode_ci';
+
                     $table->bigIncrements('id');
                     $table->string('type', 128)->index();
                     $table->string('category', 128)->index();
@@ -36,6 +39,9 @@ class CreateMediaTrackingTables extends Migration
             Schema::create(
                 $mediaPlaybackSessionsTable,
                 function (Blueprint $table) {
+                    $table->charset = 'utf8mb4';
+                    $table->collation = 'utf8mb4_unicode_ci';
+
                     $table->bigIncrements('id');
                     $table->string('uuid', 64)->unique()->nullable()->index();
                     $table->string('media_id', 64)->index();
