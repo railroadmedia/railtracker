@@ -16,7 +16,7 @@ return [
     'data_mode' => 'host', // 'host' or 'client', hosts do the db migrations, clients do not
 
     'charset' => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
+    'collation' => 'utf8mb4_bin',
 
     'table_prefix' => 'railtracker4_',
     'table_prefix_media_playback_tracking' => 'railtracker4_',
