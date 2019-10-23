@@ -15,6 +15,9 @@ return [
     'enable_query_log_dumper' => false,
     'data_mode' => 'host', // 'host' or 'client', hosts do the db migrations, clients do not
 
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+
     'table_prefix' => 'railtracker4_',
     'table_prefix_media_playback_tracking' => 'railtracker4_',
     'media_playback_types_table' => 'media_playback_types',

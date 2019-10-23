@@ -22,8 +22,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tableName,
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->bigIncrements('id');
 
@@ -97,8 +97,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'url_protocols',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('url_protocol', 32)->unique('url_protocol_index');
             }
@@ -106,8 +106,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'url_domains',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('url_domain', 128)->unique('url_domain_index');
             }
@@ -115,8 +115,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'url_paths',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('url_path', 191)->unique('url_path_index');
             }
@@ -126,8 +126,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'methods',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('method', 10)->unique('method_index');
             }
@@ -137,8 +137,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'route_names',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('route_name', 191)->unique('route_name_index');
             }
@@ -148,8 +148,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'device_kinds',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('device_kind', 64)->unique('device_kind_index');
             }
@@ -157,8 +157,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'device_models',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('device_model', 64)->unique('device_model_index');
             }
@@ -166,8 +166,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'device_platforms',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('device_platform', 64)->unique('device_platform_index');
             }
@@ -175,8 +175,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'device_versions',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('device_version', 64)->unique('device_version_index');
             }
@@ -185,8 +185,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'agent_browsers',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('agent_browser', 64)->unique('agent_browser_index');
             }
@@ -194,8 +194,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'agent_browser_versions',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('agent_browser_version', 64)->unique('agent_browser_version_index');
             }
@@ -205,8 +205,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'language_preferences',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('language_preference', 10)->unique('language_preference_index');
             }
@@ -214,8 +214,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'language_ranges',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('language_range', 64)->unique('language_range_index');
             }
@@ -225,8 +225,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_addresses',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_address', 128)->unique('ip_address_index');
             }
@@ -234,8 +234,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_latitudes',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->decimal('ip_latitude', 11, 8)->unique('ip_latitude_index');
             }
@@ -243,8 +243,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_longitudes',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->decimal('ip_longitude', 11, 8)->unique('ip_longitude_index');
             }
@@ -252,8 +252,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_country_codes',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_country_code', 6)->unique('ip_country_code_index');
             }
@@ -261,8 +261,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_country_names',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_country_name', 128)->unique('ip_country_name_index');
             }
@@ -270,8 +270,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_regions',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_region', 128)->unique('ip_region_index');
             }
@@ -279,8 +279,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_cities',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_city', 128)->unique('ip_city_index');
             }
@@ -288,8 +288,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_postal_zip_codes',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_postal_zip_code', 16)->unique('ip_postal_zip_code_index');
             }
@@ -297,8 +297,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_timezones',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_timezone', 64)->unique('ip_timezone_index');
             }
@@ -306,8 +306,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'ip_currencies',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('ip_currency', 16)->unique('ip_currency_index');
             }
@@ -317,8 +317,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'response_status_codes',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->unsignedInteger('response_status_code', false, true)->unique('response_status_code_index');
             }
@@ -327,8 +327,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'response_durations',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->unsignedBigInteger('response_duration_ms', false, true)->unique();
             }
@@ -338,8 +338,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_codes',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('exception_code', 16)->unique('exception_code_index');
             }
@@ -347,8 +347,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_lines',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->unsignedInteger('exception_line', false, true)->unique('exception_line_index');
             }
@@ -364,8 +364,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'url_queries',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('url_query', 1280);
                 $table->index([DB::raw('url_query(191)')], 'url_query_index');
@@ -376,8 +376,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'route_actions',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('route_action', 840);
                 $table->index([DB::raw('route_action(191)')], 'route_action_index');
@@ -388,8 +388,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'agent_strings',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('agent_string', 560);
                 $table->index([DB::raw('agent_string(191)')], 'agent_string_index');
@@ -400,8 +400,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_classes',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('exception_class', 1024);
                 $table->index([DB::raw('exception_class(191)')], 'exception_class_index');
@@ -412,8 +412,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_files',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->string('exception_file', 1024);
                 $table->index([DB::raw('exception_file(191)')], 'exception_file_index');
@@ -424,8 +424,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_messages',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->text('exception_message', 65279);
                 $table->string('exception_message_hash', 32)->unique('exception_message_hash_index');
@@ -434,8 +434,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::create(
             $tablePrefix . 'exception_traces',
             function (Blueprint $table) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table->text('exception_trace', 65279);
                 $table->string('exception_trace_hash', 32)->unique('exception_trace_hash_index');
@@ -447,8 +447,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('url_protocol')
@@ -460,8 +460,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('referer_url_protocol')
@@ -473,8 +473,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('url_domain')
@@ -486,8 +486,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('referer_url_domain')
@@ -499,8 +499,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('url_path')
@@ -512,8 +512,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('referer_url_path')
@@ -525,8 +525,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('method')
@@ -538,8 +538,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('route_name')
@@ -551,8 +551,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('device_kind')
@@ -564,8 +564,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('device_model')
@@ -577,8 +577,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('device_platform')
@@ -590,8 +590,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('device_version')
@@ -603,8 +603,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('agent_browser')
@@ -616,8 +616,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('agent_browser_version')
@@ -629,8 +629,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('language_preference')
@@ -642,8 +642,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('language_range')
@@ -655,8 +655,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_address')
@@ -668,8 +668,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_latitude')
@@ -681,8 +681,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_longitude')
@@ -694,8 +694,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_country_code')
@@ -707,8 +707,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_country_name')
@@ -720,8 +720,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_region')
@@ -733,8 +733,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_city')
@@ -746,8 +746,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_postal_zip_code')
@@ -759,8 +759,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_timezone')
@@ -772,8 +772,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('ip_currency')
@@ -785,8 +785,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('response_status_code')
@@ -798,8 +798,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('response_duration_ms')
@@ -811,8 +811,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('exception_code')
@@ -824,8 +824,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('exception_line')
@@ -839,8 +839,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('url_query_hash')
@@ -852,8 +852,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('referer_url_query_hash')
@@ -865,8 +865,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('route_action_hash')
@@ -878,8 +878,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('agent_string_hash')
@@ -891,8 +891,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('exception_class_hash')
@@ -904,8 +904,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('exception_file_hash')
@@ -917,8 +917,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('exception_message_hash')
@@ -930,8 +930,8 @@ class CreateRequestAssociationTables extends Migration
         Schema::table(
             $tablePrefix . 'requests',
             function (Blueprint $table) use ($tablePrefix) {
-                $table->charset = 'utf8mb4';
-                $table->collation = 'utf8mb4_unicode_ci';
+                $table->charset = config('railtracker.charset');
+                $table->collation = config('railtracker.collation');
 
                 $table
                     ->foreign('exception_trace_hash')

@@ -165,6 +165,13 @@ class RailtrackerTestCase extends BaseTestCase
         config()->set('railtracker.database_in_memory', false);
         config()->set('railtracker.enable_query_log', false);
 
+        if(empty(config('railtracker.charset'))){
+            config()->set('railtracker.charset', 'utf8mb4');
+        }
+        if(empty(config('railtracker.collation'))){
+            config()->set('railtracker.collation', 'utf8mb4_unicode_ci');
+        }
+
         // create test users table
         if (!$app['db']->connection()->getSchemaBuilder()->hasTable('users')) {
             $app['db']->connection()
