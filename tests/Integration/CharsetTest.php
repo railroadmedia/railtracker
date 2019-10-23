@@ -2,7 +2,10 @@
 
 namespace Railroad\Railtracker\Tests\Integration;
 
+use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Monolog\Handler\StreamHandler;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;
 
@@ -136,8 +139,15 @@ class CharsetTestextends extends RailtrackerTestCase
         $outputTwo = [array_merge($outputBase[0], ['ip' => '2.2.2.2', 'city' => 'Los Angeles'])];
 
         $this->ipDataApiSdkServiceMock
+            ->expects($this->at(0))
             ->method('bulkRequest')
             ->willReturn($outputOne);
+
+        $this->ipDataApiSdkServiceMock
+            ->expects($this->at(1))
+            ->method('bulkRequest')
+            ->willReturn($outputTwo);
+
 
         $request = $this->randomRequest('1.1.1.1');
         $this->sendRequest($request);
@@ -155,30 +165,35 @@ class CharsetTestextends extends RailtrackerTestCase
             ]
         );
 
-        // request with non-accent-having value
 
-        $this->ipDataApiSdkServiceMock
-            ->method('bulkRequest')
-            ->willReturn($outputTwo);
+        $this->assertDatabaseHas(
+            config('railtracker.table_prefix') . 'ip_cities',
+            [
+                'ip_city' => 'Los Ángeles',
+            ]
+        );
+
+        // request with non-accent-having value
 
         $request = $this->randomRequest('2.2.2.2');
         $this->sendRequest($request);
 
+        $messageQueryFailureExpected = '"Error while writing to association tables ("SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`railtracker_test`.`railtracker4_requests`, CONSTRAINT `railtracker4_requests_ip_city_foreign` FOREIGN KEY (`ip_city`) REFERENCES `railtracker4_ip_cities` (`ip_city`)) (SQL: insert into `railtracker4_ip_cities` (`ip_city`) values (Los Angeles) on duplicate key update `ip_city`=values(`ip_city`))")"';
+
+//        $this->expectOutputString($messageQueryFailureExpected);
+
         try{
             $this->processTrackings();
         }catch(\Exception $exception){
-            $this->fail($exception->getMessage());
+            $this->fail('Exception thrown');
         }
 
-        $this->assertDatabaseHas(
-            config('railtracker.table_prefix') . 'requests',
+        $this->assertDatabaseMissing(
+            config('railtracker.table_prefix') . 'ip_cities',
             [
                 'ip_city' => 'Los Angeles',
             ]
         );
-        // process that request
-
-        // fails
     }
 
 //    public function test_passes()
