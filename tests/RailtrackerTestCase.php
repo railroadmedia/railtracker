@@ -125,7 +125,7 @@ class RailtrackerTestCase extends BaseTestCase
 
         config()->set('app.key', 'base64:191XeCIUtk74j6+7Qi4mpPoWjEPUNHurWYt/S08qH1k=');
         config()->set('session.driver', 'database');
-        config()->set('session.connection', 'sqlite');
+        config()->set('session.connection', 'mysql-test');
 
         config()->set('railtracker.global_is_active', true);
         config()->set('railtracker.table_prefix', $defaultConfig['table_prefix']);
@@ -136,14 +136,22 @@ class RailtrackerTestCase extends BaseTestCase
 
         // db
         config()->set('railtracker.data_mode', 'host');
-        config()->set('railtracker.database_connection_name', 'sqlite');
-        config()->set('database.default', 'sqlite');
+        config()->set('railtracker.database_connection_name', 'mysql-test');
+        config()->set('database.default', 'mysql-test');
         config()->set(
-            'database.connections.' . 'sqlite',
+            'database.connections.' . 'mysql-test',
             [
-                'driver' => 'sqlite',
-                'database' => ':memory:',
+                'driver' => 'mysql',
+                'host' => 'mysql',
+                'port' => '3306',
+                'database' => 'railtracker_test',
+                'username' => 'root',
+                'password' => 'root',
+                'charset' => 'utf8',
+                'collation' => 'utf8_unicode_ci',
                 'prefix' => '',
+                'strict' => true,
+                'engine' => null,
             ]
         );
 
@@ -151,27 +159,30 @@ class RailtrackerTestCase extends BaseTestCase
         config()->set('railtracker.redis_host', $defaultConfig['redis_host']);
         config()->set('railtracker.redis_port', $defaultConfig['redis_port']);
         config()->set('railtracker.development_mode', $defaultConfig['development_mode'] ?? true);
-        config()->set('railtracker.database_driver', 'pdo_sqlite');
+        config()->set('railtracker.database_driver', 'mysql');
         config()->set('railtracker.database_user', 'root');
         config()->set('railtracker.database_password', 'root');
-        config()->set('railtracker.database_in_memory', true);
-        config()->set('railtracker.enable_query_log', true);
+        config()->set('railtracker.database_in_memory', false);
+        config()->set('railtracker.enable_query_log', false);
 
         // create test users table
-        $app['db']->connection()
-            ->getSchemaBuilder()
-            ->create(
-                'users',
-                function (Blueprint $table) {
-                    $table->increments('id');
-                    $table->string('email');
-                    $table->string('remember_token')
-                        ->nullable();
-                }
-            );
+        if (!$app['db']->connection()->getSchemaBuilder()->hasTable('users')) {
+            $app['db']->connection()
+                ->getSchemaBuilder()
+                ->create(
+                    'users',
+                    function (Blueprint $table) {
+                        $table->increments('id');
+                        $table->string('email');
+                        $table->string('remember_token')
+                            ->nullable();
+                    }
+                );
+        }
 
         // create session table
-        $app['db']->connection()
+        if (!$app['db']->connection()->getSchemaBuilder()->hasTable('sessions')) {
+            $app['db']->connection()
             ->getSchemaBuilder()
             ->create(
                 'sessions',
@@ -188,6 +199,7 @@ class RailtrackerTestCase extends BaseTestCase
                     $table->integer('last_activity');
                 }
             );
+        }
 
         $app['config']->set(
             'database.redis',
