@@ -1206,6 +1206,8 @@ class RequestTrackerTest extends RailtrackerTestCase
 
     public function test_user_id_set_on_old_requests_after_authentication_multiple_requests()
     {
+        //config()->set('railtracker.updateUsersAnonymousRequests_processing_chunk_size', 2);
+
         $numberOrUsers = 10;
         $numberOrRequestsPerUser = 8;
 
