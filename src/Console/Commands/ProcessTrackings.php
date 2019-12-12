@@ -255,23 +255,18 @@ class ProcessTrackings extends \Illuminate\Console\Command
             $table = config('railtracker.table_prefix') . 'requests'; // todo: a more proper way to get this?
 
             if (!empty($userId) && !empty($cookieId)) {
+                $chunkSize = config('railtracker.updateUsersAnonymousRequests_processing_chunk_size') ?? 1000;
 
-                $results = $this->databaseManager->table($table)
+                $this->databaseManager->table($table)
                     ->select('id')
                     ->where(['cookie_id' => $cookieId])
                     ->whereNull('user_id')
-                    ->get();
-
-                $idsAsArray = $results->pluck('id')->toArray();
-                $chunkSize = config('railtracker.updateUsersAnonymousRequests_processing_chunk_size') ?? 1000;
-                $idsAsArrayChunked = array_chunk($idsAsArray, $chunkSize);
-
-                foreach($idsAsArrayChunked as $chunkOfIds){
-                    $this->databaseManager->table($table)
-                        ->whereIn('id', $chunkOfIds)
-                        ->whereNull('user_id')
-                        ->update(['user_id' => $userId]);
-                }
+                    ->orderBy('id')
+                    ->chunk($chunkSize, function($ids) use ($table, $userId){ /** @var $ids Collection */
+                        $this->databaseManager->table($table)
+                            ->whereIn('id', $ids->pluck('id')->toArray())
+                            ->update(['user_id' => $userId]);
+                    });
 
                 // delete cookie
                 $this->cookieJar->queue($this->cookieJar->forget(self::$cookieKey));
