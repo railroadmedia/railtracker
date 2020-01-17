@@ -31,13 +31,94 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private $databaseManager;
 
+    /**
+     * @var RequestRepository
+     */
+    private $requestRepository;
+
+
+    private static $map = [
+        [
+            'url_protocols' => ['url_protocol', 'referer_url_protocol'],
+            'url_domains' => ['url_name', 'referer_url_name'],
+            'url_paths' => ['url_path','url_referer_path'],
+            'methods' => ['method_method'],
+            'route_names' => ['route_action'],
+            'device_kinds' => ['device_kind'],
+            'device_models' => ['device_model'],
+            'device_platforms' => ['device_platform'],
+            'device_versions' => ['device_platform_version'],
+            'agent_browsers' => ['agent_browser'],
+            'agent_browser_versions' => ['agent_browser_version'],
+            'language_preferences' => ['language_preference'],
+            'language_ranges' => ['language_language_range'],
+            'ip_addresses' => ['geoip_ip_address'],
+            'ip_latitudes' => ['geoip_latitude'],
+            'ip_longitudes' => ['geoip_longitude'],
+            'ip_country_codes' => ['geoip_country_code'],
+            'ip_country_names' => ['geoip_country_name'],
+            'ip_regions' => ['geoip_region'],
+            'ip_cities' => ['geoip_city'],
+            'ip_postal_zip_codes' => ['geoip_postal_code'],
+            'ip_timezones' => ['geoip_timezone'],
+            'ip_currencies' => ['geoip_currency'],
+            'response_status_codes' => [''],
+            'response_durations' => [''],
+            'exception_codes' => [''],
+            'exception_lines' => [''],
+
+            // long strings requiring hashes
+
+            'url_queries' => ['url_query_string','url_referer_query_string'],
+
+            'route_actions' => [
+                [
+                    // TODO: fill for use here. (Original: 'route_action' => 'routeAction',)
+                    // TODO: fill for use here. (Original: 'route_action_hash' => 'routeActionHash',)
+                ],
+            ],
+            'agent_strings' => [
+                [
+                    // TODO: fill for use here. (Original: 'agent_string' => 'agentString',)
+                    // TODO: fill for use here. (Original: 'agent_string_hash' => 'agentStringHash',)
+                ],
+            ],
+            'exception_classes' => [
+                [
+                    // TODO: fill for use here. (Original: 'exception_class' => 'exceptionClass',)
+                    // TODO: fill for use here. (Original: 'exception_class_hash' => 'exceptionClassHash',)
+                ],
+            ],
+            'exception_files' => [
+                [
+                    // TODO: fill for use here. (Original: 'exception_file' => 'exceptionFile',)
+                    // TODO: fill for use here. (Original: 'exception_file_hash' => 'exceptionFileHash',)
+                ],
+            ],
+            'exception_messages' => [
+                [
+                    // TODO: fill for use here. (Original: 'exception_message' => 'exceptionMessage',)
+                    // TODO: fill for use here. (Original: 'exception_message_hash' => 'exceptionMessageHash',)
+                ],
+            ],
+            'exception_traces' => [
+                [
+                    // TODO: fill for use here. (Original: 'exception_trace' => 'exceptionTrace',)
+                    // TODO: fill for use here. (Original: 'exception_trace_hash' => 'exceptionTraceHash',)
+                ],
+            ],
+        ],
+    ];
+
     public function __construct(
-        DatabaseManager $databaseManager
+        DatabaseManager $databaseManager,
+        RequestRepository $requestRepository
     )
     {
         parent::__construct();
 
         $this->databaseManager = $databaseManager;
+        $this->requestRepository = $requestRepository;
     }
 
     /**
@@ -181,44 +262,120 @@ requested_on
 
         $results = $this->databaseManager
             ->table('railtracker_requests')
-
-            ->join('railtracker_urls', 'railtracker_requests.url_id', '=', 'railtracker_urls.id')
-
-            ->join('railtracker_url_protocols', 'railtracker_urls.protocol_id', '=', 'railtracker_url_protocols.id')
-            ->join('railtracker_url_domains', 'railtracker_urls.domain_id', '=', 'railtracker_url_domains.id')
-            ->join('railtracker_url_paths', 'railtracker_urls.path_id', '=', 'railtracker_url_paths.id')
-            ->join('railtracker_url_queries', 'railtracker_urls.query_id', '=', 'railtracker_url_queries.id')
-
-            ->select('railtracker_requests.*',
-//                'railtracker_urls.*',
-                'railtracker_url_protocols.protocol',
-                'railtracker_url_domains.name',
-                'railtracker_url_paths.path',
-                'railtracker_url_queries.string'
+            ->select(
+                'railtracker_requests.*'
             )
 
-            ->orderBy('railtracker_requests.id')
-            ->limit(1)
-            ->get();
+            // ------------ urls
+            ->leftJoin('railtracker_urls as urls', 'railtracker_requests.url_id', '=', 'urls.id')
+            ->leftJoin('railtracker_url_protocols as url_protocols', 'urls.protocol_id', '=', 'url_protocols.id')
+            ->leftJoin('railtracker_url_domains as url_domains', 'urls.domain_id', '=', 'url_domains.id')
+            ->leftJoin('railtracker_url_paths as url_paths', 'urls.path_id', '=', 'url_paths.id')
+            ->leftJoin('railtracker_url_queries as url_queries', 'urls.query_id', '=', 'url_queries.id')
+            ->addSelect(
+                'url_protocols.protocol as url_protocol',
+                'url_domains.name as url_name',
+                'url_paths.path as url_path',
+                'url_queries.string as url_query_string'
+            )
+            // ------------ referer urls
+            ->leftJoin('railtracker_urls as referer_urls', 'railtracker_requests.referer_url_id', '=', 'referer_urls.id')
+            ->leftJoin('railtracker_url_protocols as url_protocols_referers', 'referer_urls.protocol_id', '=', 'url_protocols_referers.id')
+            ->leftJoin('railtracker_url_domains as url_domains_referers', 'referer_urls.domain_id', '=', 'url_domains_referers.id')
+            ->leftJoin('railtracker_url_paths as url_paths_referers', 'referer_urls.path_id', '=', 'url_paths_referers.id')
+            ->leftJoin('railtracker_url_queries as url_queries_referers', 'referer_urls.query_id', '=', 'url_queries_referers.id')
+            ->addSelect(
+                'url_protocols_referers.protocol as url_referer_protocol',
+                'url_domains_referers.name as url_referer_name',
+                'url_paths_referers.path as url_referer_path',
+                'url_queries_referers.string as url_referer_query_string'
+            )
+            // ------------ routes, request_devices, request_agents, request_methods, request_languages, geoip
+            ->leftJoin('railtracker_routes','railtracker_requests.route_id','=','railtracker_routes.id')
+            ->leftJoin('railtracker_request_devices','railtracker_requests.device_id','=','railtracker_request_devices.id')
+            ->leftJoin('railtracker_request_agents','railtracker_requests.agent_id','=','railtracker_request_agents.id')
+            ->leftJoin('railtracker_request_methods','railtracker_requests.method_id','=','railtracker_request_methods.id')
+            ->leftJoin('railtracker_request_languages','railtracker_requests.language_id','=','railtracker_request_languages.id')
+            ->leftJoin('railtracker_geoip','railtracker_requests.geoip_id','=','railtracker_geoip.id')
+            ->addSelect(
+                'railtracker_routes.name as route_name',
+                'railtracker_routes.action as route_action',
+                'railtracker_routes.hash as route_hash',
 
+                'railtracker_request_devices.kind as device_kind',
+                'railtracker_request_devices.model as device_model',
+                'railtracker_request_devices.platform as device_platform',
+                'railtracker_request_devices.platform_version as device_platform_version',
+                'railtracker_request_devices.is_mobile as device_is_mobile',
+                'railtracker_request_devices.hash as device_hash',
 
-        dd($results);
+                'railtracker_request_agents.name as agent_name',
+                'railtracker_request_agents.browser as agent_browser',
+                'railtracker_request_agents.browser_version as agent_browser_version',
 
-//            ->chunkById($chunkSize, function($rows){
-//                $this->migrateTheseRequests($rows);
-//                die();
-//                die();
-//                die();
-//                die();
-//                die();
-//            });
+                'railtracker_request_methods.method as method_method',
+
+                'railtracker_request_languages.preference as language_preference',
+                'railtracker_request_languages.language_range as language_language_range',
+
+                'railtracker_geoip.latitude as geoip_latitude',
+                'railtracker_geoip.longitude as geoip_longitude',
+                'railtracker_geoip.country_code as geoip_country_code',
+                'railtracker_geoip.country_name as geoip_country_name',
+                'railtracker_geoip.region as geoip_region',
+                'railtracker_geoip.city as geoip_city',
+                'railtracker_geoip.postal_code as geoip_postal_code',
+                'railtracker_geoip.ip_address as geoip_ip_address',
+                'railtracker_geoip.timezone as geoip_timezone',
+                'railtracker_geoip.currency as geoip_currency',
+                'railtracker_geoip.hash as geoip_hash'
+            )
+            // ------------
+
+            ->orderBy('id')
+            ->chunk($chunkSize, function($rows){
+                $this->migrateTheseRequests($rows);
+            });
 
         dump($results);
     }
 
-    private function migrateTheseRequests($rows)
+    private function migrateTheseRequests(Collection $legacyData)
     {
-        dump($rows);
+        dd($legacyData);
+
+//        foreach($legacyData as $row){
+//
+//        }
+
+        //$this->requestRepository->storeRequests();
+
+        // first, linked data
+
+        // 1.1 - prep linked data
+
+        foreach(RequestRepository::$rowsToInsertByTable as $table => $rowsToInsert){
+
+            $dataToInsertForThisTable = [];
+
+            foreach($legacyData as $legacyDatum){
+                dd($legacyDatum);
+            }
+
+            $dataToInsert[$table] = $dataToInsertForThisTable;
+        }
+
+            // 1.2 - store linked data
+
+
+        // second, store requests table
+
+
+
+
+
+
+        die(); die(); die(); die(); die(); die(); die(); die();
     }
 
     private function Drumeo3To4()
