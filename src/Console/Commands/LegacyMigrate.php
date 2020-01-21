@@ -38,149 +38,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private $requestRepository;
 
-    private $chunkSize = 1;
+    private $chunkSize = 100;
 
-    private $limitToOneChunk = true;
-
-    private static $map = [
-        'url_protocols' => [ // 'association table' => fields required in table for each property of legacy data
-            ['url_protocol' => 'url_protocol'], // column-name => property name in JOINed data
-            ['url_protocol' => 'url_referer_protocol'],
-        ],
-        'url_domains' => [
-            ['url_domain' => 'url_name'],
-            ['url_domain' => 'url_referer_name'],
-        ],
-        'url_paths' => [
-            ['url_path' => 'url_path'],
-            ['url_path' => 'url_referer_path'],
-        ],
-        'methods' => [
-            ['method' => 'method_method'],
-        ],
-        'route_names' => [
-            ['route_name' => 'route_action'],
-        ],
-        'device_kinds' => [
-            ['device_kind' => 'device_kind'],
-        ],
-        'device_models' => [
-            ['device_model' => 'device_model'],
-        ],
-        'device_platforms' => [
-            ['device_platform' => 'device_platform'],
-        ],
-        'device_versions' => [
-            ['device_version' => 'device_platform_version'],
-        ],
-        'agent_browsers' => [
-            ['agent_browser' => 'agent_browser'],
-        ],
-        'agent_browser_versions' => [
-            ['agent_browser_version' => 'agent_browser_version'],
-        ],
-        'language_preferences' => [
-            ['language_preference' => 'language_preference'],
-        ],
-        'language_ranges' => [
-            ['language_range' => 'language_language_range'],
-        ],
-        'ip_addresses' => [
-            ['ip_address' => 'geoip_ip_address'],
-        ],
-        'ip_latitudes' => [
-            ['ip_latitude' => 'geoip_latitude'],
-        ],
-        'ip_longitudes' => [
-            ['ip_longitude' => 'geoip_longitude'],
-        ],
-        'ip_country_codes' => [
-            ['ip_country_code' => 'geoip_country_code'],
-        ],
-        'ip_country_names' => [
-            ['ip_country_name' => 'geoip_country_name'],
-        ],
-        'ip_regions' => [
-            ['ip_region' => 'geoip_region'],
-        ],
-        'ip_cities' => [
-            ['ip_city' => 'geoip_city'],
-        ],
-        'ip_postal_zip_codes' => [
-            ['ip_postal_zip_code' => 'geoip_postal_code'],
-        ],
-        'ip_timezones' => [
-            ['ip_timezone' => 'geoip_timezone'],
-        ],
-        'ip_currencies' => [
-            ['ip_currency' => 'geoip_currency'],
-        ],
-
-        // todo: handle these separately because the JOINS are so expensive?
-
-//        'response_status_codes' => [
-//            ['response_status_code' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
-//        'response_durations' => [
-//            ['response_duration_ms' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
-//        'exception_codes' => [
-//            ['exception_code' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
-//        'exception_lines' => [
-//            ['exception_line' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
-
-        // long strings requiring hashes
-
-        'url_queries' => [ // table
-            [ // a row
-                'url_query' => 'url_query_string',
-                'url_query_hash' => 'url_query_string_hash', // these are manually created in method "" below.
-            ],
-            [ // another row
-                'url_query' => 'url_referer_query_string',
-                'url_query_hash' => 'url_referer_query_string_hash', // these are manually created in method "" below.
-            ],
-        ],
-
-        'route_actions' => [
-            [
-                'route_action' => 'route_action',
-                'route_action_hash' => 'route_action_hash', // these are manually created in method "" below.
-            ],
-        ],
-        'agent_strings' => [
-            [
-                'agent_string' => 'agent_name',
-                'agent_string_hash' => 'agent_name_hash', // these are manually created in method "" below.
-            ],
-        ],
-//        'exception_classes' => [
-//            [
-//                'exception_class' => 'exceptionClass',
-//                //'exception_class_hash' => 'exceptionClassHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-//        'exception_files' => [
-//            [
-//                'exception_file' => 'exceptionFile',
-//                //'exception_file_hash' => 'exceptionFileHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-//        'exception_messages' => [
-//            [
-//                'exception_message' => 'exceptionMessage',
-//                //'exception_message_hash' => 'exceptionMessageHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-//        'exception_traces' => [
-//            [
-//                'exception_trace' => 'exceptionTrace',
-//                //'exception_trace_hash' => 'exceptionTraceHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-    ];
+    //private $limitToOneChunk = true;
 
     public function __construct(
         DatabaseManager $databaseManager,
@@ -400,7 +260,151 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         // first, linked data
 
-        foreach(self::$map as $table => $fieldsForEachRow){
+        $specialCases = ['url_protocols','url_domains','url_paths',];
+
+        $map = [
+            'url_protocols' => [ // 'association table' => fields required in table for each property of legacy data
+                ['url_protocol' => 'url_protocol'], // column-name => property name in JOINed data
+                ['url_protocol' => 'url_referer_protocol'],
+            ],
+            'url_domains' => [
+                ['url_domain' => 'url_name'],
+                ['url_domain' => 'url_referer_name'],
+            ],
+            'url_paths' => [
+                ['url_path' => 'url_path'],
+                ['url_path' => 'url_referer_path'],
+            ],
+            'methods' => [
+                ['method' => 'method_method'],
+            ],
+            'route_names' => [
+                ['route_name' => 'route_name'],
+            ],
+            'device_kinds' => [
+                ['device_kind' => 'device_kind'],
+            ],
+            'device_models' => [
+                ['device_model' => 'device_model'],
+            ],
+            'device_platforms' => [
+                ['device_platform' => 'device_platform'],
+            ],
+            'device_versions' => [
+                ['device_version' => 'device_platform_version'],
+            ],
+            'agent_browsers' => [
+                ['agent_browser' => 'agent_browser'],
+            ],
+            'agent_browser_versions' => [
+                ['agent_browser_version' => 'agent_browser_version'],
+            ],
+            'language_preferences' => [
+                ['language_preference' => 'language_preference'],
+            ],
+            'language_ranges' => [
+                ['language_range' => 'language_language_range'],
+            ],
+            'ip_addresses' => [
+                ['ip_address' => 'geoip_ip_address'],
+            ],
+            'ip_latitudes' => [
+                ['ip_latitude' => 'geoip_latitude'],
+            ],
+            'ip_longitudes' => [
+                ['ip_longitude' => 'geoip_longitude'],
+            ],
+            'ip_country_codes' => [
+                ['ip_country_code' => 'geoip_country_code'],
+            ],
+            'ip_country_names' => [
+                ['ip_country_name' => 'geoip_country_name'],
+            ],
+            'ip_regions' => [
+                ['ip_region' => 'geoip_region'],
+            ],
+            'ip_cities' => [
+                ['ip_city' => 'geoip_city'],
+            ],
+            'ip_postal_zip_codes' => [
+                ['ip_postal_zip_code' => 'geoip_postal_code'],
+            ],
+            'ip_timezones' => [
+                ['ip_timezone' => 'geoip_timezone'],
+            ],
+            'ip_currencies' => [
+                ['ip_currency' => 'geoip_currency'],
+            ],
+
+            // todo: handle these separately because the JOINS are so expensive?
+
+//        'response_status_codes' => [
+//            ['response_status_code' => 'XXXXXXXXXXXXXXXXXXXXX'],
+//        ],
+//        'response_durations' => [
+//            ['response_duration_ms' => 'XXXXXXXXXXXXXXXXXXXXX'],
+//        ],
+//        'exception_codes' => [
+//            ['exception_code' => 'XXXXXXXXXXXXXXXXXXXXX'],
+//        ],
+//        'exception_lines' => [
+//            ['exception_line' => 'XXXXXXXXXXXXXXXXXXXXX'],
+//        ],
+
+            // long strings requiring hashes
+
+            'url_queries' => [ // table
+                [ // a row
+                    'url_query' => 'url_query_string',
+                    'url_query_hash' => 'url_query_string_hash', // these are manually created in method "" below.
+                ],
+                [ // another row
+                    'url_query' => 'url_referer_query_string',
+                    'url_query_hash' => 'url_referer_query_string_hash', // these are manually created in method "" below.
+                ],
+            ],
+
+            'route_actions' => [
+                [
+                    'route_action' => 'route_action',
+                    'route_action_hash' => 'route_action_hash', // these are manually created in method "" below.
+                ],
+            ],
+            'agent_strings' => [
+                [
+                    'agent_string' => 'agent_name',
+                    'agent_string_hash' => 'agent_name_hash', // these are manually created in method "" below.
+                ],
+            ],
+//        'exception_classes' => [
+//            [
+//                'exception_class' => 'exceptionClass',
+//                //'exception_class_hash' => 'exceptionClassHash',  // todo: generate hash or get from legacy?
+//            ],
+//        ],
+//        'exception_files' => [
+//            [
+//                'exception_file' => 'exceptionFile',
+//                //'exception_file_hash' => 'exceptionFileHash',  // todo: generate hash or get from legacy?
+//            ],
+//        ],
+//        'exception_messages' => [
+//            [
+//                'exception_message' => 'exceptionMessage',
+//                //'exception_message_hash' => 'exceptionMessageHash',  // todo: generate hash or get from legacy?
+//            ],
+//        ],
+//        'exception_traces' => [
+//            [
+//                'exception_trace' => 'exceptionTrace',
+//                //'exception_trace_hash' => 'exceptionTraceHash',  // todo: generate hash or get from legacy?
+//            ],
+//        ],
+        ];
+
+        $notProvided = '[LEGACY]';
+
+        foreach($map as $table => $fieldsForEachRow){
 
             $rowsToCreate = [];
 
@@ -408,9 +412,15 @@ class LegacyMigrate extends \Illuminate\Console\Command
             foreach($fieldsForEachRow as $columnPropertySets){
                 foreach($legacyData as $legacyDatum){
                     $row = [];
+
                     foreach($columnPropertySets as $column => $property){
-                        if(isset($legacyDatum->$property) || is_null(($legacyDatum->$property))){
+
+                        if(isset($legacyDatum->$property)){
                             $row[$column] = $legacyDatum->$property;
+                        }
+
+                        if(is_null($legacyDatum->$property) && in_array($column, $specialCases)){
+                            $row[$column] = $notProvided;
                         }
                     }
                     if(empty($row)) continue;
@@ -420,6 +430,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             // 1.2 - store linked data (Note: copied from RequestRepository, but sqlite part omitted)
             if(empty($rowsToCreate)) continue;
+
             try{
                 $builder->from(config('railtracker.table_prefix') . $table)->insertOrUpdate($rowsToCreate);
             }catch(\Exception $e){
@@ -432,20 +443,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $bulkInsertData = [];
 
-        // -------------------------- replace this -----------------------------
-
-//        /**
-//         * @var $requestVOs RequestVO[]
-//         */
-//        foreach ($requestVOs as $requestVO) {
-//            $bulkInsertData[] = $requestVO->returnArrayForDatabaseInteraction();
-//        }
-
-        // ---------------------------- with this ------------------------------
-
         foreach($legacyData as $legacyDatum){
-
-            $notProvided = 'missingLegacy';
 
             $bulkInsertData[] = [
                 'uuid' =>                   $legacyDatum->uuid ?? $notProvided, // NOT nullable
@@ -514,12 +512,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         foreach(array_chunk($bulkInsertData, $this->chunkSize) as $chunkOfBulkInsertData){
 
-
-            dump('----------------------------------------------------------');
-            dump('inserting: ' . var_export($chunkOfBulkInsertData, true));
-
-
-
             if (empty($chunkOfBulkInsertData)) continue;
 
             try{
@@ -539,7 +531,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
             ->whereIn('uuid', $uuids)
             ->get();
 
-        if($this->limitToOneChunk) return false;
+        if($this->limitToOneChunk ?? false) return false;
 
         return $presumablyCreatedRows->count();
     }
