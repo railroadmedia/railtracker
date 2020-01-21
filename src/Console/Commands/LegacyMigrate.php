@@ -38,8 +38,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private $requestRepository;
 
-    private $chunkSize = 100;
-    private $limit = 100;
+    private $chunkSize = 1;
+
+    private $limitToOneChunk = true;
 
     private static $map = [
         'url_protocols' => [ // 'association table' => fields required in table for each property of legacy data
@@ -204,7 +205,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $toRun = $this->promptForOption();
 
-        $this->$toRun();
+        return $this->$toRun();
     }
 
     /**
@@ -260,6 +261,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
             ->leftJoin('railtracker_url_paths as url_paths', 'urls.path_id', '=', 'url_paths.id')
             ->leftJoin('railtracker_url_queries as url_queries', 'urls.query_id', '=', 'url_queries.id')
             ->addSelect(
+                'urls.id as url_id_from_join',
                 'url_protocols.protocol as url_protocol',
                 'url_domains.name as url_name',
                 'url_paths.path as url_path',
@@ -286,15 +288,18 @@ class LegacyMigrate extends \Illuminate\Console\Command
             ->leftJoin('railtracker_geoip','railtracker_requests.geoip_id','=','railtracker_geoip.id')
             ->addSelect(
                 'railtracker_routes.name as route_name',
-                'railtracker_routes.action as route_action',
-                'railtracker_routes.hash as route_hash', // is this needed?
+                'railtracker_routes.action as route_action', // this will be the route_action_hash, but we still need
+                // the scalar value to store in the association table.
+                'railtracker_routes.hash as route_hash', // is this needed? I'm still not sure, but I know that this
+                // will be the route_action_hash. It's probably note needed.
 
                 'railtracker_request_devices.kind as device_kind',
                 'railtracker_request_devices.model as device_model',
                 'railtracker_request_devices.platform as device_platform',
                 'railtracker_request_devices.platform_version as device_platform_version',
                 'railtracker_request_devices.is_mobile as device_is_mobile',
-                'railtracker_request_devices.hash as device_hash', // is this needed?
+                'railtracker_request_devices.hash as device_hash', // is this needed? Probably same as route_hash
+                // above. I don't know if it's needed, but probably not.
 
                 'railtracker_request_agents.name as agent_name',
                 'railtracker_request_agents.browser as agent_browser',
@@ -326,9 +331,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
              */
 
             ->orderBy('id')
-            ->limit($this->limit)
             ->chunk($this->chunkSize, function($rows){
-                $this->migrateTheseRequests($rows);
+                return $this->migrateTheseRequests($rows);
             });
 
         $this->info('Success: ' . var_export($success, true));
@@ -383,6 +387,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private function migrateTheseRequests(Collection $legacyData)
     {
+        $this->info('Processing ' . $legacyData->count() . ' legacy requests.');
+
         $this->fillHashes($legacyData);
 
         $dbConnectionName = config('railtracker.database_connection_name');
@@ -403,8 +409,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 foreach($legacyData as $legacyDatum){
                     $row = [];
                     foreach($columnPropertySets as $column => $property){
-                        if(!isset($legacyDatum->$property)) continue;
-                        $row[$column] = $legacyDatum->$property;
+                        if(isset($legacyDatum->$property) || is_null(($legacyDatum->$property))){
+                            $row[$column] = $legacyDatum->$property;
+                        }
                     }
                     if(empty($row)) continue;
                     $rowsToCreate[] = $row;
@@ -437,55 +444,67 @@ class LegacyMigrate extends \Illuminate\Console\Command
         // ---------------------------- with this ------------------------------
 
         foreach($legacyData as $legacyDatum){
+
+            $notProvided = 'missingLegacy';
+
             $bulkInsertData[] = [
-                'uuid' =>                   $legacyDatum->uuid ?? null,                         // [x]
-                'cookie_id' =>              $legacyDatum->cookie_id ?? null,                    // [x]
-                'user_id' =>                $legacyDatum->user_id ?? null,                      // [x]
-                'url_protocol' =>           $legacyDatum->url_protocol ?? null,                 // [x]
-                'url_domain' =>             $legacyDatum->url_name ?? null,                     // [x]
-                'url_path' =>               $legacyDatum->url_path ?? null,                     // [x]
-                'method' =>                 $legacyDatum->method_method ?? null,                       // [ ]
-                'route_name' =>             $legacyDatum->routeName ?? null,                    // [ ]
-                'device_kind' =>            $legacyDatum->deviceKind ?? null,                   // [ ]
-                'device_model' =>           $legacyDatum->deviceModel ?? null,                  // [ ]
-                'device_platform' =>        $legacyDatum->devicePlatform ?? null,               // [ ]
-                'device_version' =>         $legacyDatum->deviceVersion ?? null,                // [ ]
-                'device_is_mobile' =>       $legacyDatum->deviceIsMobile ?? null,               // [ ]
-                'agent_browser' =>          $legacyDatum->agentBrowser ?? null,                 // [ ]
-                'agent_browser_version' =>  $legacyDatum->agentBrowserVersion ?? null,          // [ ]
-                'referer_url_protocol' =>   $legacyDatum->refererUrlProtocol ?? null,           // [ ]
-                'referer_url_domain' =>     $legacyDatum->refererUrlDomain ?? null,             // [ ]
-                'referer_url_path' =>       $legacyDatum->refererUrlPath ?? null,               // [ ]
-                'language_preference' =>    $legacyDatum->languagePreference ?? null,           // [ ]
-                'language_range' =>         $legacyDatum->languageRange ?? null,                // [ ]
-                'ip_address' =>             $legacyDatum->ipAddress ?? null,                    // [ ]
-                'ip_latitude' =>            $legacyDatum->ipLatitude ?? null,                   // [ ]
-                'ip_longitude' =>           $legacyDatum->ipLongitude ?? null,                  // [ ]
-                'ip_country_code' =>        $legacyDatum->ipCountryCode ?? null,                // [ ]
-                'ip_country_name' =>        $legacyDatum->ipCountryName ?? null,                // [ ]
-                'ip_region' =>              $legacyDatum->ipRegion ?? null,                     // [ ]
-                'ip_city' =>                $legacyDatum->ipCity ?? null,                       // [ ]
-                'ip_postal_zip_code' =>     $legacyDatum->ipPostalZipCode ?? null,              // [ ]
-                'ip_timezone' =>            $legacyDatum->ipTimezone ?? null,                   // [ ]
-                'ip_currency' =>            $legacyDatum->ipCurrency ?? null,                   // [ ]
-                'is_robot' =>               $legacyDatum->isRobot ?? null,                      // [ ]
+                'uuid' =>                   $legacyDatum->uuid ?? $notProvided, // NOT nullable
+                'cookie_id' =>              $legacyDatum->cookie_id ?? null,
+                'user_id' =>                $legacyDatum->user_id ?? null,
+                'url_protocol' =>           $legacyDatum->url_protocol ?? $notProvided, // NOT nullable
+                'url_domain' =>             $legacyDatum->url_name ?? $notProvided, // NOT nullable
+                'url_path' =>               $legacyDatum->url_path ?? $notProvided, // NOT nullable
+                'method' =>                 $legacyDatum->method_method ?? null,
+                'route_name' =>             $legacyDatum->route_name ?? null,
+                'device_kind' =>            $legacyDatum->device_kind ?? null,
+                'device_model' =>           $legacyDatum->device_model ?? null,
+                'device_platform' =>        $legacyDatum->device_platform ?? null,
+                'device_version' =>         $legacyDatum->device_platform_version ?? null,
+                'device_is_mobile' =>       $legacyDatum->device_is_mobile ?? $notProvided, // NOT nullable
+                'agent_browser' =>          $legacyDatum->agent_browser ?? null,
+                'agent_browser_version' =>  $legacyDatum->agent_browser_version ?? null,
+                'referer_url_protocol' =>   $legacyDatum->url_referer_protocol ?? null,
+                'referer_url_domain' =>     $legacyDatum->url_referer_name ?? null,
+                'referer_url_path' =>       $legacyDatum->url_referer_path ?? null,
+                'language_preference' =>    $legacyDatum->language_preference ?? null,
+                'language_range' =>         $legacyDatum->language_language_range ?? null,
+                'ip_address' =>             $legacyDatum->geoip_ip_address ?? null,
 
-                'exception_code' =>         $legacyDatum->exceptionCode ?? null,                // [ ]
-                'exception_line' =>         $legacyDatum->exceptionLine ?? null,                // [ ]
+                /*
+                 * I don't think we'll have any of the IP data—and that's fine because we're going to be running the
+                 * "fill-missing-ip-data" command anyways.
+                 */
+                'ip_latitude' =>            $legacyDatum->geoip_latitude ?? null, // see note above
+                'ip_longitude' =>           $legacyDatum->geoip_longitude ?? null, // see note above
+                'ip_country_code' =>        $legacyDatum->geoip_country_code ?? null, // see note above
+                'ip_country_name' =>        $legacyDatum->geoip_country_name ?? null, // see note above
+                'ip_region' =>              $legacyDatum->geoip_region ?? null, // see note above
+                'ip_city' =>                $legacyDatum->geoip_city ?? null, // see note above
+                'ip_postal_zip_code' =>     $legacyDatum->geoip_postal_code ?? null, // see note above
+                'ip_timezone' =>            $legacyDatum->ipTimezone ?? null, // see note above
+                'ip_currency' =>            $legacyDatum->ipCurrency ?? null, // see note above
 
-                'requested_on' =>           $legacyDatum->requestedOn ?? null,                  // [ ]
-                'response_status_code' =>   $legacyDatum->responseStatusCode ?? null,           // [ ]
-                'response_duration_ms' =>   $legacyDatum->responseDurationMs ?? null,           // [ ]
-                'responded_on' =>           $legacyDatum->respondedOn ?? null,                  // [ ]
+                'is_robot' =>               $legacyDatum->isRobot ?? 2, // NOT nullable
 
-                'url_query_hash' =>         $legacyDatum->url_query_string_hash ?? null,        // [x]
-                'referer_url_query_hash' => $legacyDatum->url_referer_query_string_hash ?? null,// [x]
-                'route_action_hash' =>      $legacyDatum->routeActionHash ?? null,              // [ ]
-                'agent_string_hash' =>      $legacyDatum->agentStringHash ?? null,              // [ ]
-                'exception_class_hash' =>   $legacyDatum->exceptionClassHash ?? null,           // [ ]
-                'exception_file_hash' =>    $legacyDatum->exceptionFileHash ?? null,            // [ ]
-                'exception_message_hash' => $legacyDatum->exceptionMessageHash ?? null,         // [ ]
-                'exception_trace_hash' =>   $legacyDatum->exceptionTraceHash ?? null,           // [ ]
+                'exception_code' =>         $legacyDatum->exceptionCode ?? null, // addressed elsewhere
+                'exception_line' =>         $legacyDatum->exceptionLine ?? null, // addressed elsewhere
+
+                'requested_on' =>           $legacyDatum->requested_on ?? $notProvided, // NOT nullable
+
+                'response_status_code' =>   $legacyDatum->responseStatusCode ?? null, // addressed elsewhere
+                'response_duration_ms' =>   $legacyDatum->responseDurationMs ?? null, // addressed elsewhere
+                'responded_on' =>           $legacyDatum->respondedOn ?? null, // addressed elsewhere
+
+                'url_query_hash' =>         $legacyDatum->url_query_string_hash ?? null,
+                'referer_url_query_hash' => $legacyDatum->url_referer_query_string_hash ?? null,
+                'route_action_hash' =>      $legacyDatum->routeActionHash ?? null, // should|must be
+                // generated from a property of $legacyDatum—either route_action or route_name
+                'agent_string_hash' =>      $legacyDatum->agentStringHash ?? null, // should|must be
+                // generated from $legacyDatum->agent_name
+                'exception_class_hash' =>   $legacyDatum->exceptionClassHash ?? null,
+                'exception_file_hash' =>    $legacyDatum->exceptionFileHash ?? null,
+                'exception_message_hash' => $legacyDatum->exceptionMessageHash ?? null,
+                'exception_trace_hash' =>   $legacyDatum->exceptionTraceHash ?? null,
             ];
         }
 
@@ -494,6 +513,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $table = config('railtracker.table_prefix') . 'requests';
 
         foreach(array_chunk($bulkInsertData, $this->chunkSize) as $chunkOfBulkInsertData){
+
+
+            dump('----------------------------------------------------------');
+            dump('inserting: ' . var_export($chunkOfBulkInsertData, true));
+
+
 
             if (empty($chunkOfBulkInsertData)) continue;
 
@@ -514,7 +539,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
             ->whereIn('uuid', $uuids)
             ->get();
 
-        return $presumablyCreatedRows ?? new Collection();
+        if($this->limitToOneChunk) return false;
+
+        return $presumablyCreatedRows->count();
     }
 
     private function Drumeo3To4()
