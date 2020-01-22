@@ -141,6 +141,10 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $legacyDatum->url_referer_query_string_hash = null;
             $legacyDatum->route_action_hash = null;
             $legacyDatum->agent_name_hash = null;
+            $legacyDatum->exception_exception_class_hash = null;
+            $legacyDatum->exception_file_hash = null;
+            $legacyDatum->exception_message_hash = null;
+            $legacyDatum->exception_trace_hash = null;
 
             //dd($legacyDatum);
 
@@ -189,7 +193,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         // first, linked data
 
-        $specialCases = ['url_protocols','url_domains','url_paths',];
+        $specialCases = ['url_protocol','url_domain','url_path',];
 
         $map = [
             'url_protocols' => [ // 'association table' => fields required in table for each property of legacy data
@@ -316,7 +320,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 'exception_trace' => 'exception_trace',
                 'exception_trace_hash' => 'exception_trace_hash'
             ]],
-            ];
+        ];
 
         $notProvided = '[LEGACY]';
 
@@ -563,18 +567,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 'exceptions.trace AS exception_trace',
                 'exceptions.hash AS exception_hash'
             )
-
-            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
-            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
-            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
-            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
-            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
-            ->whereNotNull('exception_id')
-            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
-            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
-            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
-            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
-            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
 
             ->orderBy('id')
             ->chunk($this->chunkSize, function($rows){
