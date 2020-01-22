@@ -60,8 +60,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
     {
         $toRun = $this->promptForOption($this->option('run') ?? null);
 
-        dd($toRun);
-
         return $this->$toRun();
     }
 
@@ -165,6 +163,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private function migrateTheseRequests(Collection $legacyData)
     {
+        dd($legacyData);
+
         $this->info('Processing ' . $legacyData->count() . ' legacy requests.');
 
         $this->fillHashes($legacyData);
@@ -557,8 +557,42 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 'railtracker_requests.*',
                 'railtracker_requests.id as request_id'
             )
-            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.reqeust_id')
-            ->addSelect('responses.*')
+
+            // responses
+
+            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.request_id')
+            ->addSelect(
+                'responses.response_duration_ms',
+                'responses.responded_on'
+            )
+            ->leftJoin('railtracker_response_status_codes as response_status_codes', 'responses.status_code_id', '=', 'response_status_codes.id')
+            ->addSelect(
+                'response_status_codes.code AS response_status_code_code',
+                'response_status_codes.hash AS response_status_code_hash'
+            )
+
+            // request-exceptions
+
+            ->leftJoin('railtracker_request_exceptions as request_exceptions', 'railtracker_requests.id', '=', 'request_exceptions.request_id')
+            ->addSelect(
+                'request_exceptions.created_at_timestamp_ms AS exception_timestamp'
+            )
+
+            // exceptions
+
+            ->leftJoin('railtracker_exceptions as exceptions', 'request_exceptions.exception_id', '=', 'exceptions.id')
+            ->addSelect(
+                'exceptions.id AS exception_id',
+                'exceptions.code AS exception_code',
+                'exceptions.line AS exception_line',
+                'exceptions.exception_class AS exception_exception_class',
+                'exceptions.file AS exception_file',
+                'exceptions.message AS exception_message',
+                'exceptions.trace AS exception_trace',
+                'exceptions.hash AS exception_hash'
+            )
+
+
             ->orderBy('id')
             ->chunk($this->chunkSize, function($rows){
                 return $this->migrateTheseRequests($rows);
