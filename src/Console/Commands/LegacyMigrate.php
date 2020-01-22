@@ -26,7 +26,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
     /**
      * @var string
      */
-    protected $signature = 'legacyMigrate {--default}';
+    protected $signature = 'legacyMigrate {--run=}';
 
     /**
      * @var DatabaseManager
@@ -58,31 +58,44 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        if($this->option('default')){
-            $this->DrumeoLegacyTo4();
-            return true;
-        }
+        $toRun = $this->promptForOption($this->option('run') ?? null);
 
-        $toRun = $this->promptForOption();
+        dd($toRun);
 
         return $this->$toRun();
     }
 
     /**
+     * @param null $supplied
      * @return bool|mixed
      */
-    private function promptForOption()
+    private function promptForOption($supplied = null)
     {
         $methodsAvailable = [
             'DrumeoLegacyTo4',
+            'DrumeoLegacyTo4ResponsesAndExceptions',
             'Drumeo3To4',
             'MusoraLegacyTo4',
+            'MusoraLegacyTo4ResponsesAndExceptions',
             'Musora3To4',
             'Pianote3To4',
             'Guitareo3To4'
         ];
 
-        $selection = false;
+        // get if supplied when command called.
+
+        $notNumeric = !is_numeric($supplied);
+        $tooHigh = $supplied > (count($methodsAvailable) - 1);
+
+        $selection = $supplied;
+
+        if($notNumeric || $tooHigh) {
+            $this->info('Invalid. Select option from list or try again.' . PHP_EOL);
+            $selection = false;
+        }
+
+        // else prompt for selection
+
         while ($selection === false){
 
             foreach($methodsAvailable as $index => $methodAvailable){
@@ -534,6 +547,26 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('Success: ' . var_export($success, true));
     }
 
+    private function DrumeoLegacyTo4ResponsesAndExceptions()
+    {
+        $this->info('------ STARTING DrumeoLegacyTo4ResponsesAndExceptions ------');
+
+        $success = $this->databaseManager
+            ->table('railtracker_requests')
+            ->select(
+                'railtracker_requests.*',
+                'railtracker_requests.id as request_id'
+            )
+            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.reqeust_id')
+            ->addSelect('responses.*')
+            ->orderBy('id')
+            ->chunk($this->chunkSize, function($rows){
+                return $this->migrateTheseRequests($rows);
+            });
+
+        $this->info('Success: ' . var_export($success, true));
+    }
+
     private function Drumeo3To4()
     {
         $this->info('------ STARTING Drumeo3To4 ------');
@@ -582,6 +615,13 @@ class LegacyMigrate extends \Illuminate\Console\Command
     private function MusoraLegacyTo4()
     {
         $this->info('------ STARTING MusoraLegacyTo4 ------');
+
+        $this->info('TO DO');
+    }
+
+    private function MusoraLegacyTo4ResponsesAndExceptions()
+    {
+        $this->info('------ STARTING MusoraLegacyTo4ResponsesAndExceptions ------');
 
         $this->info('TO DO');
     }
