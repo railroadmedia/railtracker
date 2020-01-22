@@ -156,6 +156,19 @@ class LegacyMigrate extends \Illuminate\Console\Command
             if(isset($legacyDatum->agent_name)){
                 $legacyDatum->agent_name_hash = md5($legacyDatum->agent_name);
             }
+
+            if(isset($legacyDatum->exception_exception_class)){
+                $legacyDatum->exception_exception_class_hash = md5($legacyDatum->exception_exception_class);
+            }
+            if(isset($legacyDatum->exception_file)){
+                $legacyDatum->exception_file_hash = md5($legacyDatum->exception_file);
+            }
+            if(isset($legacyDatum->exception_message)){
+                $legacyDatum->exception_message_hash = md5($legacyDatum->exception_message);
+            }
+            if(isset($legacyDatum->exception_trace)){
+                $legacyDatum->exception_trace_hash = md5($legacyDatum->exception_trace);
+            }
         }
 
         //dd($legacyData);
@@ -163,8 +176,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private function migrateTheseRequests(Collection $legacyData)
     {
-        dd($legacyData);
-
         $this->info('Processing ' . $legacyData->count() . ' legacy requests.');
 
         $this->fillHashes($legacyData);
@@ -254,71 +265,58 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 ['ip_currency' => 'geoip_currency'],
             ],
 
-            // todo: handle these separately because the JOINS are so expensive?
+            // more complex to join
 
-//        'response_status_codes' => [
-//            ['response_status_code' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
-//        'response_durations' => [
-//            ['response_duration_ms' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
-//        'exception_codes' => [
-//            ['exception_code' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
-//        'exception_lines' => [
-//            ['exception_line' => 'XXXXXXXXXXXXXXXXXXXXX'],
-//        ],
+            'response_status_codes' => [
+                ['response_status_code' => 'response_status_code_code'],
+            ],
+            'response_durations' => [
+                ['response_duration_ms' => 'response_duration_ms'],
+            ],
+            'exception_codes' => [
+                ['exception_code' => 'exception_code'],
+            ],
+            'exception_lines' => [
+                ['exception_line' => 'exception_line'],
+            ],
 
             // long strings requiring hashes
 
-            'url_queries' => [ // table
-                [ // a row
+            'url_queries' => [
+                [
                     'url_query' => 'url_query_string',
-                    'url_query_hash' => 'url_query_string_hash', // these are manually created in method "" below.
+                    'url_query_hash' => 'url_query_string_hash'
                 ],
-                [ // another row
+                [
                     'url_query' => 'url_referer_query_string',
-                    'url_query_hash' => 'url_referer_query_string_hash', // these are manually created in method "" below.
-                ],
+                    'url_query_hash' => 'url_referer_query_string_hash'
+                ]
             ],
-
-            'route_actions' => [
-                [
-                    'route_action' => 'route_action',
-                    'route_action_hash' => 'route_action_hash', // these are manually created in method "" below.
-                ],
-            ],
-            'agent_strings' => [
-                [
-                    'agent_string' => 'agent_name',
-                    'agent_string_hash' => 'agent_name_hash', // these are manually created in method "" below.
-                ],
-            ],
-//        'exception_classes' => [
-//            [
-//                'exception_class' => 'exceptionClass',
-//                //'exception_class_hash' => 'exceptionClassHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-//        'exception_files' => [
-//            [
-//                'exception_file' => 'exceptionFile',
-//                //'exception_file_hash' => 'exceptionFileHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-//        'exception_messages' => [
-//            [
-//                'exception_message' => 'exceptionMessage',
-//                //'exception_message_hash' => 'exceptionMessageHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-//        'exception_traces' => [
-//            [
-//                'exception_trace' => 'exceptionTrace',
-//                //'exception_trace_hash' => 'exceptionTraceHash',  // todo: generate hash or get from legacy?
-//            ],
-//        ],
-        ];
+            'route_actions' => [[
+                'route_action' => 'route_action',
+                'route_action_hash' => 'route_action_hash'
+            ]],
+            'agent_strings' => [[
+                'agent_string' => 'agent_name',
+                'agent_string_hash' => 'agent_name_hash'
+            ]],
+            'exception_classes' => [[
+                'exception_class' => 'exception_exception_class',
+                'exception_class_hash' => 'exception_exception_class_hash'
+            ]],
+            'exception_files' => [[
+                'exception_file' => 'exception_file',
+                'exception_file_hash' => 'exception_file_hash'
+            ]],
+            'exception_messages' => [[
+                'exception_message' => 'exception_message',
+                'exception_message_hash' => 'exception_message_hash'
+            ]],
+            'exception_traces' => [[
+                'exception_trace' => 'exception_trace',
+                'exception_trace_hash' => 'exception_trace_hash'
+            ]],
+            ];
 
         $notProvided = '[LEGACY]';
 
@@ -402,23 +400,23 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
                 'is_robot' =>               $legacyDatum->isRobot ?? 2, // NOT nullable
 
-                'exception_code' =>         $legacyDatum->exceptionCode ?? null, // addressed elsewhere
-                'exception_line' =>         $legacyDatum->exceptionLine ?? null, // addressed elsewhere
+                'exception_code' =>         $legacyDatum->exception_code ?? null, // addressed elsewhere
+                'exception_line' =>         $legacyDatum->exception_line ?? null, // addressed elsewhere
 
                 'requested_on' =>           $legacyDatum->requested_on ?? $notProvided, // NOT nullable
 
-                'response_status_code' =>   $legacyDatum->responseStatusCode ?? null, // addressed elsewhere
-                'response_duration_ms' =>   $legacyDatum->responseDurationMs ?? null, // addressed elsewhere
+                'response_status_code' =>   $legacyDatum->response_status_code_code ?? null, // addressed elsewhere
+                'response_duration_ms' =>   $legacyDatum->response_duration_ms ?? null, // addressed elsewhere
                 'responded_on' =>           $legacyDatum->respondedOn ?? null, // addressed elsewhere
 
                 'url_query_hash' =>         $legacyDatum->url_query_string_hash ?? null,
                 'referer_url_query_hash' => $legacyDatum->url_referer_query_string_hash ?? null,
-                'route_action_hash' =>      $legacyDatum->routeActionHash ?? null, // should|must be generated from a property of $legacyDatum—either route_action or route_name
-                'agent_string_hash' =>      $legacyDatum->agentStringHash ?? null, // should|must be generated from $legacyDatum->agent_name
-                'exception_class_hash' =>   $legacyDatum->exceptionClassHash ?? null,
-                'exception_file_hash' =>    $legacyDatum->exceptionFileHash ?? null,
-                'exception_message_hash' => $legacyDatum->exceptionMessageHash ?? null,
-                'exception_trace_hash' =>   $legacyDatum->exceptionTraceHash ?? null,
+                'route_action_hash' =>      $legacyDatum->route_action_hash ?? null,
+                'agent_string_hash' =>      $legacyDatum->agent_name_hash ?? null,
+                'exception_class_hash' =>   $legacyDatum->exception_exception_class_hash ?? null,
+                'exception_file_hash' =>    $legacyDatum->exception_file_hash ?? null,
+                'exception_message_hash' => $legacyDatum->exception_message_hash ?? null,
+                'exception_trace_hash' =>   $legacyDatum->exception_trace_hash ?? null,
             ];
         }
 
@@ -532,12 +530,51 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 'railtracker_geoip.hash as geoip_hash' // is this needed?
             )
 
-            /*
-             * Response and exception information is handled separately because the JOINS are too costly to include
-             * here.
-             *
-             * Jonathan.M, Jan 2020
-             */
+            // responses
+
+            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.request_id')
+            ->addSelect(
+                'responses.response_duration_ms',
+                'responses.responded_on'
+            )
+            ->leftJoin('railtracker_response_status_codes as response_status_codes', 'responses.status_code_id', '=', 'response_status_codes.id')
+            ->addSelect(
+                'response_status_codes.code AS response_status_code_code',
+                'response_status_codes.hash AS response_status_code_hash'
+            )
+
+            // request-exceptions
+
+            ->leftJoin('railtracker_request_exceptions as request_exceptions', 'railtracker_requests.id', '=', 'request_exceptions.request_id')
+            ->addSelect(
+                'request_exceptions.created_at_timestamp_ms AS exception_timestamp'
+            )
+
+            // exceptions
+
+            ->leftJoin('railtracker_exceptions as exceptions', 'request_exceptions.exception_id', '=', 'exceptions.id')
+            ->addSelect(
+                'exceptions.id AS exception_id',
+                'exceptions.code AS exception_code',
+                'exceptions.line AS exception_line',
+                'exceptions.exception_class AS exception_exception_class',
+                'exceptions.file AS exception_file',
+                'exceptions.message AS exception_message',
+                'exceptions.trace AS exception_trace',
+                'exceptions.hash AS exception_hash'
+            )
+
+            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
+            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
+            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
+            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
+            // ↓↓↓↓↓↓↓ TEMP - no commit!! ↓↓↓↓↓↓↓
+            ->whereNotNull('exception_id')
+            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
+            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
+            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
+            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
+            // ↑↑↑↑↑↑↑ TEMP - no commit!! ↑↑↑↑↑↑↑
 
             ->orderBy('id')
             ->chunk($this->chunkSize, function($rows){
