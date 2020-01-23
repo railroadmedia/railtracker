@@ -69,16 +69,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private function promptForOption($supplied = null)
     {
-        $methodsAvailable = [
-            'DrumeoLegacyTo4',
-            'DrumeoLegacyTo4ResponsesAndExceptions',
-            'Drumeo3To4',
-            'MusoraLegacyTo4',
-            'MusoraLegacyTo4ResponsesAndExceptions',
-            'Musora3To4',
-            'Pianote3To4',
-            'Guitareo3To4'
-        ];
+        $methodsAvailable = ['legacyToFour','threeToFour'];
 
         // get if supplied when command called.
 
@@ -176,6 +167,123 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }
 
         //dd($legacyData);
+    }
+
+    private function legacyToFour()
+    {
+        $success = $this->databaseManager
+            ->table('railtracker_requests')
+            ->select(
+                'railtracker_requests.*',
+                'railtracker_requests.id as request_id'
+            )
+
+            // ------------ urls
+            ->leftJoin('railtracker_urls as urls', 'railtracker_requests.url_id', '=', 'urls.id')
+            ->leftJoin('railtracker_url_protocols as url_protocols', 'urls.protocol_id', '=', 'url_protocols.id')
+            ->leftJoin('railtracker_url_domains as url_domains', 'urls.domain_id', '=', 'url_domains.id')
+            ->leftJoin('railtracker_url_paths as url_paths', 'urls.path_id', '=', 'url_paths.id')
+            ->leftJoin('railtracker_url_queries as url_queries', 'urls.query_id', '=', 'url_queries.id')
+            ->addSelect(
+                'urls.id as url_id_from_join',
+                'url_protocols.protocol as url_protocol',
+                'url_domains.name as url_name',
+                'url_paths.path as url_path',
+                'url_queries.string as url_query_string'
+            )
+            // ------------ referer urls
+            ->leftJoin('railtracker_urls as referer_urls', 'railtracker_requests.referer_url_id', '=', 'referer_urls.id')
+            ->leftJoin('railtracker_url_protocols as url_protocols_referers', 'referer_urls.protocol_id', '=', 'url_protocols_referers.id')
+            ->leftJoin('railtracker_url_domains as url_domains_referers', 'referer_urls.domain_id', '=', 'url_domains_referers.id')
+            ->leftJoin('railtracker_url_paths as url_paths_referers', 'referer_urls.path_id', '=', 'url_paths_referers.id')
+            ->leftJoin('railtracker_url_queries as url_queries_referers', 'referer_urls.query_id', '=', 'url_queries_referers.id')
+            ->addSelect(
+                'url_protocols_referers.protocol as url_referer_protocol',
+                'url_domains_referers.name as url_referer_name',
+                'url_paths_referers.path as url_referer_path',
+                'url_queries_referers.string as url_referer_query_string'
+            )
+            // ------------ routes, request_devices, request_agents, request_methods, request_languages
+            ->leftJoin('railtracker_routes','railtracker_requests.route_id','=','railtracker_routes.id')
+            ->leftJoin('railtracker_request_devices','railtracker_requests.device_id','=','railtracker_request_devices.id')
+            ->leftJoin('railtracker_request_agents','railtracker_requests.agent_id','=','railtracker_request_agents.id')
+            ->leftJoin('railtracker_request_methods','railtracker_requests.method_id','=','railtracker_request_methods.id')
+            ->leftJoin('railtracker_request_languages','railtracker_requests.language_id','=','railtracker_request_languages.id')
+            ->addSelect(
+                'railtracker_routes.name as route_name',
+                'railtracker_routes.action as route_action',
+
+                'railtracker_request_devices.kind as device_kind',
+                'railtracker_request_devices.model as device_model',
+                'railtracker_request_devices.platform as device_platform',
+                'railtracker_request_devices.platform_version as device_platform_version',
+                'railtracker_request_devices.is_mobile as device_is_mobile',
+
+                'railtracker_request_agents.name as agent_name',
+                'railtracker_request_agents.browser as agent_browser',
+                'railtracker_request_agents.browser_version as agent_browser_version',
+
+                'railtracker_request_methods.method as method_method',
+
+                'railtracker_request_languages.preference as language_preference',
+                'railtracker_request_languages.language_range as language_language_range'
+            )
+
+            // geo_ip
+             ->leftJoin('railtracker_geoip','railtracker_requests.geoip_id','=','railtracker_geoip.id')
+             ->addSelect(
+                 'railtracker_geoip.latitude as geoip_latitude',
+                 'railtracker_geoip.longitude as geoip_longitude',
+                 'railtracker_geoip.country_code as geoip_country_code',
+                 'railtracker_geoip.country_name as geoip_country_name',
+                 'railtracker_geoip.region as geoip_region',
+                 'railtracker_geoip.city as geoip_city',
+                 'railtracker_geoip.postal_code as geoip_postal_code',
+                 'railtracker_geoip.ip_address as geoip_ip_address',
+                 'railtracker_geoip.timezone as geoip_timezone',
+                 'railtracker_geoip.currency as geoip_currency'
+             )
+
+            // responses
+
+            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.request_id')
+            ->addSelect(
+                'responses.response_duration_ms',
+                'responses.responded_on'
+            )
+            ->leftJoin('railtracker_response_status_codes as response_status_codes', 'responses.status_code_id', '=', 'response_status_codes.id')
+            ->addSelect(
+                'response_status_codes.code AS response_status_code_code',
+                'response_status_codes.hash AS response_status_code_hash'
+            )
+
+            // request-exceptions
+
+            ->leftJoin('railtracker_request_exceptions as request_exceptions', 'railtracker_requests.id', '=', 'request_exceptions.request_id')
+            ->addSelect(
+                'request_exceptions.created_at_timestamp_ms AS exception_timestamp'
+            )
+
+            // exceptions
+
+            ->leftJoin('railtracker_exceptions as exceptions', 'request_exceptions.exception_id', '=', 'exceptions.id')
+            ->addSelect(
+                'exceptions.id AS exception_id',
+                'exceptions.code AS exception_code',
+                'exceptions.line AS exception_line',
+                'exceptions.exception_class AS exception_exception_class',
+                'exceptions.file AS exception_file',
+                'exceptions.message AS exception_message',
+                'exceptions.trace AS exception_trace',
+                'exceptions.hash AS exception_hash'
+            )
+
+            ->orderBy('id')
+            ->chunk($this->chunkSize, function($rows){
+                return $this->migrateTheseRequests($rows);
+            });
+
+        $this->info('Success: ' . var_export($success, true));
     }
 
     private function migrateTheseRequests(Collection $legacyData)
@@ -388,10 +496,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 'language_range' =>         $legacyDatum->language_language_range ?? null,
                 'ip_address' =>             $legacyDatum->geoip_ip_address ?? null,
 
-                /*
-                 * I don't think we'll have any of the IP data—and that's fine because we're going to be running the
-                 * "fill-missing-ip-data" command anyways.
-                 */
                 'ip_latitude' =>            $legacyDatum->geoip_latitude ?? null, // see note above
                 'ip_longitude' =>           $legacyDatum->geoip_longitude ?? null, // see note above
                 'ip_country_code' =>        $legacyDatum->geoip_country_code ?? null, // see note above
@@ -454,260 +558,138 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $presumablyCreatedRows->count();
     }
 
-    private function DrumeoLegacyTo4()
+    private function threeToFour()
     {
-        $this->info('------ STARTING DrumeoLegacyTo4 ------');
+        $tablesToTransfer = [
+            'railtracker3_agent_browser_versions' => ['agent_browser_version'],
+            'railtracker3_agent_browsers' => ['agent_browser'],
+            'railtracker3_agent_strings' => ['agent_string','agent_string_hash'],
+            'railtracker3_device_kinds' => ['device_kind'],
+            'railtracker3_device_models' => ['device_model'],
+            'railtracker3_device_platforms' => ['device_platform'],
+            'railtracker3_device_versions' => ['device_version'],
+            'railtracker3_exception_classes' => ['exception_class','exception_class_hash'],
+            'railtracker3_exception_codes' => ['exception_code'],
+            'railtracker3_exception_files' => ['exception_file','exception_file_hash'],
+            'railtracker3_exception_lines' => ['exception_line'],
+            'railtracker3_exception_messages' => ['exception_message','exception_message_hash'],
+            'railtracker3_exception_traces' => ['exception_trace','exception_trace_hash'],
+            'railtracker3_ip_addresses' => ['ip_address'],
+            'railtracker3_ip_cities' => ['ip_city'],
+            'railtracker3_ip_country_codes' => ['ip_country_code'],
+            'railtracker3_ip_country_names' => ['ip_country_name'],
+            'railtracker3_ip_currencies' => ['ip_currency'],
+            'railtracker3_ip_latitudes' => ['ip_latitude'],
+            'railtracker3_ip_longitudes' => ['ip_longitude'],
+            'railtracker3_ip_postal_zip_codes' => ['ip_postal_zip_code'],
+            'railtracker3_ip_regions' => ['ip_region'],
+            'railtracker3_ip_timezones' => ['ip_timezone'],
+            'railtracker3_language_preferences' => ['language_preference'],
+            'railtracker3_language_ranges' => ['language_range'],
+            'railtracker3_methods' => ['method'],
+            'railtracker3_response_durations' => ['response_duration_ms'],
+            'railtracker3_response_status_codes' => ['response_status_code'],
+            'railtracker3_route_actions' => ['route_action','route_action_hash'],
+            'railtracker3_route_names' => ['route_name'],
+            'railtracker3_url_domains' => ['url_domain'],
+            'railtracker3_url_paths' => ['url_path'],
+            'railtracker3_url_protocols' => ['url_protocol'],
+            'railtracker3_url_queries' => ['url_query','url_query_hash'],
+            'railtracker3_requests' => [ // last else foreign-key constraint violations
+                'id',
+                'uuid',
+                'cookie_id',
+                'user_id',
+                'url_protocol',
+                'url_domain',
+                'url_path',
+                'referer_url_protocol',
+                'referer_url_domain',
+                'referer_url_path',
+                'method',
+                'route_name',
+                'device_kind',
+                'device_model',
+                'device_platform',
+                'device_version',
+                'device_is_mobile',
+                'agent_browser',
+                'agent_browser_version',
+                'language_preference',
+                'language_range',
+                'ip_address',
+                'ip_latitude',
+                'ip_longitude',
+                'ip_country_code',
+                'ip_country_name',
+                'ip_region',
+                'ip_city',
+                'ip_postal_zip_code',
+                'ip_timezone',
+                'ip_currency',
+                'is_robot',
+                'response_status_code',
+                'response_duration_ms',
+                'exception_code',
+                'exception_line',
+                'requested_on',
+                'responded_on',
+                'url_query_hash',
+                'referer_url_query_hash',
+                'route_action_hash',
+                'agent_string_hash',
+                'exception_class_hash',
+                'exception_file_hash',
+                'exception_message_hash',
+                'exception_trace_hash',
+            ],
+        ];
 
-        $success = $this->databaseManager
-            ->table('railtracker_requests')
-            ->select(
-                'railtracker_requests.*',
-                'railtracker_requests.id as request_id'
-            )
-
-            // ------------ urls
-            ->leftJoin('railtracker_urls as urls', 'railtracker_requests.url_id', '=', 'urls.id')
-            ->leftJoin('railtracker_url_protocols as url_protocols', 'urls.protocol_id', '=', 'url_protocols.id')
-            ->leftJoin('railtracker_url_domains as url_domains', 'urls.domain_id', '=', 'url_domains.id')
-            ->leftJoin('railtracker_url_paths as url_paths', 'urls.path_id', '=', 'url_paths.id')
-            ->leftJoin('railtracker_url_queries as url_queries', 'urls.query_id', '=', 'url_queries.id')
-            ->addSelect(
-                'urls.id as url_id_from_join',
-                'url_protocols.protocol as url_protocol',
-                'url_domains.name as url_name',
-                'url_paths.path as url_path',
-                'url_queries.string as url_query_string'
-            )
-            // ------------ referer urls
-            ->leftJoin('railtracker_urls as referer_urls', 'railtracker_requests.referer_url_id', '=', 'referer_urls.id')
-            ->leftJoin('railtracker_url_protocols as url_protocols_referers', 'referer_urls.protocol_id', '=', 'url_protocols_referers.id')
-            ->leftJoin('railtracker_url_domains as url_domains_referers', 'referer_urls.domain_id', '=', 'url_domains_referers.id')
-            ->leftJoin('railtracker_url_paths as url_paths_referers', 'referer_urls.path_id', '=', 'url_paths_referers.id')
-            ->leftJoin('railtracker_url_queries as url_queries_referers', 'referer_urls.query_id', '=', 'url_queries_referers.id')
-            ->addSelect(
-                'url_protocols_referers.protocol as url_referer_protocol',
-                'url_domains_referers.name as url_referer_name',
-                'url_paths_referers.path as url_referer_path',
-                'url_queries_referers.string as url_referer_query_string'
-            )
-            // ------------ routes, request_devices, request_agents, request_methods, request_languages, geoip
-            ->leftJoin('railtracker_routes','railtracker_requests.route_id','=','railtracker_routes.id')
-            ->leftJoin('railtracker_request_devices','railtracker_requests.device_id','=','railtracker_request_devices.id')
-            ->leftJoin('railtracker_request_agents','railtracker_requests.agent_id','=','railtracker_request_agents.id')
-            ->leftJoin('railtracker_request_methods','railtracker_requests.method_id','=','railtracker_request_methods.id')
-            ->leftJoin('railtracker_request_languages','railtracker_requests.language_id','=','railtracker_request_languages.id')
-            ->leftJoin('railtracker_geoip','railtracker_requests.geoip_id','=','railtracker_geoip.id')
-            ->addSelect(
-                'railtracker_routes.name as route_name',
-                'railtracker_routes.action as route_action', // this will be the route_action_hash, but we still need
-                // the scalar value to store in the association table.
-                'railtracker_routes.hash as route_hash', // is this needed? I'm still not sure, but I know that this
-                // will be the route_action_hash. It's probably note needed.
-
-                'railtracker_request_devices.kind as device_kind',
-                'railtracker_request_devices.model as device_model',
-                'railtracker_request_devices.platform as device_platform',
-                'railtracker_request_devices.platform_version as device_platform_version',
-                'railtracker_request_devices.is_mobile as device_is_mobile',
-                'railtracker_request_devices.hash as device_hash', // is this needed? Probably same as route_hash
-                // above. I don't know if it's needed, but probably not.
-
-                'railtracker_request_agents.name as agent_name',
-                'railtracker_request_agents.browser as agent_browser',
-                'railtracker_request_agents.browser_version as agent_browser_version',
-
-                'railtracker_request_methods.method as method_method',
-
-                'railtracker_request_languages.preference as language_preference',
-                'railtracker_request_languages.language_range as language_language_range',
-
-                'railtracker_geoip.latitude as geoip_latitude',
-                'railtracker_geoip.longitude as geoip_longitude',
-                'railtracker_geoip.country_code as geoip_country_code',
-                'railtracker_geoip.country_name as geoip_country_name',
-                'railtracker_geoip.region as geoip_region',
-                'railtracker_geoip.city as geoip_city',
-                'railtracker_geoip.postal_code as geoip_postal_code',
-                'railtracker_geoip.ip_address as geoip_ip_address',
-                'railtracker_geoip.timezone as geoip_timezone',
-                'railtracker_geoip.currency as geoip_currency',
-                'railtracker_geoip.hash as geoip_hash' // is this needed?
-            )
-
-            // responses
-
-            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.request_id')
-            ->addSelect(
-                'responses.response_duration_ms',
-                'responses.responded_on'
-            )
-            ->leftJoin('railtracker_response_status_codes as response_status_codes', 'responses.status_code_id', '=', 'response_status_codes.id')
-            ->addSelect(
-                'response_status_codes.code AS response_status_code_code',
-                'response_status_codes.hash AS response_status_code_hash'
-            )
-
-            // request-exceptions
-
-            ->leftJoin('railtracker_request_exceptions as request_exceptions', 'railtracker_requests.id', '=', 'request_exceptions.request_id')
-            ->addSelect(
-                'request_exceptions.created_at_timestamp_ms AS exception_timestamp'
-            )
-
-            // exceptions
-
-            ->leftJoin('railtracker_exceptions as exceptions', 'request_exceptions.exception_id', '=', 'exceptions.id')
-            ->addSelect(
-                'exceptions.id AS exception_id',
-                'exceptions.code AS exception_code',
-                'exceptions.line AS exception_line',
-                'exceptions.exception_class AS exception_exception_class',
-                'exceptions.file AS exception_file',
-                'exceptions.message AS exception_message',
-                'exceptions.trace AS exception_trace',
-                'exceptions.hash AS exception_hash'
-            )
-
-            ->orderBy('id')
-            ->chunk($this->chunkSize, function($rows){
-                return $this->migrateTheseRequests($rows);
-            });
-
-        $this->info('Success: ' . var_export($success, true));
+        foreach($tablesToTransfer as $table => $columnsToTransfer){
+            $chunkCount = 0;
+            if(count($columnsToTransfer) === 1){
+                $orderByColumn = reset($columnsToTransfer);
+            }else{
+                $orderByColumn = reset($columnsToTransfer);
+            }
+            $this->info('Transferring ' . $table);
+            $success = $this->databaseManager
+                ->table($table)
+                ->select($columnsToTransfer)
+                ->orderBy($orderByColumn)
+                ->chunk(
+                    $this->chunkSize,
+                    function($rows) use ($table, &$chunkCount)
+                    {
+                        $chunkCount++;
+                        $this->info('chunk ' . $chunkCount);
+                        return $this->transferTheseRequests($rows, $table);
+                    }
+                );
+            $this->info($success ? 'Succeeded' : 'Failed');
+        }
     }
 
-    private function DrumeoLegacyTo4ResponsesAndExceptions()
+    private function transferTheseRequests($rows, $table)
     {
-        $this->info('------ STARTING DrumeoLegacyTo4ResponsesAndExceptions ------');
+        $dbConnectionName = config('railtracker.database_connection_name');
 
-        $success = $this->databaseManager
-            ->table('railtracker_requests')
-            ->select(
-                'railtracker_requests.*',
-                'railtracker_requests.id as request_id'
-            )
+        $builder = new BulkInsertOrUpdateBuilder(
+            $this->databaseManager->connection($dbConnectionName),
+            new BulkInsertOrUpdateMySqlGrammar()
+        );
 
-            // responses
+        foreach($rows as $row){
+            $data[] = json_decode(json_encode($row), true);
+        }
 
-            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.request_id')
-            ->addSelect(
-                'responses.response_duration_ms',
-                'responses.responded_on'
-            )
-            ->leftJoin('railtracker_response_status_codes as response_status_codes', 'responses.status_code_id', '=', 'response_status_codes.id')
-            ->addSelect(
-                'response_status_codes.code AS response_status_code_code',
-                'response_status_codes.hash AS response_status_code_hash'
-            )
+        $tableToUpdate = str_replace_first('3', '4', $table);
 
-            // request-exceptions
-
-            ->leftJoin('railtracker_request_exceptions as request_exceptions', 'railtracker_requests.id', '=', 'request_exceptions.request_id')
-            ->addSelect(
-                'request_exceptions.created_at_timestamp_ms AS exception_timestamp'
-            )
-
-            // exceptions
-
-            ->leftJoin('railtracker_exceptions as exceptions', 'request_exceptions.exception_id', '=', 'exceptions.id')
-            ->addSelect(
-                'exceptions.id AS exception_id',
-                'exceptions.code AS exception_code',
-                'exceptions.line AS exception_line',
-                'exceptions.exception_class AS exception_exception_class',
-                'exceptions.file AS exception_file',
-                'exceptions.message AS exception_message',
-                'exceptions.trace AS exception_trace',
-                'exceptions.hash AS exception_hash'
-            )
-
-
-            ->orderBy('id')
-            ->chunk($this->chunkSize, function($rows){
-                return $this->migrateTheseRequests($rows);
-            });
-
-        $this->info('Success: ' . var_export($success, true));
+        try{
+            return $builder->from($tableToUpdate)->insertOrUpdate($data ?? []);
+        }catch(\Exception $e){
+            error_log($e);
+            dump('Error while writing to requests table ("' . $e->getMessage() . '")');
+        }
     }
-
-    private function Drumeo3To4()
-    {
-        $this->info('------ STARTING Drumeo3To4 ------');
-
-        /*
-        railtracker3_agent_browser_versions
-        railtracker3_agent_browsers
-        railtracker3_agent_strings
-        railtracker3_device_kinds
-        railtracker3_device_models
-        railtracker3_device_platforms
-        railtracker3_device_versions
-        railtracker3_exception_classes
-        railtracker3_exception_codes
-        railtracker3_exception_files
-        railtracker3_exception_lines
-        railtracker3_exception_messages
-        railtracker3_exception_traces
-        railtracker3_ip_addresses
-        railtracker3_ip_cities
-        railtracker3_ip_country_codes
-        railtracker3_ip_country_names
-        railtracker3_ip_currencies
-        railtracker3_ip_latitudes
-        railtracker3_ip_longitudes
-        railtracker3_ip_postal_zip_codes
-        railtracker3_ip_regions
-        railtracker3_ip_timezones
-        railtracker3_language_preferences
-        railtracker3_language_ranges
-        railtracker3_methods
-        railtracker3_requests
-        railtracker3_response_durations
-        railtracker3_response_status_codes
-        railtracker3_route_actions
-        railtracker3_route_names
-        railtracker3_url_domains
-        railtracker3_url_paths
-        railtracker3_url_protocols
-        railtracker3_url_queries
-         */
-
-        $this->info('TO DO');
-    }
-
-    private function MusoraLegacyTo4()
-    {
-        $this->info('------ STARTING MusoraLegacyTo4 ------');
-
-        $this->info('TO DO');
-    }
-
-    private function MusoraLegacyTo4ResponsesAndExceptions()
-    {
-        $this->info('------ STARTING MusoraLegacyTo4ResponsesAndExceptions ------');
-
-        $this->info('TO DO');
-    }
-
-    private function Musora3To4()
-    {
-        $this->info('------ STARTING Musora3To4 ------');
-
-        $this->info('TO DO');
-    }
-
-    private function Pianote3To4()
-    {
-        $this->info('------ STARTING Pianote3To4 ------');
-
-        $this->info('TO DO');
-    }
-
-    private function Guitareo3To4()
-    {
-        $this->info('------ STARTING Guitareo3To4 ------');
-
-        $this->info('TO DO');
-    }
-
 }
