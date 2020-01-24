@@ -45,4 +45,6 @@ return [
     //'test-ip' => '156.184.155.130',
 
     'updateUsersAnonymousRequests_processing_chunk_size' => 1000,
+
+    'legacy_migrate_chunk_size' => 1000,
 ];

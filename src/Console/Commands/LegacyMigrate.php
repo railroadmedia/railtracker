@@ -38,7 +38,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private $requestRepository;
 
-    private $chunkSize = 100;
+    private $chunkSize;
 
     //private $limitToOneChunk = true;
 
@@ -47,6 +47,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
         RequestRepository $requestRepository
     )
     {
+        $this->chunkSize = config('railtracker.legacy_migrate_chunk_size') ?? 1000;
+
         parent::__construct();
 
         $this->databaseManager = $databaseManager;
@@ -280,6 +282,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             ->orderBy('id')
             ->chunk($this->chunkSize, function($rows){
+                sleep(1);
                 return $this->migrateTheseRequests($rows);
             });
 
@@ -661,6 +664,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     $this->chunkSize,
                     function($rows) use ($table, &$chunkCount)
                     {
+                        sleep(1);
                         $chunkCount++;
                         $this->info('chunk ' . $chunkCount);
                         return $this->transferTheseRequests($rows, $table);
