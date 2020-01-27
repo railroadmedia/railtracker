@@ -40,8 +40,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private $chunkSize;
 
-    //private $limitToOneChunk = true;
-
     public function __construct(
         DatabaseManager $databaseManager,
         RequestRepository $requestRepository
@@ -173,126 +171,178 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private function legacyToFour()
     {
-        $success = $this->databaseManager
+        $chunkCounter = 0;
+        $average = 0;
+        $durations = [];
+        $averageOfFirstFive = null;
+
+        $this->info('Chunk size: ' . $this->chunkSize);
+        $this->info('');
+        $this->info('#,duration(ms),avg(ms),vs avg as %,vs avg of 1st 5 as %');
+
+        $this->databaseManager
             ->table('railtracker_requests')
-            ->select(
-                'railtracker_requests.*',
-                'railtracker_requests.id as request_id'
-            )
-
-            // ------------ urls
-            ->leftJoin('railtracker_urls as urls', 'railtracker_requests.url_id', '=', 'urls.id')
-            ->leftJoin('railtracker_url_protocols as url_protocols', 'urls.protocol_id', '=', 'url_protocols.id')
-            ->leftJoin('railtracker_url_domains as url_domains', 'urls.domain_id', '=', 'url_domains.id')
-            ->leftJoin('railtracker_url_paths as url_paths', 'urls.path_id', '=', 'url_paths.id')
-            ->leftJoin('railtracker_url_queries as url_queries', 'urls.query_id', '=', 'url_queries.id')
-            ->addSelect(
-                'urls.id as url_id_from_join',
-                'url_protocols.protocol as url_protocol',
-                'url_domains.name as url_name',
-                'url_paths.path as url_path',
-                'url_queries.string as url_query_string'
-            )
-            // ------------ referer urls
-            ->leftJoin('railtracker_urls as referer_urls', 'railtracker_requests.referer_url_id', '=', 'referer_urls.id')
-            ->leftJoin('railtracker_url_protocols as url_protocols_referers', 'referer_urls.protocol_id', '=', 'url_protocols_referers.id')
-            ->leftJoin('railtracker_url_domains as url_domains_referers', 'referer_urls.domain_id', '=', 'url_domains_referers.id')
-            ->leftJoin('railtracker_url_paths as url_paths_referers', 'referer_urls.path_id', '=', 'url_paths_referers.id')
-            ->leftJoin('railtracker_url_queries as url_queries_referers', 'referer_urls.query_id', '=', 'url_queries_referers.id')
-            ->addSelect(
-                'url_protocols_referers.protocol as url_referer_protocol',
-                'url_domains_referers.name as url_referer_name',
-                'url_paths_referers.path as url_referer_path',
-                'url_queries_referers.string as url_referer_query_string'
-            )
-            // ------------ routes, request_devices, request_agents, request_methods, request_languages
-            ->leftJoin('railtracker_routes','railtracker_requests.route_id','=','railtracker_routes.id')
-            ->leftJoin('railtracker_request_devices','railtracker_requests.device_id','=','railtracker_request_devices.id')
-            ->leftJoin('railtracker_request_agents','railtracker_requests.agent_id','=','railtracker_request_agents.id')
-            ->leftJoin('railtracker_request_methods','railtracker_requests.method_id','=','railtracker_request_methods.id')
-            ->leftJoin('railtracker_request_languages','railtracker_requests.language_id','=','railtracker_request_languages.id')
-            ->addSelect(
-                'railtracker_routes.name as route_name',
-                'railtracker_routes.action as route_action',
-
-                'railtracker_request_devices.kind as device_kind',
-                'railtracker_request_devices.model as device_model',
-                'railtracker_request_devices.platform as device_platform',
-                'railtracker_request_devices.platform_version as device_platform_version',
-                'railtracker_request_devices.is_mobile as device_is_mobile',
-
-                'railtracker_request_agents.name as agent_name',
-                'railtracker_request_agents.browser as agent_browser',
-                'railtracker_request_agents.browser_version as agent_browser_version',
-
-                'railtracker_request_methods.method as method_method',
-
-                'railtracker_request_languages.preference as language_preference',
-                'railtracker_request_languages.language_range as language_language_range'
-            )
-
-            // geo_ip
-             ->leftJoin('railtracker_geoip','railtracker_requests.geoip_id','=','railtracker_geoip.id')
-             ->addSelect(
-                 'railtracker_geoip.latitude as geoip_latitude',
-                 'railtracker_geoip.longitude as geoip_longitude',
-                 'railtracker_geoip.country_code as geoip_country_code',
-                 'railtracker_geoip.country_name as geoip_country_name',
-                 'railtracker_geoip.region as geoip_region',
-                 'railtracker_geoip.city as geoip_city',
-                 'railtracker_geoip.postal_code as geoip_postal_code',
-                 'railtracker_geoip.ip_address as geoip_ip_address',
-                 'railtracker_geoip.timezone as geoip_timezone',
-                 'railtracker_geoip.currency as geoip_currency'
-             )
-
-            // responses
-
-            ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.request_id')
-            ->addSelect(
-                'responses.response_duration_ms',
-                'responses.responded_on'
-            )
-            ->leftJoin('railtracker_response_status_codes as response_status_codes', 'responses.status_code_id', '=', 'response_status_codes.id')
-            ->addSelect(
-                'response_status_codes.code AS response_status_code_code',
-                'response_status_codes.hash AS response_status_code_hash'
-            )
-
-            // request-exceptions
-
-            ->leftJoin('railtracker_request_exceptions as request_exceptions', 'railtracker_requests.id', '=', 'request_exceptions.request_id')
-            ->addSelect(
-                'request_exceptions.created_at_timestamp_ms AS exception_timestamp'
-            )
-
-            // exceptions
-
-            ->leftJoin('railtracker_exceptions as exceptions', 'request_exceptions.exception_id', '=', 'exceptions.id')
-            ->addSelect(
-                'exceptions.id AS exception_id',
-                'exceptions.code AS exception_code',
-                'exceptions.line AS exception_line',
-                'exceptions.exception_class AS exception_exception_class',
-                'exceptions.file AS exception_file',
-                'exceptions.message AS exception_message',
-                'exceptions.trace AS exception_trace',
-                'exceptions.hash AS exception_hash'
-            )
-
+            ->select('railtracker_requests.id')
             ->orderBy('id')
-            ->chunk($this->chunkSize, function($rows){
-                sleep(1);
-                return $this->migrateTheseRequests($rows);
-            });
+            ->chunkById(
+                $this->chunkSize,
+                function($ids) use (&$chunkCounter, &$average, &$durations, &$averageOfFirstFive) {
 
-        $this->info('Success: ' . var_export($success, true));
+                    $chunkCounter++;
+
+                    /** @var $ids Collection */
+
+                    $idsToUse = [];
+
+                    foreach($ids->toArray() as $idToUse){
+                        $idsToUse[] = $idToUse->id;
+                    }
+
+                    $rows = $this->databaseManager
+                        ->table('railtracker_requests')
+                        ->select(
+                            'railtracker_requests.*',
+                            'railtracker_requests.id as id'
+                        )
+                        // ------------ urls
+                        ->leftJoin('railtracker_urls as urls', 'railtracker_requests.url_id', '=', 'urls.id')
+                        ->leftJoin('railtracker_url_protocols as url_protocols', 'urls.protocol_id', '=', 'url_protocols.id')
+                        ->leftJoin('railtracker_url_domains as url_domains', 'urls.domain_id', '=', 'url_domains.id')
+                        ->leftJoin('railtracker_url_paths as url_paths', 'urls.path_id', '=', 'url_paths.id')
+                        ->leftJoin('railtracker_url_queries as url_queries', 'urls.query_id', '=', 'url_queries.id')
+                        ->addSelect(
+                            'urls.id as url_id_from_join',
+                            'url_protocols.protocol as url_protocol',
+                            'url_domains.name as url_name',
+                            'url_paths.path as url_path',
+                            'url_queries.string as url_query_string'
+                        )
+                        // ------------ referer urls
+                        ->leftJoin('railtracker_urls as referer_urls', 'railtracker_requests.referer_url_id', '=', 'referer_urls.id')
+                        ->leftJoin('railtracker_url_protocols as url_protocols_referers', 'referer_urls.protocol_id', '=', 'url_protocols_referers.id')
+                        ->leftJoin('railtracker_url_domains as url_domains_referers', 'referer_urls.domain_id', '=', 'url_domains_referers.id')
+                        ->leftJoin('railtracker_url_paths as url_paths_referers', 'referer_urls.path_id', '=', 'url_paths_referers.id')
+                        ->leftJoin('railtracker_url_queries as url_queries_referers', 'referer_urls.query_id', '=', 'url_queries_referers.id')
+                        ->addSelect(
+                            'url_protocols_referers.protocol as url_referer_protocol',
+                            'url_domains_referers.name as url_referer_name',
+                            'url_paths_referers.path as url_referer_path',
+                            'url_queries_referers.string as url_referer_query_string'
+                        )
+                        // ------------ routes, request_devices, request_agents, request_methods, request_languages
+                        ->leftJoin('railtracker_routes','railtracker_requests.route_id','=','railtracker_routes.id')
+                        ->leftJoin('railtracker_request_devices','railtracker_requests.device_id','=','railtracker_request_devices.id')
+                        ->leftJoin('railtracker_request_agents','railtracker_requests.agent_id','=','railtracker_request_agents.id')
+                        ->leftJoin('railtracker_request_methods','railtracker_requests.method_id','=','railtracker_request_methods.id')
+                        ->leftJoin('railtracker_request_languages','railtracker_requests.language_id','=','railtracker_request_languages.id')
+                        ->addSelect(
+                            'railtracker_routes.name as route_name',
+                            'railtracker_routes.action as route_action',
+
+                            'railtracker_request_devices.kind as device_kind',
+                            'railtracker_request_devices.model as device_model',
+                            'railtracker_request_devices.platform as device_platform',
+                            'railtracker_request_devices.platform_version as device_platform_version',
+                            'railtracker_request_devices.is_mobile as device_is_mobile',
+
+                            'railtracker_request_agents.name as agent_name',
+                            'railtracker_request_agents.browser as agent_browser',
+                            'railtracker_request_agents.browser_version as agent_browser_version',
+
+                            'railtracker_request_methods.method as method_method',
+
+                            'railtracker_request_languages.preference as language_preference',
+                            'railtracker_request_languages.language_range as language_language_range'
+                        )
+                        // geo_ip
+                        ->leftJoin('railtracker_geoip','railtracker_requests.geoip_id','=','railtracker_geoip.id')
+                        ->addSelect(
+                            'railtracker_geoip.latitude as geoip_latitude',
+                            'railtracker_geoip.longitude as geoip_longitude',
+                            'railtracker_geoip.country_code as geoip_country_code',
+                            'railtracker_geoip.country_name as geoip_country_name',
+                            'railtracker_geoip.region as geoip_region',
+                            'railtracker_geoip.city as geoip_city',
+                            'railtracker_geoip.postal_code as geoip_postal_code',
+                            'railtracker_geoip.ip_address as geoip_ip_address',
+                            'railtracker_geoip.timezone as geoip_timezone',
+                            'railtracker_geoip.currency as geoip_currency'
+                        )
+                        // responses
+                        ->leftJoin('railtracker_responses as responses', 'railtracker_requests.id', '=', 'responses.id')
+                        ->addSelect(
+                            'responses.response_duration_ms',
+                            'responses.responded_on'
+                        )
+                        ->leftJoin('railtracker_response_status_codes as response_status_codes', 'responses.status_code_id', '=', 'response_status_codes.id')
+                        ->addSelect(
+                            'response_status_codes.code AS response_status_code_code',
+                            'response_status_codes.hash AS response_status_code_hash'
+                        )
+                        // request-exceptions
+                        ->leftJoin('railtracker_request_exceptions as request_exceptions', 'railtracker_requests.id', '=', 'request_exceptions.id')
+                        ->addSelect(
+                            'request_exceptions.created_at_timestamp_ms AS exception_timestamp'
+                        )
+                        // exceptions
+                        ->leftJoin('railtracker_exceptions as exceptions', 'request_exceptions.exception_id', '=', 'exceptions.id')
+                        ->addSelect(
+                            'exceptions.id AS exception_id',
+                            'exceptions.code AS exception_code',
+                            'exceptions.line AS exception_line',
+                            'exceptions.exception_class AS exception_exception_class',
+                            'exceptions.file AS exception_file',
+                            'exceptions.message AS exception_message',
+                            'exceptions.trace AS exception_trace',
+                            'exceptions.hash AS exception_hash'
+                        )
+                        ->whereIn('railtracker_requests.id', $idsToUse)
+                        ->get();
+
+                    $start = round(microtime(true) * 1000);
+
+                    try{
+                        $success = $this->migrateTheseRequests($rows);
+                    }catch(\Exception $e){
+                        $this->info($e->getMessage());
+                        error_log($e);
+                        return false; // do not process any more chunks
+                    }
+
+                    // - - - - - - - - - - - - - - - - - - Print helpful information - - - - - - - - - - - - - - - - - -
+                    $end = round(microtime(true) * 1000);
+                    $duration = $end - $start;
+                    $durations[] = $duration;
+                    $average = array_sum($durations) / $chunkCounter;
+                    $percentDifferenceFromAverageOfFirstFive = 'n/a';
+                    if($chunkCounter > 5){
+                        $percentDifferenceFromAverageOfFirstFive = round($duration/$averageOfFirstFive,2) * 100;
+                    }else{
+                        $averageOfFirstFive = $average;
+                    }
+                    $percentDifferenceFromAverage = round($duration/$average, 2)*100;
+                    $this->info(
+                        $chunkCounter . ',' .
+                        $duration . ',' .
+                        round($average) . ',' .
+                        $percentDifferenceFromAverage. ',' .
+                        $percentDifferenceFromAverageOfFirstFive
+                    );
+                    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+                    if(!$success) return false; // do not process any more chunks
+                    //if($chunkCounter > 10) return false; // Limit chunks to process—handy for debugging|dev.
+                    return true;
+                }
+            );
+
+        $this->info('');
+        //$this->info('Success: ' . var_export($success, true));
+        $this->info('finished');
     }
 
     private function migrateTheseRequests(Collection $legacyData)
     {
-        $this->info('Processing ' . $legacyData->count() . ' legacy requests.');
-
         $this->fillHashes($legacyData);
 
         $dbConnectionName = config('railtracker.database_connection_name');
@@ -462,12 +512,35 @@ class LegacyMigrate extends \Illuminate\Console\Command
             // 1.2 - store linked data (Note: copied from RequestRepository, but sqlite part omitted)
             if(empty($rowsToCreate)) continue;
 
-            try{
-                $builder->from(config('railtracker.table_prefix') . $table)->insertOrUpdate($rowsToCreate);
-            }catch(\Exception $e){
-                error_log($e);
-                $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
+            foreach($rowsToCreate as $key => $rowToCreate){
+                try{
+                    $builder->from(config('railtracker.table_prefix') . $table)->insertOrUpdate($rowToCreate);
+                }catch(\Exception $e){
+
+//                    dd(mb_substr($e->getMessage(), 1024));
+//                    dd('====================================================================================');
+//                    dd('====================================================================================');
+//                    dd('====================================================================================');
+//                    dd('====================================================================================');
+//                    dd([$e->getFile(), $e->getLine()]);
+                    error_log($e);
+                    $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
+                }
             }
+
+//            try{
+//                $builder->from(config('railtracker.table_prefix') . $table)->insertOrUpdate($rowsToCreate);
+//            }catch(\Exception $e){
+//
+//                dd(mb_substr($e->getMessage(), 1024));
+//                dd('====================================================================================');
+//                dd('====================================================================================');
+//                dd('====================================================================================');
+//                dd('====================================================================================');
+//                dd([$e->getFile(), $e->getLine()]);
+//                error_log($e);
+//                $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
+//            }
         }
 
         // second, store requests table
@@ -555,8 +628,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
             ->select()
             ->whereIn('uuid', $uuids)
             ->get();
-
-        if($this->limitToOneChunk ?? false) return false;
 
         return $presumablyCreatedRows->count();
     }
