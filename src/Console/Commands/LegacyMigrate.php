@@ -323,8 +323,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     $percentDifferenceFromAverage = round($duration/$average, 2)*100;
                     $this->info(
                         $chunkCounter . ',' .
-                        $duration . ',' .
-                        round($average) . ',' .
+                        round($duration / 1000, 1) . ',' .
+                        round(round($average) / 1000, 1) . ',' .
                         $percentDifferenceFromAverage. ',' .
                         $percentDifferenceFromAverageOfFirstFive
                     );
@@ -505,6 +505,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         }
                     }
                     if(empty($row)) continue;
+                    if(in_array($row, $rowsToCreate)) continue;
+
                     $rowsToCreate[] = $row;
                 }
             }
