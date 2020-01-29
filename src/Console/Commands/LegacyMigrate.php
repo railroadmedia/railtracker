@@ -516,31 +516,11 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 try{
                     $builder->from(config('railtracker.table_prefix') . $table)->insertOrUpdate($rowToCreate);
                 }catch(\Exception $e){
-
-//                    dd(mb_substr($e->getMessage(), 1024));
-//                    dd('====================================================================================');
-//                    dd('====================================================================================');
-//                    dd('====================================================================================');
-//                    dd('====================================================================================');
-//                    dd([$e->getFile(), $e->getLine()]);
                     error_log($e);
                     $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
                 }
             }
 
-//            try{
-//                $builder->from(config('railtracker.table_prefix') . $table)->insertOrUpdate($rowsToCreate);
-//            }catch(\Exception $e){
-//
-//                dd(mb_substr($e->getMessage(), 1024));
-//                dd('====================================================================================');
-//                dd('====================================================================================');
-//                dd('====================================================================================');
-//                dd('====================================================================================');
-//                dd([$e->getFile(), $e->getLine()]);
-//                error_log($e);
-//                $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
-//            }
         }
 
         // second, store requests table
