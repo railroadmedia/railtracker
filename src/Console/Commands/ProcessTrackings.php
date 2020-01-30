@@ -229,13 +229,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $this->updateUsersAnonymousRequests($recordsInDatabase);
 
-        $usersPreviousRequestsByCookieId = $this->findUsersPreviousByRequestCookieId($requestVOs);
-
-        $this->fireRequestTrackedEvents(
-            $recordsInDatabase,
-            $usersPreviousRequestsByCookieId
-        );
-
         return [
             'requestsCount' => count($recordsInDatabase),
             'exceptionsTrackedCount' => $exceptionsTrackedCount
@@ -271,45 +264,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 // delete cookie
                 $this->cookieJar->queue($this->cookieJar->forget(self::$cookieKey));
             }
-        }
-    }
-
-    /**
-     * @param Collection|array[] $requestRecords
-     * @param array $usersPreviousRequestsByCookieId
-     */
-    public function fireRequestTrackedEvents($requestRecords, $usersPreviousRequestsByCookieId = [])
-    {
-        foreach($requestRecords as $requestRecord){
-
-            $userHasPreviousRequest = !empty($usersPreviousRequestsByCookieId[$requestRecord->cookie_id]);
-
-            if($userHasPreviousRequest){
-                $previousRequest = $usersPreviousRequestsByCookieId[$requestRecord->cookie_id];
-                $timeOfPreviousRequest = $previousRequest->requested_on;
-            }
-
-            if(!empty($requestRecord->agent_string_hash)){
-                $agentStringFromHash = $this->databaseManager
-                    ->table(config('railtracker.table_prefix') . 'agent_strings')
-                    ->select()
-                    ->where(['agent_string_hash' => $requestRecord->agent_string_hash])
-                    ->get()
-                    ->first();
-
-                $agentString = !empty($agentStringFromHash->agent_string) ? $agentStringFromHash->agent_string : '';
-            }
-
-            event(
-                new RequestTracked(
-                    $requestRecord->id,
-                    $requestRecord->user_id,
-                    $requestRecord->ip_address,
-                    $agentString ?? '',
-                    $requestRecord->requested_on,
-                    $timeOfPreviousRequest ?? null
-                )
-            );
         }
     }
 
