@@ -514,15 +514,49 @@ class LegacyMigrate extends \Illuminate\Console\Command
             // 1.2 - store linked data (Note: copied from RequestRepository, but sqlite part omitted)
             if(empty($rowsToCreate)) continue;
 
-            foreach($rowsToCreate as $key => $rowToCreate){
-                try{
-                    $builder->from(config('railtracker.table_prefix') . $table)->insertOrUpdate($rowToCreate);
-                }catch(\Exception $e){
-                    error_log($e);
-                    $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
+            // assumption: that we don't have to worry about null values. that we can just directly maps the values arranged above to our insert values syntax without
+            // coming across a row that has less values set than other rows.
+            // this is a pretty big assumption
+
+            $columns = [];
+            $stringsForRows = [];
+
+            foreach($rowsToCreate as $rowToPrep){
+                foreach($rowToPrep as $columnName => $value){
+                    if(!in_array($columnName, $columns)){
+                        $columns[] = $columnName;
+                    }
                 }
             }
 
+            foreach($rowsToCreate as $rowToPrep){
+                $rowItemsForString = [];
+                foreach($columns as $column){
+                    // escape single quotation-marks because they're used by our query
+                    if(!isset($rowToPrep[$column])){
+                        error_log('Value for column (\'' . $column . '\') not defined. This should not be possible.');
+                        continue;
+                    }
+                    $value = $rowToPrep[$column];
+                    $value = str_replace('\'', '\\\'', $value);
+                    $value = '\'' . $value . '\'';
+                    $rowItemsForString[] = $value;
+                }
+                $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
+            }
+            $parametersString = implode(', ', $stringsForRows);
+            $columnsString = implode(', ', $columns);
+
+            $sql = "insert ignore into railtracker4_$table ($columnsString) values $parametersString";
+
+            $this->databaseManager->connection()->insert($sql);
+
+            try{
+                $builder->raw($sql);
+            }catch(\Exception $e){
+                error_log($e);
+                $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
+            }
         }
 
         // second, store requests table
