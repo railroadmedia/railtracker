@@ -171,14 +171,14 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private function legacyToFour()
     {
+        $this->info('Chunk size: ' . $this->chunkSize);
+        $this->info('#,duration(s),delete(ms),avg(s),vs avg as %,vs avg of 1st 5 as %');
+
+        $startTime = time();
         $chunkCounter = 0;
         $average = 0;
         $durations = [];
         $averageOfFirstFive = null;
-
-        $this->info('Chunk size: ' . $this->chunkSize);
-        $this->info('');
-        $this->info('#,duration(ms),avg(ms),vs avg as %,vs avg of 1st 5 as %');
 
         $this->databaseManager
             ->table('railtracker_requests')
@@ -309,6 +309,27 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         return false; // do not process any more chunks
                     }
 
+                    // - - - - - - - - - - - - - - - - - - Delete Processed Rows - - - - - - - - - - - - - - - - - - - -
+
+                    $idsToDelete = [];
+                    foreach($rows as $row){
+                        $idsToDelete[] = $row->id;
+                    }
+
+                    $highest = max($idsToDelete);
+                    $lowest = min($idsToDelete);
+
+                    $deleteQuery = "DELETE FROM railtracker_requests WHERE id >= $lowest AND id <= $highest";
+
+                    $this->info('Running delete query "' . $deleteQuery . '"');
+
+                    $deleteStartTime = round(microtime(true) * 1000);
+
+                    $this->databaseManager->connection()->delete($deleteQuery);
+
+                    $deleteEndTime = round(microtime(true) * 1000);
+
+
                     // - - - - - - - - - - - - - - - - - - Print helpful information - - - - - - - - - - - - - - - - - -
                     $end = round(microtime(true) * 1000);
                     $duration = $end - $start;
@@ -321,9 +342,13 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         $averageOfFirstFive = $average;
                     }
                     $percentDifferenceFromAverage = round($duration/$average, 2)*100;
+
+                    $deleteTimeDuration = $deleteEndTime - $deleteStartTime;
+
                     $this->info(
                         $chunkCounter . ',' .
                         round($duration / 1000, 1) . ',' .
+                        $deleteTimeDuration . ',' .
                         round(round($average) / 1000, 1) . ',' .
                         $percentDifferenceFromAverage. ',' .
                         $percentDifferenceFromAverageOfFirstFive
@@ -336,9 +361,11 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 }
             );
 
-        $this->info('');
-        //$this->info('Success: ' . var_export($success, true));
-        $this->info('finished');
+        // just a helpful message to the user
+        $minutes = (int) floor((time() - $startTime)/60);
+        $secondsRemaining = time() - $startTime - ($minutes * 60);
+        $secondsRemaining = $secondsRemaining <= 9 ? '0' . $secondsRemaining : $secondsRemaining;
+        $this->info('Finished. Total duration was: ' . $minutes . ':' . $secondsRemaining . ' minutes');
     }
 
     private function migrateTheseRequests(Collection $legacyData)
