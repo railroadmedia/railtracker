@@ -50,4 +50,5 @@ return [
     'legacy_migrate_delete_processed' => false, // if not specified, default is (bool) true
     'legacy_migrate_stop_on_failure' => true, // if not specified, default is (bool) true
     'legacy_migrate_limit_chunk_count' => 10, // Specify an integer, (bool) false, or null—if not specified, default is (bool) false
+    'unacceptable_deletion_duration' => 250,  // Specify an integer for milliseconds—if not specified, default is 250
 ];

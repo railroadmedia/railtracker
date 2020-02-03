@@ -42,6 +42,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
     private $deleteProcessed;
     private $stopOnFailure;
     private $limitChunkCount;
+    private $unacceptableDeletionDuration;
 
     public function __construct(
         DatabaseManager $databaseManager,
@@ -52,6 +53,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->deleteProcessed = config('railtracker.legacy_migrate_delete_processed') ?? true;
         $this->stopOnFailure = config('railtracker.legacy_migrate_stop_on_failure') ?? true;
         $this->limitChunkCount = config('railtracker.legacy_migrate_limit_chunk_count') ?? false;
+        $this->unacceptableDeletionDuration = config('railtracker.unacceptable_deletion_duration') ?? 250;
 
         parent::__construct();
 
@@ -343,8 +345,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
                         $deleteDuration = $deleteEndTime - $deleteStartTime;
 
-                        if($deleteDuration > 100){
-                            $this->info('Notice: deletion took more than 100ms (namely: ' . $deleteDuration . 'ms)');
+                        if($deleteDuration > $this->unacceptableDeletionDuration){
+                            $this->info('Notice: deletion took more than ' . $this->unacceptableDeletionDuration .
+                                'ms (namely: ' . $deleteDuration . 'ms)');
                         }
                     }
 
