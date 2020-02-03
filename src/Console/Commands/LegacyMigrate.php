@@ -801,7 +801,14 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         sleep(1);
                         $chunkCount++;
                         $this->info('chunk ' . $chunkCount);
-                        return $this->transferTheseRequests($rows, $table);
+
+                        $success = $this->transferTheseRequests($rows, $table);
+
+                        if($this->stopOnFailure){
+                            return $success;
+                        }
+
+                        return true;
                     }
                 );
             $this->info($success ? 'Succeeded' : 'Failed');
