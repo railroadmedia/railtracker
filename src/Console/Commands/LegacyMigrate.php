@@ -532,7 +532,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         }
                     }
                     if(empty($row)) continue;
-                    if(in_array($row, $rowsToCreate)) continue;
+                    if(in_array($row, $rowsToCreate, true)) continue;
 
                     $rowsToCreate[] = $row;
                 }
