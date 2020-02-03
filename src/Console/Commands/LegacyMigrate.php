@@ -71,6 +71,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('    Processed rows ' . ($this->deleteProcessed ? 'WILL' : 'will NOT' ) . ' be deleted');
         $this->info('    "stopOnFailure" is set to: ' . ($this->stopOnFailure ? 'true' : 'false' ));
         $this->info('    "limitChunkCount" is set to: ' . ($this->limitChunkCount ? $this->limitChunkCount : 'false' ));
+        $this->info('    "unacceptableDeletionDuration" is set to: ' . $this->unacceptableDeletionDuration);
         $this->info('------------------------------------------------------------------------------------');
         $this->info('');
 
