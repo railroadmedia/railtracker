@@ -563,10 +563,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
             // 1.2 - store linked data (Note: copied from RequestRepository, but sqlite part omitted)
             if(empty($rowsToCreate)) continue;
 
-            // assumption: that we don't have to worry about null values. that we can just directly maps the values arranged above to our insert values syntax without
-            // coming across a row that has less values set than other rows.
-            // this is a pretty big assumption
-
             $columns = [];
             $stringsForRows = [];
 
