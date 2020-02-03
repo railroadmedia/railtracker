@@ -39,6 +39,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
     private $requestRepository;
 
     private $chunkSize;
+    private $deleteProcessed;
+    private $stopOnFailure;
+    private $limitChunkCount;
 
     public function __construct(
         DatabaseManager $databaseManager,
@@ -46,6 +49,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
     )
     {
         $this->chunkSize = config('railtracker.legacy_migrate_chunk_size') ?? 1000;
+        $this->deleteProcessed = config('railtracker.legacy_migrate_delete_processed') ?? true;
+        $this->stopOnFailure = config('railtracker.legacy_migrate_stop_on_failure') ?? true;
+        $this->limitChunkCount = config('railtracker.legacy_migrate_limit_chunk_count') ?? false;
 
         parent::__construct();
 
@@ -58,6 +64,14 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     public function handle()
     {
+        $this->info('--------------------------------------settings--------------------------------------');
+        $this->info('    Chunk size: ' . $this->chunkSize);
+        $this->info('    Processed rows ' . ($this->deleteProcessed ? 'WILL' : 'will NOT' ) . ' be deleted');
+        $this->info('    "stopOnFailure" is set to: ' . ($this->stopOnFailure ? 'true' : 'false' ));
+        $this->info('    "limitChunkCount" is set to: ' . ($this->limitChunkCount ? $this->limitChunkCount : 'false' ));
+        $this->info('------------------------------------------------------------------------------------');
+        $this->info('');
+
         $toRun = $this->promptForOption($this->option('run') ?? null);
 
         return $this->$toRun();
@@ -171,8 +185,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private function legacyToFour()
     {
-        $this->info('Chunk size: ' . $this->chunkSize);
-        $this->info('#,duration(s),delete(ms),avg(s),vs avg as %,vs avg of 1st 5 as %');
+        $this->info('#,duration(ms),avg(ms),vs avg as %,vs avg of 1st 5 as %,delete(ms)');
 
         $startTime = time();
         $chunkCounter = 0;
@@ -309,32 +322,36 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         return false; // do not process any more chunks
                     }
 
-                    // - - - - - - - - - - - - - - - - - - Delete Processed Rows - - - - - - - - - - - - - - - - - - - -
+                    if($this->deleteProcessed){
+                        $idsToDelete = [];
+                        foreach($rows as $row){
+                            $idsToDelete[] = $row->id;
+                        }
 
-                    $idsToDelete = [];
-                    foreach($rows as $row){
-                        $idsToDelete[] = $row->id;
+                        $highest = max($idsToDelete);
+                        $lowest = min($idsToDelete);
+
+                        $deleteQuery = "DELETE FROM railtracker_requests WHERE id >= $lowest AND id <= $highest";
+
+                        //$this->info('Running delete query "' . $deleteQuery . '"');
+
+                        $deleteStartTime = round(microtime(true) * 1000);
+
+                        $this->databaseManager->connection()->delete($deleteQuery);
+
+                        $deleteEndTime = round(microtime(true) * 1000);
+
+                        $deleteDuration = $deleteEndTime - $deleteStartTime;
+
+                        if($deleteDuration > 100){
+                            $this->info('Notice: deletion took more than 100ms (namely: ' . $deleteDuration . 'ms)');
+                        }
                     }
 
-                    $highest = max($idsToDelete);
-                    $lowest = min($idsToDelete);
-
-                    $deleteQuery = "DELETE FROM railtracker_requests WHERE id >= $lowest AND id <= $highest";
-
-                    $this->info('Running delete query "' . $deleteQuery . '"');
-
-                    $deleteStartTime = round(microtime(true) * 1000);
-
-                    $this->databaseManager->connection()->delete($deleteQuery);
-
-                    $deleteEndTime = round(microtime(true) * 1000);
-
-
-                    // - - - - - - - - - - - - - - - - - - Print helpful information - - - - - - - - - - - - - - - - - -
                     $end = round(microtime(true) * 1000);
-                    $duration = $end - $start;
+                    $duration = round($end - $start);
                     $durations[] = $duration;
-                    $average = array_sum($durations) / $chunkCounter;
+                    $average = round(array_sum($durations) / $chunkCounter);
                     $percentDifferenceFromAverageOfFirstFive = 'n/a';
                     if($chunkCounter > 5){
                         $percentDifferenceFromAverageOfFirstFive = round($duration/$averageOfFirstFive,2) * 100;
@@ -343,20 +360,24 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     }
                     $percentDifferenceFromAverage = round($duration/$average, 2)*100;
 
-                    $deleteTimeDuration = $deleteEndTime - $deleteStartTime;
-
                     $this->info(
                         $chunkCounter . ',' .
-                        round($duration / 1000, 1) . ',' .
-                        $deleteTimeDuration . ',' .
-                        round(round($average) / 1000, 1) . ',' .
+                        $duration . ',' .
+                        $average . ',' .
                         $percentDifferenceFromAverage. ',' .
-                        $percentDifferenceFromAverageOfFirstFive
+                        $percentDifferenceFromAverageOfFirstFive . ',' .
+                        ($deleteDuration ?? 'n/a')
                     );
-                    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-                    if(!$success) return false; // do not process any more chunks
-                    //if($chunkCounter > 10) return false; // Limit chunks to process—handy for debugging|dev.
+                    if($this->stopOnFailure){
+                        if(!$success) return false; // do not process any more chunks on failure
+                    }
+
+                    // Limit how many chunks to process—handy for debugging|dev.
+                    if($this->limitChunkCount !== false){
+                        if($chunkCounter > $this->limitChunkCount) return false;
+                    }
+
                     return true;
                 }
             );
@@ -365,7 +386,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $minutes = (int) floor((time() - $startTime)/60);
         $secondsRemaining = time() - $startTime - ($minutes * 60);
         $secondsRemaining = $secondsRemaining <= 9 ? '0' . $secondsRemaining : $secondsRemaining;
-        $this->info('Finished. Total duration was: ' . $minutes . ':' . $secondsRemaining . ' minutes');
+        $this->info('');
+        $this->info('Finished. Total duration was: ' . $minutes . ':' . $secondsRemaining . ' (mmm:ss)');
     }
 
     private function migrateTheseRequests(Collection $legacyData)
@@ -646,8 +668,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 'exception_trace_hash' =>   $legacyDatum->exception_trace_hash ?? null,
             ];
         }
-
-        // ---------------------------------------------------------------------
 
         $table = config('railtracker.table_prefix') . 'requests';
 
