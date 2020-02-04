@@ -587,7 +587,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         continue;
                     }
                     $value = $rowToPrep[$column];
-                    $value = str_replace('\'', '\\\'', $value);
+                    $value = str_replace('\'', '\\\'', $value); // todo: is this needed?
                     $value = '\'' . $value . '\'';
                     $rowItemsForString[] = $value;
                 }
@@ -600,6 +600,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             $this->databaseManager->connection()->insert($sql);
 
+
+            // todo: hol up, why is this here?
+            // todo: hol up, why is this here?
+            // todo: hol up, why is this here?
+            // todo: hol up, why is this here?
+            // todo: hol up, why is this here?
             try{
                 $builder->raw($sql);
             }catch(\Exception $e){
@@ -732,6 +738,37 @@ class LegacyMigrate extends \Illuminate\Console\Command
             'railtracker3_url_paths' => ['url_path'],
             'railtracker3_url_protocols' => ['url_protocol'],
             'railtracker3_url_queries' => ['url_query','url_query_hash'],
+        ];
+
+        foreach($tablesToTransfer as $table => $columnsToTransfer){
+            $chunkCount = 0;
+            $orderByColumn = reset($columnsToTransfer);
+            $this->info('Transferring ' . $table);
+            $success = $this->databaseManager
+                ->table($table)
+                ->select($columnsToTransfer)
+                ->orderBy($orderByColumn)
+                ->chunkById(
+                    $this->chunkSize,
+                    function($rows) use ($table, &$chunkCount)
+                    {
+                        $chunkCount++;
+                        $this->info('chunk ' . $chunkCount);
+                        sleep(1);
+                        $success = $this->transferTheseRequests($rows, $table);
+
+                        if($this->stopOnFailure){
+                            return $success;
+                        }
+
+                        return true;
+                    },
+                    $orderByColumn
+                );
+            $this->info($success ? 'Succeeded' : 'Failed');
+        }
+
+        $tablesToTransfer = [
             'railtracker3_requests' => [ // last else foreign-key constraint violations
                 'id',
                 'uuid',
@@ -794,14 +831,16 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 ->table($table)
                 ->select($columnsToTransfer)
                 ->orderBy($orderByColumn)
-                ->chunk(
+                ->chunkById(
                     $this->chunkSize,
                     function($rows) use ($table, &$chunkCount)
                     {
-                        sleep(1);
                         $chunkCount++;
                         $this->info('chunk ' . $chunkCount);
-
+                        if($chunkCount < 261){
+                            return true;
+                        }
+                        sleep(1);
                         $success = $this->transferTheseRequests($rows, $table);
 
                         if($this->stopOnFailure){
@@ -813,6 +852,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 );
             $this->info($success ? 'Succeeded' : 'Failed');
         }
+
     }
 
     private function transferTheseRequests($rows, $table)
@@ -831,10 +871,44 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $tableToUpdate = str_replace_first('3', '4', $table);
 
         try{
-            return $builder->from($tableToUpdate)->insertOrUpdate($data ?? []);
+            $columns = [];
+            $stringsForRows = [];
+
+            foreach($rows as $rowToPrep){
+                foreach($rowToPrep as $columnName => $value){
+                    if(!in_array($columnName, $columns)){
+                        $columns[] = $columnName;
+                    }
+                }
+            }
+
+            foreach($rows as $rowToPrep){
+                $rowItemsForString = [];
+                foreach($columns as $column){
+                    $value = 'NULL';
+                    if(isset($rowToPrep->$column)){
+                        $value = $rowToPrep->$column;
+                        // escape single quotation-marks because they're used by our query
+                        $value = str_replace('\'', '\\\'', $value); // todo: is this needed?
+                        $value = '\'' . $value . '\'';
+                    }
+                    $rowItemsForString[] = $value;
+                }
+                $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
+            }
+            $parametersString = implode(', ', $stringsForRows);
+            $columnsString = implode(', ', $columns);
+
+            $sql = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
+
+            $this->databaseManager->connection()->insert($sql);
+
         }catch(\Exception $e){
             error_log($e);
             dump('Error while writing to requests table ("' . $e->getMessage() . '")');
+            if($this->stopOnFailure){
+                return false;
+            }
         }
     }
 }
