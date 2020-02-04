@@ -86,7 +86,11 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private function promptForOption($supplied = null)
     {
-        $methodsAvailable = ['legacyToFour','threeToFour'];
+        $methodsAvailable = [
+            'legacyToFour',
+            'threeToFourAssociations',
+            'threeToFourRequests',
+        ];
 
         // get if supplied when command called.
 
@@ -701,7 +705,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $presumablyCreatedRows->count();
     }
 
-    private function threeToFour()
+    private function threeToFourAssociationTables()
     {
         $tablesToTransfer = [
             'railtracker3_agent_browser_versions' => ['agent_browser_version'],
@@ -742,127 +746,168 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         foreach($tablesToTransfer as $table => $columnsToTransfer){
             $chunkCount = 0;
+
             $orderByColumn = reset($columnsToTransfer);
+            $this->info('');
+            $this->info('------------------------------------------------------------------------');
             $this->info('Transferring ' . $table);
-            $success = $this->databaseManager
-                ->table($table)
-                ->select($columnsToTransfer)
-                ->orderBy($orderByColumn)
-                ->chunkById(
-                    $this->chunkSize,
-                    function($rows) use ($table, &$chunkCount)
-                    {
-                        $chunkCount++;
-                        $this->info('chunk ' . $chunkCount);
-                        sleep(1);
-                        $success = $this->transferTheseRequests($rows, $table);
+            $this->info('');
 
-                        if($this->stopOnFailure){
-                            return $success;
-                        }
+            $empty = false;
 
-                        return true;
-                    },
-                    $orderByColumn
-                );
-            $this->info($success ? 'Succeeded' : 'Failed');
-        }
+            while(!$empty){
+                sleep(0.5);
+                $chunkCount++;
+                $rows = $this->databaseManager
+                    ->table($table)
+                    ->select($columnsToTransfer)
+                    ->orderBy($orderByColumn)
+                    ->limit($this->chunkSize)
+                    //->skip(($chunkCount - 1) * $this->chunkSize)
+                    ->get();
+                $empty = count($rows) === 0;
+                if($empty) continue;
+                $success = $this->transferTheseRequests($rows, $table);
+                // ------------------------------------------------------------
 
-        $tablesToTransfer = [
-            'railtracker3_requests' => [ // last else foreign-key constraint violations
-                'id',
-                'uuid',
-                'cookie_id',
-                'user_id',
-                'url_protocol',
-                'url_domain',
-                'url_path',
-                'referer_url_protocol',
-                'referer_url_domain',
-                'referer_url_path',
-                'method',
-                'route_name',
-                'device_kind',
-                'device_model',
-                'device_platform',
-                'device_version',
-                'device_is_mobile',
-                'agent_browser',
-                'agent_browser_version',
-                'language_preference',
-                'language_range',
-                'ip_address',
-                'ip_latitude',
-                'ip_longitude',
-                'ip_country_code',
-                'ip_country_name',
-                'ip_region',
-                'ip_city',
-                'ip_postal_zip_code',
-                'ip_timezone',
-                'ip_currency',
-                'is_robot',
-                'response_status_code',
-                'response_duration_ms',
-                'exception_code',
-                'exception_line',
-                'requested_on',
-                'responded_on',
-                'url_query_hash',
-                'referer_url_query_hash',
-                'route_action_hash',
-                'agent_string_hash',
-                'exception_class_hash',
-                'exception_file_hash',
-                'exception_message_hash',
-                'exception_trace_hash',
-            ],
-        ];
-
-        foreach($tablesToTransfer as $table => $columnsToTransfer){
-            $chunkCount = 0;
-            if(count($columnsToTransfer) === 1){
-                $orderByColumn = reset($columnsToTransfer);
-            }else{
-                $orderByColumn = reset($columnsToTransfer);
+                // ------------------------------------------------------------
+                $this->info('Success: ' . ($success ? 'true' : 'false'));
             }
-            $this->info('Transferring ' . $table);
-            $success = $this->databaseManager
+
+            //$this->info($success ? 'Succeeded' : 'Failed');
+        }
+    }
+
+    private function threeToFourRequests()
+    {
+        $table = 'railtracker3_requests';
+
+        $columnsToTransfer = [
+            'id',
+            'uuid',
+            'cookie_id',
+            'user_id',
+            'url_protocol',
+            'url_domain',
+            'url_path',
+            'referer_url_protocol',
+            'referer_url_domain',
+            'referer_url_path',
+            'method',
+            'route_name',
+            'device_kind',
+            'device_model',
+            'device_platform',
+            'device_version',
+            'device_is_mobile',
+            'agent_browser',
+            'agent_browser_version',
+            'language_preference',
+            'language_range',
+            'ip_address',
+            'ip_latitude',
+            'ip_longitude',
+            'ip_country_code',
+            'ip_country_name',
+            'ip_region',
+            'ip_city',
+            'ip_postal_zip_code',
+            'ip_timezone',
+            'ip_currency',
+            'is_robot',
+            'response_status_code',
+            'response_duration_ms',
+            'exception_code',
+            'exception_line',
+            'requested_on',
+            'responded_on',
+            'url_query_hash',
+            'referer_url_query_hash',
+            'route_action_hash',
+            'agent_string_hash',
+            'exception_class_hash',
+            'exception_file_hash',
+            'exception_message_hash',
+            'exception_trace_hash',
+        ];
+        $chunkCount = 0;
+
+        $empty = false;
+
+        $this->info('chunkCount,successful,duration(ms),deletionSuccess,deleteDuration');
+
+        while(!$empty){
+
+            sleep(0.5);
+
+            $startTime = round(microtime(true) * 1000);
+
+            $chunkCount++;
+
+            $rows = $this->databaseManager
                 ->table($table)
                 ->select($columnsToTransfer)
-                ->orderBy($orderByColumn)
-                ->chunkById(
-                    $this->chunkSize,
-                    function($rows) use ($table, &$chunkCount)
-                    {
-                        $chunkCount++;
-                        $this->info('chunk ' . $chunkCount);
-                        if($chunkCount < 261){
-                            return true;
-                        }
-                        sleep(1);
-                        $success = $this->transferTheseRequests($rows, $table);
+                ->orderBy('id')
+                ->limit($this->chunkSize)
+                //->skip(($chunkCount - 1) * $this->chunkSize)
+                ->get();
 
-                        if($this->stopOnFailure){
-                            return $success;
-                        }
+            $empty = count($rows) === 0;
 
-                        return true;
-                    }
-                );
-            $this->info($success ? 'Succeeded' : 'Failed');
+            if($empty) continue;
+
+            $success = $this->transferTheseRequests($rows, $table);
+
+            $endTime = round(microtime(true) * 1000);
+            $duration = $endTime - $startTime;
+
+            // ------------------------------------
+
+            $deleteStartTime = round(microtime(true) * 1000);
+
+            $parameters = [];
+
+            foreach($rows as $row){
+                $parameters[] = $row->id;
+            }
+
+            $parametersImploded = implode(',', $parameters);
+            $parametersString = '(' . $parametersImploded . ')';
+
+            $sql = "delete from railtracker3_requests where id in $parametersString";
+
+            $deletionOperationSuccess = $this->databaseManager->connection()->insert($sql);
+
+            if(!$deletionOperationSuccess){
+                $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
+                if($this->stopOnFailure){
+                    die();
+                }
+            }
+
+            $deleteEndTime = round(microtime(true) * 1000);
+
+            $deleteDuration = $deleteEndTime - $deleteStartTime;
+
+            // ------------------------------------
+
+            $successful = $success ? '1' : '0';
+            $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
+            if($success){
+                $this->info($chunkCount . ',' . $successful . ',' . $duration . ',' . $deletionSuccess . ',' . $deleteDuration);
+            }else{
+                $this->info('Chunk ' . $chunkCount . ' was NOT processed successfully');
+            }
+
         }
 
+        $this->info('------------------------------------------------------------------------');
+        $this->info('done!');
     }
 
     private function transferTheseRequests($rows, $table)
     {
         $dbConnectionName = config('railtracker.database_connection_name');
-
-        $builder = new BulkInsertOrUpdateBuilder(
-            $this->databaseManager->connection($dbConnectionName),
-            new BulkInsertOrUpdateMySqlGrammar()
-        );
 
         foreach($rows as $row){
             $data[] = json_decode(json_encode($row), true);
@@ -901,7 +946,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             $sql = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
 
-            $this->databaseManager->connection()->insert($sql);
+            return $this->databaseManager->connection()->insert($sql);
 
         }catch(\Exception $e){
             error_log($e);
