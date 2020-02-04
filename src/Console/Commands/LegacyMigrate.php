@@ -2,19 +2,11 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
-use Exception;
-use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
-use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateBuilder;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateMySqlGrammar;
 use Railroad\Railtracker\Repositories\RequestRepository;
-use Railroad\Railtracker\Services\BatchService;
-use Railroad\Railtracker\Services\IpDataApiSdkService;
-use Railroad\Railtracker\Trackers\ExceptionTracker;
-use Railroad\Railtracker\ValueObjects\ExceptionVO;
-use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class LegacyMigrate extends \Illuminate\Console\Command
 {
@@ -88,8 +80,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
     {
         $methodsAvailable = [
             'legacyToFour',
-            'threeToFourAssociations',
             'threeToFourRequests',
+            'threeToFourAssociations',
         ];
 
         // get if supplied when command called.
@@ -705,81 +697,10 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $presumablyCreatedRows->count();
     }
 
-    private function threeToFourAssociationTables()
-    {
-        $tablesToTransfer = [
-            'railtracker3_agent_browser_versions' => ['agent_browser_version'],
-            'railtracker3_agent_browsers' => ['agent_browser'],
-            'railtracker3_agent_strings' => ['agent_string','agent_string_hash'],
-            'railtracker3_device_kinds' => ['device_kind'],
-            'railtracker3_device_models' => ['device_model'],
-            'railtracker3_device_platforms' => ['device_platform'],
-            'railtracker3_device_versions' => ['device_version'],
-            'railtracker3_exception_classes' => ['exception_class','exception_class_hash'],
-            'railtracker3_exception_codes' => ['exception_code'],
-            'railtracker3_exception_files' => ['exception_file','exception_file_hash'],
-            'railtracker3_exception_lines' => ['exception_line'],
-            'railtracker3_exception_messages' => ['exception_message','exception_message_hash'],
-            'railtracker3_exception_traces' => ['exception_trace','exception_trace_hash'],
-            'railtracker3_ip_addresses' => ['ip_address'],
-            'railtracker3_ip_cities' => ['ip_city'],
-            'railtracker3_ip_country_codes' => ['ip_country_code'],
-            'railtracker3_ip_country_names' => ['ip_country_name'],
-            'railtracker3_ip_currencies' => ['ip_currency'],
-            'railtracker3_ip_latitudes' => ['ip_latitude'],
-            'railtracker3_ip_longitudes' => ['ip_longitude'],
-            'railtracker3_ip_postal_zip_codes' => ['ip_postal_zip_code'],
-            'railtracker3_ip_regions' => ['ip_region'],
-            'railtracker3_ip_timezones' => ['ip_timezone'],
-            'railtracker3_language_preferences' => ['language_preference'],
-            'railtracker3_language_ranges' => ['language_range'],
-            'railtracker3_methods' => ['method'],
-            'railtracker3_response_durations' => ['response_duration_ms'],
-            'railtracker3_response_status_codes' => ['response_status_code'],
-            'railtracker3_route_actions' => ['route_action','route_action_hash'],
-            'railtracker3_route_names' => ['route_name'],
-            'railtracker3_url_domains' => ['url_domain'],
-            'railtracker3_url_paths' => ['url_path'],
-            'railtracker3_url_protocols' => ['url_protocol'],
-            'railtracker3_url_queries' => ['url_query','url_query_hash'],
-        ];
-
-        foreach($tablesToTransfer as $table => $columnsToTransfer){
-            $chunkCount = 0;
-
-            $orderByColumn = reset($columnsToTransfer);
-            $this->info('');
-            $this->info('------------------------------------------------------------------------');
-            $this->info('Transferring ' . $table);
-            $this->info('');
-
-            $empty = false;
-
-            while(!$empty){
-                sleep(0.5);
-                $chunkCount++;
-                $rows = $this->databaseManager
-                    ->table($table)
-                    ->select($columnsToTransfer)
-                    ->orderBy($orderByColumn)
-                    ->limit($this->chunkSize)
-                    //->skip(($chunkCount - 1) * $this->chunkSize)
-                    ->get();
-                $empty = count($rows) === 0;
-                if($empty) continue;
-                $success = $this->transferTheseRequests($rows, $table);
-                // ------------------------------------------------------------
-
-                // ------------------------------------------------------------
-                $this->info('Success: ' . ($success ? 'true' : 'false'));
-            }
-
-            //$this->info($success ? 'Succeeded' : 'Failed');
-        }
-    }
-
     private function threeToFourRequests()
     {
+        $this->info('starting threeToFourRequests');
+
         $table = 'railtracker3_requests';
 
         $columnsToTransfer = [
@@ -834,9 +755,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $empty = false;
 
-        $this->info('chunkCount,successful,duration(ms),deletionSuccess,deleteDuration');
+        $this->info('chunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration');
 
         while(!$empty){
+
+            $deletionOperationSuccess = '0';
+            $deleteDuration = 'n/a';
 
             sleep(0.5);
 
@@ -849,66 +773,284 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 ->select($columnsToTransfer)
                 ->orderBy('id')
                 ->limit($this->chunkSize)
-                //->skip(($chunkCount - 1) * $this->chunkSize)
                 ->get();
+
+            if(count($rows) < $this->chunkSize){
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+
+
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+            }
 
             $empty = count($rows) === 0;
 
             if($empty) continue;
 
-            $success = $this->transferTheseRequests($rows, $table);
+            $insertedOrUpdated = $this->transferTheseRow($rows, $table, true);
 
             $endTime = round(microtime(true) * 1000);
             $duration = $endTime - $startTime;
 
             // ------------------------------------
+            // only delete those rows that have been inserted
 
-            $deleteStartTime = round(microtime(true) * 1000);
-
-            $parameters = [];
-
-            foreach($rows as $row){
-                $parameters[] = $row->id;
-            }
-
-            $parametersImploded = implode(',', $parameters);
-            $parametersString = '(' . $parametersImploded . ')';
-
-            $sql = "delete from railtracker3_requests where id in $parametersString";
-
-            $deletionOperationSuccess = $this->databaseManager->connection()->insert($sql);
-
-            if(!$deletionOperationSuccess){
-                $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
-                if($this->stopOnFailure){
-                    die();
+            $uuidsSuccessfullyTransferred = [];
+            foreach($insertedOrUpdated as $row){
+                if(isset($row->uuid)){
+                    $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
+                }else{
+                    $this->info('UUID not set on result of transferTheseRow in threeToFourRequests. This should not ' .
+                        'be possible');
+                    if($this->stopOnFailure){
+                        die();
+                    }
                 }
             }
 
-            $deleteEndTime = round(microtime(true) * 1000);
+            // ------------------------------------
 
-            $deleteDuration = $deleteEndTime - $deleteStartTime;
+            if(!empty($uuidsSuccessfullyTransferred)){
+                $deleteStartTime = round(microtime(true) * 1000);
+
+                $parameters = [];
+
+                $parametersImploded = implode(',', $uuidsSuccessfullyTransferred);
+                $parametersString = '(' . $parametersImploded . ')';
+
+                $sql = "delete from railtracker3_requests where uuid in $parametersString";
+
+                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
+
+                if(!$deletionOperationSuccess){
+                    $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
+                    if($this->stopOnFailure){
+                        die();
+                    }
+                }
+
+                $deleteEndTime = round(microtime(true) * 1000);
+
+                $deleteDuration = $deleteEndTime - $deleteStartTime;
+            }
 
             // ------------------------------------
 
-            $successful = $success ? '1' : '0';
+            $successful = (!empty($insertedOrUpdated)) ? '1' : '0';
             $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
-            if($success){
-                $this->info($chunkCount . ',' . $successful . ',' . $duration . ',' . $deletionSuccess . ',' . $deleteDuration);
-            }else{
-                $this->info('Chunk ' . $chunkCount . ' was NOT processed successfully');
-            }
-
+            $this->info($chunkCount . ',' . count($insertedOrUpdated) . ',' . $duration . ',' . $deletionSuccess . ',' . $deleteDuration);
         }
-
-        $this->info('------------------------------------------------------------------------');
         $this->info('done!');
     }
 
-    private function transferTheseRequests($rows, $table)
+    private function threeToFourAssociations()
     {
-        $dbConnectionName = config('railtracker.database_connection_name');
+        $tablesToTransfer = [
+            'railtracker3_agent_browser_versions' => ['agent_browser_version'],
+            'railtracker3_agent_browsers' => ['agent_browser'],
+            'railtracker3_agent_strings' => ['agent_string_hash','agent_string'],
+            'railtracker3_device_kinds' => ['device_kind'],
+            'railtracker3_device_models' => ['device_model'],
+            'railtracker3_device_platforms' => ['device_platform'],
+            'railtracker3_device_versions' => ['device_version'],
+            'railtracker3_exception_classes' => ['exception_class_hash','exception_class'],
+            'railtracker3_exception_codes' => ['exception_code'],
+            'railtracker3_exception_files' => ['exception_file_hash','exception_file'],
+            'railtracker3_exception_lines' => ['exception_line'],
+            'railtracker3_exception_messages' => ['exception_message_hash','exception_message'],
+            'railtracker3_exception_traces' => ['exception_trace_hash','exception_trace'],
+            'railtracker3_ip_addresses' => ['ip_address'],
+            'railtracker3_ip_cities' => ['ip_city'],
+            'railtracker3_ip_country_codes' => ['ip_country_code'],
+            'railtracker3_ip_country_names' => ['ip_country_name'],
+            'railtracker3_ip_currencies' => ['ip_currency'],
+            'railtracker3_ip_latitudes' => ['ip_latitude'],
+            'railtracker3_ip_longitudes' => ['ip_longitude'],
+            'railtracker3_ip_postal_zip_codes' => ['ip_postal_zip_code'],
+            'railtracker3_ip_regions' => ['ip_region'],
+            'railtracker3_ip_timezones' => ['ip_timezone'],
+            'railtracker3_language_preferences' => ['language_preference'],
+            'railtracker3_language_ranges' => ['language_range'],
+            'railtracker3_methods' => ['method'],
+            'railtracker3_response_durations' => ['response_duration_ms'],
+            'railtracker3_response_status_codes' => ['response_status_code'],
+            'railtracker3_route_actions' => ['route_action_hash','route_action'],
+            'railtracker3_route_names' => ['route_name'],
+            'railtracker3_url_domains' => ['url_domain'],
+            'railtracker3_url_paths' => ['url_path'],
+            'railtracker3_url_protocols' => ['url_protocol'],
+            'railtracker3_url_queries' => ['url_query_hash','url_query'],
+        ];
 
+        $this->info('table,chunkCount,successful,duration(ms),deleted,del-dur(ms)');
+
+        foreach($tablesToTransfer as $table => $columnsToTransfer){
+            $chunkCount = 0;
+
+            $orderByColumn = reset($columnsToTransfer);
+
+            $empty = false;
+
+            $this->info($table . ',chunkCount,successful,duration(ms),deleted,del-dur(ms)');
+
+            while(!$empty){
+
+                $deletionOperationSuccess = false;
+                $deleteDuration = 'n/a';
+
+                sleep(0.5);
+
+                $startTime = round(microtime(true) * 1000);
+
+                $chunkCount++;
+
+                $skip = ($chunkCount - 1) * $this->chunkSize;
+
+                $rows = $this->databaseManager
+                    ->table($table)
+                    ->select($columnsToTransfer)
+                    ->orderBy($orderByColumn)
+                    ->limit($this->chunkSize)
+                    ->skip($skip)
+                    ->get();
+
+                $empty = count($rows) === 0;
+
+                if($empty) continue;
+
+                $success = $this->transferTheseRow($rows, $table);
+
+                $endTime = round(microtime(true) * 1000);
+
+                $duration = $endTime - $startTime;
+
+                // ------------------------------------------------------------------------
+
+//                $deleteStartTime = round(microtime(true) * 1000);
+//
+//                $parameters = [];
+//
+//                foreach($rows as $row){
+//                    $value = $row->$orderByColumn;
+//                    if(gettype($value) === 'string'){
+//                        // escape single quotation-marks because they're used by our query
+//                        $value = str_replace('\'', '\\\'', $value);
+//                        $value = '\'' . $value . '\'';
+//                    }
+//                    $parameters[] = $value;
+//                }
+//
+//                $parametersImploded = implode(',', $parameters);
+//                $parametersString = '(' . $parametersImploded . ')';
+//
+//                $sql = "delete from $table where $orderByColumn in $parametersString";
+//
+//                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
+//
+//                if(!$deletionOperationSuccess){
+//                    $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
+//                    if($this->stopOnFailure){
+//                        die();
+//                    }
+//                }
+//
+//                $deleteEndTime = round(microtime(true) * 1000);
+//
+//                $deleteDuration = $deleteEndTime - $deleteStartTime;
+
+                // ------------------------------------------------------------------------
+
+                $successful = $success ? '1' : '0';
+                $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
+                $this->info(',' . $chunkCount . ',' . $successful . ',' . $duration . ',' . $deletionSuccess .
+                    ',' . $deleteDuration);
+            }
+        }
+        $this->info('done!');
+    }
+
+    private function transferTheseRow($rows, $table, $returnGet = false)
+    {
         foreach($rows as $row){
             $data[] = json_decode(json_encode($row), true);
         }
@@ -927,6 +1069,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 }
             }
 
+            $uuids = [];
             foreach($rows as $rowToPrep){
                 $rowItemsForString = [];
                 foreach($columns as $column){
@@ -934,8 +1077,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     if(isset($rowToPrep->$column)){
                         $value = $rowToPrep->$column;
                         // escape single quotation-marks because they're used by our query
-                        $value = str_replace('\'', '\\\'', $value); // todo: is this needed?
+                        $value = str_replace('\'', '\\\'', $value);
                         $value = '\'' . $value . '\'';
+
+                        if($returnGet && ($column === 'uuid')){
+                            $uuids[] = $value;
+                        }
                     }
                     $rowItemsForString[] = $value;
                 }
@@ -944,9 +1091,19 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $parametersString = implode(', ', $stringsForRows);
             $columnsString = implode(', ', $columns);
 
-            $sql = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
+            $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
 
-            return $this->databaseManager->connection()->insert($sql);
+            $insertResult = $this->databaseManager->connection()->insert($insertQuery);
+
+            if($returnGet){
+                if(empty($uuids)) return [];
+                $uuidsAsString = '(' . implode(',', $uuids) . ')';
+                $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
+                $rows = $this->databaseManager->connection()->select($selectQuery);
+                return $rows;
+            }
+
+            return $insertResult;
 
         }catch(\Exception $e){
             error_log($e);
