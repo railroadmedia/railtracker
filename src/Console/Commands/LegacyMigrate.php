@@ -35,6 +35,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
     private $stopOnFailure;
     private $limitChunkCount;
     private $unacceptableDeletionDuration;
+    private $silenceBigUglyError;
 
     public function __construct(
         DatabaseManager $databaseManager,
@@ -46,6 +47,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->stopOnFailure = config('railtracker.legacy_migrate_stop_on_failure') ?? true;
         $this->limitChunkCount = config('railtracker.legacy_migrate_limit_chunk_count') ?? false;
         $this->unacceptableDeletionDuration = config('railtracker.unacceptable_deletion_duration') ?? 250;
+        $this->silenceBigUglyError = config('railtracker.silence_big_ugly_error') ?? false;
 
         parent::__construct();
 
@@ -66,6 +68,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('    "stopOnFailure" is set to: ' . ($this->stopOnFailure ? 'true' : 'false' ));
         $this->info('    "limitChunkCount" is set to: ' . ($this->limitChunkCount ? $this->limitChunkCount : 'false' ));
         $this->info('    "unacceptableDeletionDuration" is set to: ' . $this->unacceptableDeletionDuration);
+        $this->info('    "silenceBigUglyError" is set to: ' . $this->silenceBigUglyError);
         $this->info('------------------------------------------------------------------------------------');
         $this->info('');
 
@@ -772,7 +775,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $deletionOperationSuccess = '0';
             $deleteDuration = 'n/a';
 
-            sleep(0.5);
+            sleep(1);
 
             $startTime = round(microtime(true) * 1000);
 
@@ -910,7 +913,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('table,chunkCount,successful,duration(ms),deleted,del-dur(ms)');
 
         foreach($tablesToTransfer as $table => $columnsToTransfer){
-            sleep(0.5);
+            sleep(1);
 
             $chunkCount = 0;
 
@@ -925,7 +928,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 $deletionOperationSuccess = false;
                 $deleteDuration = 'n/a';
 
-                sleep(0.5);
+                sleep(1);
 
                 $startTime = round(microtime(true) * 1000);
 
@@ -1054,7 +1057,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         }catch(\Exception $e){
             error_log($e);
-            dump('Error while writing to requests table ("' . $e->getMessage() . '")');
+            if($this->silenceBigUglyError){
+                dump('Error while writing to requests table ("' . $e->getMessage() . '")');
+            }
             if($this->stopOnFailure){
                 if($returnGet) return [];
                 return false;
