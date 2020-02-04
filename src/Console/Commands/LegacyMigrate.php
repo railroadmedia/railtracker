@@ -80,8 +80,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
     {
         $methodsAvailable = [
             'legacyToFour',
-            'threeToFourRequests',
             'threeToFourAssociations',
+            'threeToFourRequests',
         ];
 
         // get if supplied when command called.
@@ -701,6 +701,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
     {
         $this->info('starting threeToFourRequests');
 
+        $entireStart = round(microtime(true) * 1000);
+
         $table = 'railtracker3_requests';
 
         $columnsToTransfer = [
@@ -757,6 +759,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $this->info('chunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration');
 
+        $limit = $this->chunkSize;
+
+        $setAside = [];
+        $unableToGet = [];
+        $onlySetAsideRemains = false;
+
         while(!$empty){
 
             $deletionOperationSuccess = '0';
@@ -768,159 +776,94 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             $chunkCount++;
 
-            $rows = $this->databaseManager
-                ->table($table)
-                ->select($columnsToTransfer)
-                ->orderBy('id')
-                ->limit($this->chunkSize)
-                ->get();
+            $query = $this->databaseManager->table($table)->select($columnsToTransfer);
 
-            if(count($rows) < $this->chunkSize){
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+            if(!$onlySetAsideRemains) $query = $query->whereNotIn('uuid', $setAside);
 
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
-                //todo: if count(rows) < chunkSize you must change limit or else will have infinite loop (!!!)
+            $rows = $query->orderBy('id')->limit($limit)->get();
 
+            // if result is less than chunkSize, you must change limit or you will have an infinite loop
+            if(count($rows) < $this->chunkSize) $limit = count($rows);
 
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
-                dd(count($rows) . '!!!!!!!!!!!!!!!!!!!!!!!! ');
+            // After we try processing $onlySetAsideRemains without any success
+            if($onlySetAsideRemains && count($rows) === 0){
+                $unableToGet = array_merge($unableToGet, $setAside);
+                $empty = true;
             }
-
-            $empty = count($rows) === 0;
-
             if($empty) continue;
+
+            // after all the easy rows are done and only those set aside in $onlySetAsideRemains remain
+            if(!$onlySetAsideRemains && count($rows) === 0) $onlySetAsideRemains = true;
+            if(count($rows) === 0) continue;
 
             $insertedOrUpdated = $this->transferTheseRow($rows, $table, true);
 
             $endTime = round(microtime(true) * 1000);
             $duration = $endTime - $startTime;
 
-            // ------------------------------------
-            // only delete those rows that have been inserted
-
+            // figure out what rows actually inserted, so that we can delete only those, but also so those not inserted
+            // can be set aside to address later and thus reduce the query time above in each iteration
             $uuidsSuccessfullyTransferred = [];
             foreach($insertedOrUpdated as $row){
-                if(isset($row->uuid)){
-                    $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
-                }else{
-                    $this->info('UUID not set on result of transferTheseRow in threeToFourRequests. This should not ' .
-                        'be possible');
-                    if($this->stopOnFailure){
-                        die();
+                if(!isset($row->uuid)){
+                    $this->info('UUID missing in delete eval in threeToFourRequests(). This should not be possible');
+                    if($this->stopOnFailure) die();
+                    continue;
+                }
+                $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
+            }
+
+            // rows not migrated to set aside for later lest they slow query on each iteration
+            foreach($rows as $row){
+                if(!in_array(('\'' . $row->uuid . '\''), $uuidsSuccessfullyTransferred)){
+                    if(!in_array($row->uuid, $setAside)){
+                        $setAside[] = $row->uuid;
+                    }else{
+                        if($onlySetAsideRemains){ // unable to get this uuid even at the end
+
+                            $this->info('unable to get this uuid even at the end: ' . $row->uuid);
+
+                            if (($key = array_search($row->uuid, $setAside)) !== false) {
+                                unset($setAside[$key]);
+                            }
+                            $unableToGet[] = $row->uuid;
+                        }
                     }
                 }
             }
 
-            // ------------------------------------
-
+            // only delete those rows that have been inserted
             if(!empty($uuidsSuccessfullyTransferred)){
                 $deleteStartTime = round(microtime(true) * 1000);
-
-                $parameters = [];
-
-                $parametersImploded = implode(',', $uuidsSuccessfullyTransferred);
-                $parametersString = '(' . $parametersImploded . ')';
-
-                $sql = "delete from railtracker3_requests where uuid in $parametersString";
-
+                $parameters = implode(',', $uuidsSuccessfullyTransferred);
+                $sql = "delete from railtracker3_requests where uuid in ($parameters)";
                 $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
-
                 if(!$deletionOperationSuccess){
-                    $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
-                    if($this->stopOnFailure){
-                        die();
-                    }
+                    $this->info('Failed to delete railtracker3_requests rows: ' . $parameters);
+                    if($this->stopOnFailure) die();
                 }
 
-                $deleteEndTime = round(microtime(true) * 1000);
-
-                $deleteDuration = $deleteEndTime - $deleteStartTime;
+                $deleteDuration = round(microtime(true) * 1000) - $deleteStartTime;
             }
 
             // ------------------------------------
 
-            $successful = (!empty($insertedOrUpdated)) ? '1' : '0';
             $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
             $this->info($chunkCount . ',' . count($insertedOrUpdated) . ',' . $duration . ',' . $deletionSuccess . ',' . $deleteDuration);
         }
+
+        $this->info('');
         $this->info('done!');
+        $entireDurationSeconds = (round(microtime(true) * 1000) - $entireStart) / 1000;
+        $entireDurationMinutesNoRemainder = floor($entireDurationSeconds/60);
+        $entireDurationRemainderSeconds = round($entireDurationSeconds - ($entireDurationMinutesNoRemainder * 60));
+        $this->info('Duration: ' . $entireDurationMinutesNoRemainder . ' minutes and ' . $entireDurationRemainderSeconds . ' seconds');
+
+        if(!empty($unableToGet)){
+            $this->info('unable to transfer the rows with these uuids: ' . var_export($unableToGet, true));
+        }else{
+            $this->info('Successfully transferred all rows!');
+        }
     }
 
     private function threeToFourAssociations()
@@ -965,6 +908,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('table,chunkCount,successful,duration(ms),deleted,del-dur(ms)');
 
         foreach($tablesToTransfer as $table => $columnsToTransfer){
+            sleep(0.5);
+
             $chunkCount = 0;
 
             $orderByColumn = reset($columnsToTransfer);
@@ -1109,6 +1054,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
             error_log($e);
             dump('Error while writing to requests table ("' . $e->getMessage() . '")');
             if($this->stopOnFailure){
+                if($returnGet) return [];
                 return false;
             }
         }
