@@ -58,7 +58,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        $this->info('(version-unique marker: 2002041143)');
+        $this->info('version-unique marker (**Should** be immediately-previous commit):');
+        $this->info('https://github.com/railroadmedia/railtracker/commit/48d1f5bc8fe8ed09927370225bda0c1053430397');
         $this->info('--------------------------------------settings--------------------------------------');
         $this->info('    Chunk size: ' . $this->chunkSize);
         $this->info('    Processed rows ' . ($this->deleteProcessed ? 'WILL' : 'will NOT' ) . ' be deleted');
