@@ -60,8 +60,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        $this->info('version-unique marker (**Should** be immediately-previous commit):');
-        $this->info('https://github.com/railroadmedia/railtracker/commit/48d1f5bc8fe8ed09927370225bda0c1053430397');
+        $this->info('version-unique marker (**Should** be immediately-previous commit): a1eaf51');
         $this->info('--------------------------------------settings--------------------------------------');
         $this->info('    Chunk size: ' . $this->chunkSize);
         $this->info('    Processed rows ' . ($this->deleteProcessed ? 'WILL' : 'will NOT' ) . ' be deleted');
@@ -1056,14 +1055,17 @@ class LegacyMigrate extends \Illuminate\Console\Command
             return $insertResult;
 
         }catch(\Exception $e){
+
             error_log($e);
-            if($this->silenceBigUglyError){
+
+            if(!$this->silenceBigUglyError){
                 dump('Error while writing to requests table ("' . $e->getMessage() . '")');
             }
-            if($this->stopOnFailure){
-                if($returnGet) return [];
-                return false;
-            }
+            if($this->stopOnFailure) die();
+
+            if($returnGet) return [];
+
+            return false;
         }
     }
 }
