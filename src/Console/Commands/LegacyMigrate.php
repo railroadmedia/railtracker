@@ -58,6 +58,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     public function handle()
     {
+        $this->info('(version-unique marker: 2002041143)');
         $this->info('--------------------------------------settings--------------------------------------');
         $this->info('    Chunk size: ' . $this->chunkSize);
         $this->info('    Processed rows ' . ($this->deleteProcessed ? 'WILL' : 'will NOT' ) . ' be deleted');
