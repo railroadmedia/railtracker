@@ -701,6 +701,134 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $presumablyCreatedRows->count();
     }
 
+    private function threeToFourAssociations()
+    {
+        $tablesToTransfer = [
+            'railtracker3_agent_browser_versions' => ['agent_browser_version'],
+            'railtracker3_agent_browsers' => ['agent_browser'],
+            'railtracker3_agent_strings' => ['agent_string_hash','agent_string'],
+            'railtracker3_device_kinds' => ['device_kind'],
+            'railtracker3_device_models' => ['device_model'],
+            'railtracker3_device_platforms' => ['device_platform'],
+            'railtracker3_device_versions' => ['device_version'],
+            'railtracker3_exception_classes' => ['exception_class_hash','exception_class'],
+            'railtracker3_exception_codes' => ['exception_code'],
+            'railtracker3_exception_files' => ['exception_file_hash','exception_file'],
+            'railtracker3_exception_lines' => ['exception_line'],
+            'railtracker3_exception_messages' => ['exception_message_hash','exception_message'],
+            'railtracker3_exception_traces' => ['exception_trace_hash','exception_trace'],
+            'railtracker3_ip_addresses' => ['ip_address'],
+            'railtracker3_ip_cities' => ['ip_city'],
+            'railtracker3_ip_country_codes' => ['ip_country_code'],
+            'railtracker3_ip_country_names' => ['ip_country_name'],
+            'railtracker3_ip_currencies' => ['ip_currency'],
+            'railtracker3_ip_latitudes' => ['ip_latitude'],
+            'railtracker3_ip_longitudes' => ['ip_longitude'],
+            'railtracker3_ip_postal_zip_codes' => ['ip_postal_zip_code'],
+            'railtracker3_ip_regions' => ['ip_region'],
+            'railtracker3_ip_timezones' => ['ip_timezone'],
+            'railtracker3_language_preferences' => ['language_preference'],
+            'railtracker3_language_ranges' => ['language_range'],
+            'railtracker3_methods' => ['method'],
+            'railtracker3_response_durations' => ['response_duration_ms'],
+            'railtracker3_response_status_codes' => ['response_status_code'],
+            'railtracker3_route_actions' => ['route_action_hash','route_action'],
+            'railtracker3_route_names' => ['route_name'],
+            'railtracker3_url_domains' => ['url_domain'],
+            'railtracker3_url_paths' => ['url_path'],
+            'railtracker3_url_protocols' => ['url_protocol'],
+            'railtracker3_url_queries' => ['url_query_hash','url_query'],
+        ];
+
+        $this->info('table,chunkCount,successful,duration(ms),deleted,del-dur(ms)');
+
+        foreach($tablesToTransfer as $table => $columnsToTransfer){
+            sleep(1);
+
+            $chunkCount = 0;
+
+            $orderByColumn = reset($columnsToTransfer);
+
+            $empty = false;
+
+            $this->info($table . ',chunkCount,successful,duration(ms),deleted,del-dur(ms)');
+
+            while(!$empty){
+
+                $deletionOperationSuccess = false;
+                $deleteDuration = 'n/a';
+
+                sleep(1);
+
+                $startTime = round(microtime(true) * 1000);
+
+                $chunkCount++;
+
+                $skip = ($chunkCount - 1) * $this->chunkSize;
+
+                $rows = $this->databaseManager
+                    ->table($table)
+                    ->select($columnsToTransfer)
+                    ->orderBy($orderByColumn)
+                    ->limit($this->chunkSize)
+                    ->skip($skip)
+                    ->get();
+
+                $empty = count($rows) === 0;
+
+                if($empty) continue;
+
+                $success = $this->transferTheseRow($rows, $table);
+
+                $endTime = round(microtime(true) * 1000);
+
+                $duration = $endTime - $startTime;
+
+                // ------------------------------------------------------------------------
+
+//                $deleteStartTime = round(microtime(true) * 1000);
+//
+//                $parameters = [];
+//
+//                foreach($rows as $row){
+//                    $value = $row->$orderByColumn;
+//                    if(gettype($value) === 'string'){
+//                        // escape single quotation-marks because they're used by our query
+//                        $value = str_replace('\'', '\\\'', $value);
+//                        $value = '\'' . $value . '\'';
+//                    }
+//                    $parameters[] = $value;
+//                }
+//
+//                $parametersImploded = implode(',', $parameters);
+//                $parametersString = '(' . $parametersImploded . ')';
+//
+//                $sql = "delete from $table where $orderByColumn in $parametersString";
+//
+//                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
+//
+//                if(!$deletionOperationSuccess){
+//                    $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
+//                    if($this->stopOnFailure){
+//                        die();
+//                    }
+//                }
+//
+//                $deleteEndTime = round(microtime(true) * 1000);
+//
+//                $deleteDuration = $deleteEndTime - $deleteStartTime;
+
+                // ------------------------------------------------------------------------
+
+                $successful = $success ? '1' : '0';
+                $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
+                $this->info(',' . $chunkCount . ',' . $successful . ',' . $duration . ',' . $deletionSuccess .
+                    ',' . $deleteDuration);
+            }
+        }
+        $this->info('done!');
+    }
+
     private function threeToFourRequests()
     {
         $this->info('starting threeToFourRequests');
@@ -868,134 +996,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }else{
             $this->info('Successfully transferred all rows!');
         }
-    }
-
-    private function threeToFourAssociations()
-    {
-        $tablesToTransfer = [
-            'railtracker3_agent_browser_versions' => ['agent_browser_version'],
-            'railtracker3_agent_browsers' => ['agent_browser'],
-            'railtracker3_agent_strings' => ['agent_string_hash','agent_string'],
-            'railtracker3_device_kinds' => ['device_kind'],
-            'railtracker3_device_models' => ['device_model'],
-            'railtracker3_device_platforms' => ['device_platform'],
-            'railtracker3_device_versions' => ['device_version'],
-            'railtracker3_exception_classes' => ['exception_class_hash','exception_class'],
-            'railtracker3_exception_codes' => ['exception_code'],
-            'railtracker3_exception_files' => ['exception_file_hash','exception_file'],
-            'railtracker3_exception_lines' => ['exception_line'],
-            'railtracker3_exception_messages' => ['exception_message_hash','exception_message'],
-            'railtracker3_exception_traces' => ['exception_trace_hash','exception_trace'],
-            'railtracker3_ip_addresses' => ['ip_address'],
-            'railtracker3_ip_cities' => ['ip_city'],
-            'railtracker3_ip_country_codes' => ['ip_country_code'],
-            'railtracker3_ip_country_names' => ['ip_country_name'],
-            'railtracker3_ip_currencies' => ['ip_currency'],
-            'railtracker3_ip_latitudes' => ['ip_latitude'],
-            'railtracker3_ip_longitudes' => ['ip_longitude'],
-            'railtracker3_ip_postal_zip_codes' => ['ip_postal_zip_code'],
-            'railtracker3_ip_regions' => ['ip_region'],
-            'railtracker3_ip_timezones' => ['ip_timezone'],
-            'railtracker3_language_preferences' => ['language_preference'],
-            'railtracker3_language_ranges' => ['language_range'],
-            'railtracker3_methods' => ['method'],
-            'railtracker3_response_durations' => ['response_duration_ms'],
-            'railtracker3_response_status_codes' => ['response_status_code'],
-            'railtracker3_route_actions' => ['route_action_hash','route_action'],
-            'railtracker3_route_names' => ['route_name'],
-            'railtracker3_url_domains' => ['url_domain'],
-            'railtracker3_url_paths' => ['url_path'],
-            'railtracker3_url_protocols' => ['url_protocol'],
-            'railtracker3_url_queries' => ['url_query_hash','url_query'],
-        ];
-
-        $this->info('table,chunkCount,successful,duration(ms),deleted,del-dur(ms)');
-
-        foreach($tablesToTransfer as $table => $columnsToTransfer){
-            sleep(1);
-
-            $chunkCount = 0;
-
-            $orderByColumn = reset($columnsToTransfer);
-
-            $empty = false;
-
-            $this->info($table . ',chunkCount,successful,duration(ms),deleted,del-dur(ms)');
-
-            while(!$empty){
-
-                $deletionOperationSuccess = false;
-                $deleteDuration = 'n/a';
-
-                sleep(1);
-
-                $startTime = round(microtime(true) * 1000);
-
-                $chunkCount++;
-
-                $skip = ($chunkCount - 1) * $this->chunkSize;
-
-                $rows = $this->databaseManager
-                    ->table($table)
-                    ->select($columnsToTransfer)
-                    ->orderBy($orderByColumn)
-                    ->limit($this->chunkSize)
-                    ->skip($skip)
-                    ->get();
-
-                $empty = count($rows) === 0;
-
-                if($empty) continue;
-
-                $success = $this->transferTheseRow($rows, $table);
-
-                $endTime = round(microtime(true) * 1000);
-
-                $duration = $endTime - $startTime;
-
-                // ------------------------------------------------------------------------
-
-//                $deleteStartTime = round(microtime(true) * 1000);
-//
-//                $parameters = [];
-//
-//                foreach($rows as $row){
-//                    $value = $row->$orderByColumn;
-//                    if(gettype($value) === 'string'){
-//                        // escape single quotation-marks because they're used by our query
-//                        $value = str_replace('\'', '\\\'', $value);
-//                        $value = '\'' . $value . '\'';
-//                    }
-//                    $parameters[] = $value;
-//                }
-//
-//                $parametersImploded = implode(',', $parameters);
-//                $parametersString = '(' . $parametersImploded . ')';
-//
-//                $sql = "delete from $table where $orderByColumn in $parametersString";
-//
-//                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
-//
-//                if(!$deletionOperationSuccess){
-//                    $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
-//                    if($this->stopOnFailure){
-//                        die();
-//                    }
-//                }
-//
-//                $deleteEndTime = round(microtime(true) * 1000);
-//
-//                $deleteDuration = $deleteEndTime - $deleteStartTime;
-
-                // ------------------------------------------------------------------------
-
-                $successful = $success ? '1' : '0';
-                $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
-                $this->info(',' . $chunkCount . ',' . $successful . ',' . $duration . ',' . $deletionSuccess .
-                    ',' . $deleteDuration);
-            }
-        }
-        $this->info('done!');
     }
 
     private function transferTheseRow($rows, $table, $returnGet = false)
