@@ -60,6 +60,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     public function handle()
     {
+        $this->info('version-unique marker (**Should** be immediately-previous commit): a1eaf51');
         $this->info('--------------------------------------settings--------------------------------------');
         $this->info('    Chunk size: ' . $this->chunkSize);
         $this->info('    Processed rows ' . ($this->deleteProcessed ? 'WILL' : 'will NOT' ) . ' be deleted');
@@ -700,6 +701,175 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $presumablyCreatedRows->count();
     }
 
+    private function threeToFourRequests()
+    {
+        $this->info('starting threeToFourRequests');
+
+        $entireStart = round(microtime(true) * 1000);
+
+        $table = 'railtracker3_requests';
+
+        $columnsToTransfer = [
+            'id',
+            'uuid',
+            'cookie_id',
+            'user_id',
+            'url_protocol',
+            'url_domain',
+            'url_path',
+            'referer_url_protocol',
+            'referer_url_domain',
+            'referer_url_path',
+            'method',
+            'route_name',
+            'device_kind',
+            'device_model',
+            'device_platform',
+            'device_version',
+            'device_is_mobile',
+            'agent_browser',
+            'agent_browser_version',
+            'language_preference',
+            'language_range',
+            'ip_address',
+            'ip_latitude',
+            'ip_longitude',
+            'ip_country_code',
+            'ip_country_name',
+            'ip_region',
+            'ip_city',
+            'ip_postal_zip_code',
+            'ip_timezone',
+            'ip_currency',
+            'is_robot',
+            'response_status_code',
+            'response_duration_ms',
+            'exception_code',
+            'exception_line',
+            'requested_on',
+            'responded_on',
+            'url_query_hash',
+            'referer_url_query_hash',
+            'route_action_hash',
+            'agent_string_hash',
+            'exception_class_hash',
+            'exception_file_hash',
+            'exception_message_hash',
+            'exception_trace_hash',
+        ];
+        $chunkCount = 0;
+
+        $empty = false;
+
+        $this->info('chunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration');
+
+        $limit = $this->chunkSize;
+
+        $setAside = [];
+        $unableToGet = [];
+        $onlySetAsideRemains = false;
+
+        while(!$empty){
+
+            $deletionOperationSuccess = '0';
+            $deleteDuration = 'n/a';
+
+            sleep(1);
+
+            $startTime = round(microtime(true) * 1000);
+
+            $chunkCount++;
+
+            $query = $this->databaseManager->table($table)->select($columnsToTransfer);
+
+            if(!$onlySetAsideRemains) $query = $query->whereNotIn('uuid', $setAside);
+
+            $rows = $query->orderBy('id')->limit($limit)->get();
+
+            // if result is less than chunkSize, you must change limit or you will have an infinite loop
+            if(count($rows) < $this->chunkSize) $limit = count($rows);
+
+            // After we try processing $onlySetAsideRemains without any success
+            if($onlySetAsideRemains && count($rows) === 0){
+                $unableToGet = array_merge($unableToGet, $setAside);
+                $empty = true;
+            }
+            if($empty) continue;
+
+            // after all the easy rows are done and only those set aside in $onlySetAsideRemains remain
+            if(!$onlySetAsideRemains && count($rows) === 0) $onlySetAsideRemains = true;
+            if(count($rows) === 0) continue;
+
+            $insertedOrUpdated = $this->transferTheseRow($rows, $table, true);
+
+            $endTime = round(microtime(true) * 1000);
+            $duration = $endTime - $startTime;
+
+            // figure out what rows actually inserted, so that we can delete only those, but also so those not inserted
+            // can be set aside to address later and thus reduce the query time above in each iteration
+            $uuidsSuccessfullyTransferred = [];
+            foreach($insertedOrUpdated as $row){
+                if(!isset($row->uuid)){
+                    $this->info('UUID missing in delete eval in threeToFourRequests(). This should not be possible');
+                    if($this->stopOnFailure) die();
+                    continue;
+                }
+                $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
+            }
+
+            // rows not migrated to set aside for later lest they slow query on each iteration
+            foreach($rows as $row){
+                if(!in_array(('\'' . $row->uuid . '\''), $uuidsSuccessfullyTransferred)){
+                    if(!in_array($row->uuid, $setAside)){
+                        $setAside[] = $row->uuid;
+                    }else{
+                        if($onlySetAsideRemains){ // unable to get this uuid even at the end
+
+                            $this->info('unable to get this uuid even at the end: ' . $row->uuid);
+
+                            if (($key = array_search($row->uuid, $setAside)) !== false) {
+                                unset($setAside[$key]);
+                            }
+                            $unableToGet[] = $row->uuid;
+                        }
+                    }
+                }
+            }
+
+            // only delete those rows that have been inserted
+            if(!empty($uuidsSuccessfullyTransferred)){
+                $deleteStartTime = round(microtime(true) * 1000);
+                $parameters = implode(',', $uuidsSuccessfullyTransferred);
+                $sql = "delete from railtracker3_requests where uuid in ($parameters)";
+                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
+                if(!$deletionOperationSuccess){
+                    $this->info('Failed to delete railtracker3_requests rows: ' . $parameters);
+                    if($this->stopOnFailure) die();
+                }
+
+                $deleteDuration = round(microtime(true) * 1000) - $deleteStartTime;
+            }
+
+            // ------------------------------------
+
+            $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
+            $this->info($chunkCount . ',' . count($insertedOrUpdated) . ',' . $duration . ',' . $deletionSuccess . ',' . $deleteDuration);
+        }
+
+        $this->info('');
+        $this->info('done!');
+        $entireDurationSeconds = (round(microtime(true) * 1000) - $entireStart) / 1000;
+        $entireDurationMinutesNoRemainder = floor($entireDurationSeconds/60);
+        $entireDurationRemainderSeconds = round($entireDurationSeconds - ($entireDurationMinutesNoRemainder * 60));
+        $this->info('Duration: ' . $entireDurationMinutesNoRemainder . ' minutes and ' . $entireDurationRemainderSeconds . ' seconds');
+
+        if(!empty($unableToGet)){
+            $this->info('unable to transfer the rows with these uuids: ' . var_export($unableToGet, true));
+        }else{
+            $this->info('Successfully transferred all rows!');
+        }
+    }
+
     private function threeToFourAssociations()
     {
         $tablesToTransfer = [
@@ -828,175 +998,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('done!');
     }
 
-    private function threeToFourRequests()
-    {
-        $this->info('starting threeToFourRequests');
-
-        $entireStart = round(microtime(true) * 1000);
-
-        $table = 'railtracker3_requests';
-
-        $columnsToTransfer = [
-            'id',
-            'uuid',
-            'cookie_id',
-            'user_id',
-            'url_protocol',
-            'url_domain',
-            'url_path',
-            'referer_url_protocol',
-            'referer_url_domain',
-            'referer_url_path',
-            'method',
-            'route_name',
-            'device_kind',
-            'device_model',
-            'device_platform',
-            'device_version',
-            'device_is_mobile',
-            'agent_browser',
-            'agent_browser_version',
-            'language_preference',
-            'language_range',
-            'ip_address',
-            'ip_latitude',
-            'ip_longitude',
-            'ip_country_code',
-            'ip_country_name',
-            'ip_region',
-            'ip_city',
-            'ip_postal_zip_code',
-            'ip_timezone',
-            'ip_currency',
-            'is_robot',
-            'response_status_code',
-            'response_duration_ms',
-            'exception_code',
-            'exception_line',
-            'requested_on',
-            'responded_on',
-            'url_query_hash',
-            'referer_url_query_hash',
-            'route_action_hash',
-            'agent_string_hash',
-            'exception_class_hash',
-            'exception_file_hash',
-            'exception_message_hash',
-            'exception_trace_hash',
-        ];
-        $chunkCount = 0;
-
-        $empty = false;
-
-        $this->info('chunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration,uuid of failed-to-migrate,error message snippet');
-
-        $limit = $this->chunkSize;
-
-        $setAside = [];
-        $unableToGet = [];
-        $onlySetAsideRemains = false;
-
-        while(!$empty){
-
-            $deletionOperationSuccess = '0';
-            $deleteDuration = 'n/a';
-
-            sleep(1);
-
-            $startTime = round(microtime(true) * 1000);
-
-            $chunkCount++;
-
-            $query = $this->databaseManager->table($table)->select($columnsToTransfer);
-
-            if(!$onlySetAsideRemains) $query = $query->whereNotIn('uuid', $setAside);
-
-            $rows = $query->orderBy('id')->limit($limit)->get();
-
-            // if result is less than chunkSize, you must change limit or you will have an infinite loop
-            if(count($rows) < $this->chunkSize) $limit = count($rows);
-
-            // After we try processing $onlySetAsideRemains without any success
-            if($onlySetAsideRemains && count($rows) === 0){
-                $unableToGet = array_merge($unableToGet, $setAside);
-                $empty = true;
-            }
-            if($empty) continue;
-
-            // after all the easy rows are done and only those set aside in $onlySetAsideRemains remain
-            if(!$onlySetAsideRemains && count($rows) === 0) $onlySetAsideRemains = true;
-            if(count($rows) === 0) continue;
-
-            $insertedOrUpdated = $this->transferTheseRow($rows, $table, true);
-
-            $endTime = round(microtime(true) * 1000);
-            $duration = $endTime - $startTime;
-
-            // figure out what rows actually inserted, so that we can delete only those, but also so those not inserted
-            // can be set aside to address later and thus reduce the query time above in each iteration
-            $uuidsSuccessfullyTransferred = [];
-            foreach($insertedOrUpdated as $row){
-                if(!isset($row->uuid)){
-                    $this->info('UUID missing in delete eval in threeToFourRequests(). This should not be possible');
-                    if($this->stopOnFailure) die();
-                    continue;
-                }
-                $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
-            }
-
-            // rows not migrated to set aside for later lest they slow query on each iteration
-            foreach($rows as $row){
-                if(!in_array(('\'' . $row->uuid . '\''), $uuidsSuccessfullyTransferred)){
-                    if(!in_array($row->uuid, $setAside)){
-                        $setAside[] = $row->uuid;
-                    }else{
-                        if($onlySetAsideRemains){ // unable to get this uuid even at the end
-
-                            $this->info('unable to get this uuid even at the end: ' . $row->uuid);
-
-                            if (($key = array_search($row->uuid, $setAside)) !== false) {
-                                unset($setAside[$key]);
-                            }
-                            $unableToGet[] = $row->uuid;
-                        }
-                    }
-                }
-            }
-
-            // only delete those rows that have been inserted
-            if(!empty($uuidsSuccessfullyTransferred)){
-                $deleteStartTime = round(microtime(true) * 1000);
-                $parameters = implode(',', $uuidsSuccessfullyTransferred);
-                $sql = "delete from railtracker3_requests where uuid in ($parameters)";
-                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
-                if(!$deletionOperationSuccess){
-                    $this->info('Failed to delete railtracker3_requests rows: ' . $parameters);
-                    if($this->stopOnFailure) die();
-                }
-
-                $deleteDuration = round(microtime(true) * 1000) - $deleteStartTime;
-            }
-
-            // ------------------------------------
-
-            $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
-            $this->info($chunkCount . ',' . count($insertedOrUpdated) . ',' . $duration . ',' . $deletionSuccess . ',' . $deleteDuration);
-        }
-
-        $this->info('');
-        $this->info('done!');
-        $entireDurationSeconds = (round(microtime(true) * 1000) - $entireStart) / 1000;
-        $entireDurationMinutesNoRemainder = floor($entireDurationSeconds/60);
-        $entireDurationRemainderSeconds = round($entireDurationSeconds - ($entireDurationMinutesNoRemainder * 60));
-        $this->info('Duration: ' . $entireDurationMinutesNoRemainder . ' minutes and ' . $entireDurationRemainderSeconds . ' seconds');
-
-        if(!empty($unableToGet)){
-            $this->info('unable to transfer the rows with these uuids: ' . var_export($unableToGet, true));
-        }else{
-            $this->info('Successfully transferred all rows!');
-        }
-    }
-
     private function transferTheseRow($rows, $table, $returnGet = false)
     {
         foreach($rows as $row){
@@ -1007,6 +1008,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         try{
             $columns = [];
+            $stringsForRows = [];
 
             foreach($rows as $rowToPrep){
                 foreach($rowToPrep as $columnName => $value){
@@ -1016,116 +1018,54 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 }
             }
 
-            return $this->insert($rows, $columns, $returnGet, $tableToUpdate);
+            $uuids = [];
+            foreach($rows as $rowToPrep){
+                $rowItemsForString = [];
+                foreach($columns as $column){
+                    $value = 'NULL';
+                    if(isset($rowToPrep->$column)){
+                        $value = $rowToPrep->$column;
+                        // escape single quotation-marks because they're used by our query
+                        $value = str_replace('\'', '\\\'', $value);
+                        $value = '\'' . $value . '\'';
+
+                        if($returnGet && ($column === 'uuid')){
+                            $uuids[] = $value;
+                        }
+                    }
+                    $rowItemsForString[] = $value;
+                }
+                $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
+            }
+            $parametersString = implode(', ', $stringsForRows);
+            $columnsString = implode(', ', $columns);
+
+            $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
+
+            $insertResult = $this->databaseManager->connection()->insert($insertQuery);
+
+            if($returnGet){
+                if(empty($uuids)) return [];
+                $uuidsAsString = '(' . implode(',', $uuids) . ')';
+                $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
+                $rows = $this->databaseManager->connection()->select($selectQuery);
+                return $rows;
+            }
+
+            return $insertResult;
 
         }catch(\Exception $e){
 
-            //error_log($e);
+            error_log($e);
 
             if(!$this->silenceBigUglyError){
                 dump('Error while writing to requests table ("' . $e->getMessage() . '")');
             }
             if($this->stopOnFailure) die();
 
-            if($tryAgain ?? true){
-                $results = [];
-                $count = 0;
-                foreach($rows as $row){ // may god have mercy on our souls
-                    try{
-                        $result = $this->insert([$row], $columns, $returnGet, $tableToUpdate);
-                        $results[] = reset($result);
-                    }catch(\Exception $exception){
-                        $count++;
-                        $subCount = '".' . $count;
-                        $indicatingNeedle = '_foreign` FOREIGN KEY (`';
-                        $messageIsAsExpected = false !== strpos($e->getMessage(), $indicatingNeedle);
-                        if($messageIsAsExpected){
-                            $indicatingNeedleLength = strlen($indicatingNeedle);
-                            $actualNeedleStart = strpos($e->getMessage(), $indicatingNeedle) + $indicatingNeedleLength;
-
-                            $endIndicatingNeedle = '`) REFERENCES `railtracker4_';
-                            $actualNeededEnd = strpos($e->getMessage(), $endIndicatingNeedle);
-
-                            $actualNeededLength = $actualNeededEnd - $actualNeedleStart;
-                            $actualNeedle = substr($e->getMessage(), $actualNeedleStart, $actualNeededLength);
-
-                            $missingKey = $actualNeedle;
-
-                            if(isset($row->$actualNeedle) || is_null($row->$actualNeedle)){
-                                $missingValue = $row->$actualNeedle;
-                                if(is_null($row->$actualNeedle)){
-                                    $missingValue = 'NULL';
-                                }
-                            }else{
-                                $this->info('');
-                                $this->info('$actualNeedle: ' . $actualNeedle);
-                                $this->info('"isset($row->$actualNeedle)" was false');
-                                $this->info('');
-                                dump($row);
-                                $this->info('');
-                                die();
-                            }
-
-                            $this->info($subCount . ',,,,,' . $row->uuid . ',' . $missingKey . ',' . $missingValue);
-                        }else{
-                            $this->info($subCount . ',,,,,' . $row->uuid . ',' . '?' . ',' . '?');
-                        }
-                    }
-                }
-                return $results;
-            }
-
             if($returnGet) return [];
 
             return false;
         }
     }
-
-    private function insert($rows, $columns, $returnGet, $tableToUpdate)
-    {
-        $stringsForRows = [];
-        $uuids = [];
-        $insertResult = [];
-
-        foreach($rows as $rowToPrep){
-            $rowItemsForString = [];
-            foreach($columns as $column){
-                $value = 'NULL';
-                if(isset($rowToPrep->$column)){
-                    $value = $rowToPrep->$column;
-                    // escape single quotation-marks because they're used by our query
-                    $value = str_replace('\'', '\\\'', $value);
-                    $value = '\'' . $value . '\'';
-
-                    if($returnGet && ($column === 'uuid')){
-                        $uuids[] = $value;
-                    }
-                }
-                $rowItemsForString[] = $value;
-            }
-            $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
-        }
-        $parametersString = implode(', ', $stringsForRows);
-        $columnsString = implode(', ', $columns);
-
-        $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
-
-        //try {
-            $insertResult = $this->databaseManager->connection()->insert($insertQuery);
-        //}catch(\Exception $e){
-            //dd($parametersString);
-        //}
-
-        if($returnGet){
-            if(empty($uuids)) return [];
-            $uuidsAsString = '(' . implode(',', $uuids) . ')';
-            $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
-            $rows = $this->databaseManager->connection()->select($selectQuery);
-            return $rows;
-        }
-
-        return $insertResult;
-    }
 }
-
-// end
