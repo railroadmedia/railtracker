@@ -1016,7 +1016,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 }
             }
 
-            return $this->money($rows, $columns, $returnGet, $tableToUpdate);
+            return $this->insert($rows, $columns, $returnGet, $tableToUpdate);
 
         }catch(\Exception $e){
 
@@ -1032,7 +1032,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 $count = 0;
                 foreach($rows as $row){ // may god have mercy on our souls
                     try{
-                        $result = $this->money([$row], $columns, $returnGet, $tableToUpdate);
+                        $result = $this->insert([$row], $columns, $returnGet, $tableToUpdate);
                         $results[] = reset($result);
                     }catch(\Exception $exception){
                         $count++;
@@ -1081,7 +1081,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }
     }
 
-    private function money($rows, $columns, $returnGet, $tableToUpdate)
+    private function insert($rows, $columns, $returnGet, $tableToUpdate)
     {
         $stringsForRows = [];
         $uuids = [];
