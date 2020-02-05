@@ -761,7 +761,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $empty = false;
 
-        $this->info('chunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration');
+        $this->info('chunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration,uuid of failed-to-migrate,error message snippet');
 
         $limit = $this->chunkSize;
 
@@ -1008,7 +1008,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         try{
             $columns = [];
-            $stringsForRows = [];
 
             foreach($rows as $rowToPrep){
                 foreach($rowToPrep as $columnName => $value){
@@ -1018,54 +1017,116 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 }
             }
 
-            $uuids = [];
-            foreach($rows as $rowToPrep){
-                $rowItemsForString = [];
-                foreach($columns as $column){
-                    $value = 'NULL';
-                    if(isset($rowToPrep->$column)){
-                        $value = $rowToPrep->$column;
-                        // escape single quotation-marks because they're used by our query
-                        $value = str_replace('\'', '\\\'', $value);
-                        $value = '\'' . $value . '\'';
-
-                        if($returnGet && ($column === 'uuid')){
-                            $uuids[] = $value;
-                        }
-                    }
-                    $rowItemsForString[] = $value;
-                }
-                $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
-            }
-            $parametersString = implode(', ', $stringsForRows);
-            $columnsString = implode(', ', $columns);
-
-            $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
-
-            $insertResult = $this->databaseManager->connection()->insert($insertQuery);
-
-            if($returnGet){
-                if(empty($uuids)) return [];
-                $uuidsAsString = '(' . implode(',', $uuids) . ')';
-                $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
-                $rows = $this->databaseManager->connection()->select($selectQuery);
-                return $rows;
-            }
-
-            return $insertResult;
+            return $this->money($rows, $columns, $returnGet, $tableToUpdate);
 
         }catch(\Exception $e){
 
-            error_log($e);
+            //error_log($e);
 
             if(!$this->silenceBigUglyError){
                 dump('Error while writing to requests table ("' . $e->getMessage() . '")');
             }
             if($this->stopOnFailure) die();
 
+            if($tryAgain ?? true){
+                $results = [];
+                $count = 0;
+                foreach($rows as $row){ // may god have mercy on our souls
+                    try{
+                        $result = $this->money([$row], $columns, $returnGet, $tableToUpdate);
+                        $results[] = reset($result);
+                    }catch(\Exception $exception){
+                        $count++;
+                        $subCount = '".' . $count;
+                        $indicatingNeedle = '_foreign` FOREIGN KEY (`';
+                        $messageIsAsExpected = false !== strpos($e->getMessage(), $indicatingNeedle);
+                        if($messageIsAsExpected){
+                            $indicatingNeedleLength = strlen($indicatingNeedle);
+                            $actualNeedleStart = strpos($e->getMessage(), $indicatingNeedle) + $indicatingNeedleLength;
+
+                            $endIndicatingNeedle = '`) REFERENCES `railtracker4_';
+                            $actualNeededEnd = strpos($e->getMessage(), $endIndicatingNeedle);
+
+                            $actualNeededLength = $actualNeededEnd - $actualNeedleStart;
+                            $actualNeedle = substr($e->getMessage(), $actualNeedleStart, $actualNeededLength);
+
+                            $missingKey = $actualNeedle;
+
+                            if(isset($row->$actualNeedle) || is_null($row->$actualNeedle)){
+                                $missingValue = $row->$actualNeedle;
+                                if(is_null($row->$actualNeedle)){
+                                    $missingValue = 'NULL';
+                                }
+                            }else{
+                                $this->info('');
+                                $this->info('$actualNeedle: ' . $actualNeedle);
+                                $this->info('"isset($row->$actualNeedle)" was false');
+                                $this->info('');
+                                dump($row);
+                                $this->info('');
+                                die();
+                            }
+
+                            $this->info($subCount . ',,,,,' . $row->uuid . ',' . $missingKey . ',' . $missingValue);
+                        }else{
+                            $this->info($subCount . ',,,,,' . $row->uuid . ',' . '?' . ',' . '?');
+                        }
+                    }
+                }
+                return $results;
+            }
+
             if($returnGet) return [];
 
             return false;
         }
     }
+
+    private function money($rows, $columns, $returnGet, $tableToUpdate)
+    {
+        $stringsForRows = [];
+        $uuids = [];
+        $insertResult = [];
+
+        foreach($rows as $rowToPrep){
+            $rowItemsForString = [];
+            foreach($columns as $column){
+                $value = 'NULL';
+                if(isset($rowToPrep->$column)){
+                    $value = $rowToPrep->$column;
+                    // escape single quotation-marks because they're used by our query
+                    $value = str_replace('\'', '\\\'', $value);
+                    $value = '\'' . $value . '\'';
+
+                    if($returnGet && ($column === 'uuid')){
+                        $uuids[] = $value;
+                    }
+                }
+                $rowItemsForString[] = $value;
+            }
+            $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
+        }
+        $parametersString = implode(', ', $stringsForRows);
+        $columnsString = implode(', ', $columns);
+
+        $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
+
+        //try {
+            $insertResult = $this->databaseManager->connection()->insert($insertQuery);
+        //}catch(\Exception $e){
+            //dd($parametersString);
+        //}
+
+        if($returnGet){
+            if(empty($uuids)) return [];
+            $uuidsAsString = '(' . implode(',', $uuids) . ')';
+            $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
+            $rows = $this->databaseManager->connection()->select($selectQuery);
+            return $rows;
+        }
+
+        return $insertResult;
+    }
 }
+
+// end
