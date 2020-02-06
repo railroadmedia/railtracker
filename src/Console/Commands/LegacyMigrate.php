@@ -666,10 +666,14 @@ class LegacyMigrate extends \Illuminate\Console\Command
     private function threeToFourRequests()
     {
         $this->chunkSize = 100;
+
         $this->info('starting threeToFourRequests (chunk size maybe be unique to this option and is: ' .
             $this->chunkSize . ')');
+
         $entireStart = round(microtime(true) * 1000);
+
         $table = 'railtracker3_requests';
+
         $columnsToTransfer = [
             'id',
             'uuid',
@@ -718,64 +722,96 @@ class LegacyMigrate extends \Illuminate\Console\Command
             'exception_message_hash',
             'exception_trace_hash',
         ];
-        $chunkCount = 0;
-        $empty = false;
+
         $this->info('-----------------------------------------------------------------------------------------------');
         $this->info('');
         $this->info('chunkCount,subChunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration,causalKey,causalValue');
+
+        $empty = false;
+        $onlySetAsideRemains = false;
+        $chunkCount = 0;
         $limit = $this->chunkSize;
         $setAside = [];
         $unableToGet = [];
-        $onlySetAsideRemains = false;
+
+        // =============================================================================================================
+        // The big loop starts =========================================================================================
+        // =============================================================================================================
         while(!$empty){
+
+            // ------------------ vars ------------------
+
             $deletionOperationSuccess = '0';
             $deleteDuration = 'n/a';
-            sleep(1);
-            $startTime = round(microtime(true) * 1000);
+
+            sleep(1); // to prevent this command from monopolizing the server
             $chunkCount++;
+
+            $startTime = round(microtime(true) * 1000);
+
+            // ------------------ query ------------------
+
             $query = $this->databaseManager->table($table)->select($columnsToTransfer);
+
+            // at the very end, all the rows that have failed migration once are tried again. But only at the end.
             if(!$onlySetAsideRemains) $query = $query->whereNotIn('uuid', $setAside);
+
             $rows = $query->orderBy('id')->limit($limit)->get();
 
-            // if result is less than chunkSize, you must change limit or you will have an infinite loop
+            // -------------- evaluate results RE continuing this loop and processing results differently --------------
+
+            /*
+             * When the result is smaller than the chunk size, that is because there are fewer rows (matching your
+             * parameters) in the table than you requests, thus this indicates that this will be the last iteration
+             * possible. You must therefore here change limit, or you will have an infinite loop.
+             */
             if(count($rows) < $this->chunkSize) $limit = count($rows);
 
-            // After we try processing $onlySetAsideRemains without any success
-            if($onlySetAsideRemains && count($rows) === 0){
-                $unableToGet = array_merge($unableToGet, $setAside);
-                $empty = true;
+            if(count($rows) === 0){
+                if($onlySetAsideRemains){
+                    // we've already tried to process the troublesome ones, without luck, it's time to give up.
+                    $unableToGet = array_merge($unableToGet, $setAside);
+                    $empty = true;
+                    continue;
+                }else{
+                    /*
+                     * After all the easy rows are done and only those in $setAside remain we then flip the
+                     * onlySetAsideRemains switch so that next time through this loop unique considerations for these
+                     * this final stage are accommodated.
+                     */
+                    $onlySetAsideRemains = true;
+                }
             }
-            if($empty) continue;
 
-            // after all the easy rows are done and only those set aside in $onlySetAsideRemains remain
-            if(!$onlySetAsideRemains && count($rows) === 0) $onlySetAsideRemains = true;
-            if(count($rows) === 0) continue;
+            // ------------------ the magic, this is where it happens ------------------
+
             $insertedOrUpdated = $this->transferTheseRequests($rows, $table, true);
+
+            // ------------------ the magic, this is how long it took ------------------
+
             $endTime = round(microtime(true) * 1000);
             $duration = $endTime - $startTime;
-            // figure out what rows actually inserted, so that we can delete only those, but also so those not inserted
-            // ... can be set aside to address later and thus reduce the query time above in each iteration
+
+            // ------------------ delete successfully migrated rows from source ------------------
+
+            /*
+             * figure out what rows actually inserted, so that we can delete only those, but also so those not inserted
+             * can be set aside to address later and thus reduce the query time above in each iteration
+             */
             $uuidsSuccessfullyTransferred = [];
             foreach($insertedOrUpdated as $row){
-                if(!isset($row->uuid)){
+                if(!isset($row->uuid)){ // this will probably never happen
                     $this->info('UUID missing in delete eval in threeToFourRequests(). This should not be possible');
                     if($this->stopOnFailure) die();
                     continue;
                 }
                 $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
             }
+
             // rows not migrated to set aside for later lest they slow query on each iteration
             foreach($rows as $row){
                 if(!in_array(('\'' . $row->uuid . '\''), $uuidsSuccessfullyTransferred)){
-                    if(!in_array($row->uuid, $setAside)){
-                        $setAside[] = $row->uuid;
-                    }else{
-                        if($onlySetAsideRemains){ // unable to get this uuid even at the end
-                            $this->info('unable to get this uuid even at the end: ' . $row->uuid);
-                            if (($key = array_search($row->uuid, $setAside)) !== false) unset($setAside[$key]);
-                            $unableToGet[] = $row->uuid;
-                        }
-                    }
+                    if(!in_array($row->uuid, $setAside)) $setAside[] = $row->uuid;
                 }
             }
             if(!empty($uuidsSuccessfullyTransferred)){ // only delete those rows that have been inserted
@@ -798,6 +834,11 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 $deleteDuration
             );
         }
+        // =============================================================================================================
+        // ========================================================================================= end of the big loop
+        // =============================================================================================================
+
+
         $this->info('');
         $this->info('done!');
         $entireDurationSeconds = (round(microtime(true) * 1000) - $entireStart) / 1000;
@@ -854,7 +895,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('table,chunkCount,successful,duration(ms),deleted,del-dur(ms)');
 
         foreach($tablesToTransfer as $table => $columnsToTransfer){
-            sleep(1);
+            sleep(1); // to prevent this command from monopolizing the server
 
             $chunkCount = 0;
 
@@ -869,7 +910,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 $deletionOperationSuccess = false;
                 $deleteDuration = 'n/a';
 
-                sleep(1);
+                sleep(1); // to prevent this command from monopolizing the server
 
                 $startTime = round(microtime(true) * 1000);
 
