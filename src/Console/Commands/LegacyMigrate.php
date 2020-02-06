@@ -124,27 +124,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
     private function fillHashes(Collection &$legacyData)
     {
-//        $legacyDataWithHashes = [];
-//
-//        $setHashUnlessNull = function($value){
-//            return !empty($value) ? md5($value) : null;
-//        };
-
         foreach($legacyData as &$legacyDatum){
-            /* * * * * * * * * * * * * * * * * * * * * * * *
-                'url_query_hash' => 'urlQueryHash',
-                'url_query_hash' => 'refererUrlQueryHash',
-                'route_action_hash' => 'routeActionHash',
-                'agent_string_hash' => 'agentStringHash',
-             * * * * * * * * * * * * * * * * * * * * * * * */
-
-            /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-                Given all this, are these actually needed in JOIN?
-                    'railtracker_routes.hash as route_hash'
-                    'railtracker_request_devices.hash as device_hash'
-                    'railtracker_geoip.hash as geoip_hash'
-             * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
             $legacyDatum->url_query_string_hash = null;
             $legacyDatum->url_referer_query_string_hash = null;
             $legacyDatum->route_action_hash = null;
@@ -153,8 +133,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $legacyDatum->exception_file_hash = null;
             $legacyDatum->exception_message_hash = null;
             $legacyDatum->exception_trace_hash = null;
-
-            //dd($legacyDatum);
 
             if(isset($legacyDatum->url_query_string)){
                 $legacyDatum->url_query_string_hash = md5($legacyDatum->url_query_string);
@@ -182,8 +160,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 $legacyDatum->exception_trace_hash = md5($legacyDatum->exception_trace);
             }
         }
-
-        //dd($legacyData);
     }
 
     private function legacyToFour()
@@ -587,7 +563,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         continue;
                     }
                     $value = $rowToPrep[$column];
-                    $value = str_replace('\'', '\\\'', $value); // todo: is this needed?
+                    $value = str_replace('\'', '\\\'', $value);
                     $value = '\'' . $value . '\'';
                     $rowItemsForString[] = $value;
                 }
@@ -599,19 +575,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $sql = "insert ignore into railtracker4_$table ($columnsString) values $parametersString";
 
             $this->databaseManager->connection()->insert($sql);
-
-
-            // todo: hol up, why is this here?
-            // todo: hol up, why is this here?
-            // todo: hol up, why is this here?
-            // todo: hol up, why is this here?
-            // todo: hol up, why is this here?
-            try{
-                $builder->raw($sql);
-            }catch(\Exception $e){
-                error_log($e);
-                $this->info('Error while writing to association tables ("' . $e->getMessage() . '")');
-            }
         }
 
         // second, store requests table
@@ -691,7 +654,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $uuids = array_column($chunkOfBulkInsertData ?? [], 'uuid');
 
-        // because we cant' get created rows from insert, it seems
         $presumablyCreatedRows = $builder
             ->from($table)
             ->select()
