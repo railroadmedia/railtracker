@@ -31,11 +31,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
     private $requestRepository;
 
     private $chunkSize;
-    private $deleteProcessed;
     private $stopOnFailure;
-    private $limitChunkCount;
-    private $unacceptableDeletionDuration;
-    private $silenceBigUglyError;
+    private $sleepMilliseconds;
 
     public function __construct(
         DatabaseManager $databaseManager,
@@ -43,44 +40,34 @@ class LegacyMigrate extends \Illuminate\Console\Command
     )
     {
         $this->chunkSize = config('railtracker.legacy_migrate_chunk_size') ?? 1000;
-        $this->deleteProcessed = config('railtracker.legacy_migrate_delete_processed') ?? true;
         $this->stopOnFailure = config('railtracker.legacy_migrate_stop_on_failure') ?? true;
-        $this->limitChunkCount = config('railtracker.legacy_migrate_limit_chunk_count') ?? false;
-        $this->unacceptableDeletionDuration = config('railtracker.unacceptable_deletion_duration') ?? 250;
-        $this->silenceBigUglyError = config('railtracker.silence_big_ugly_error') ?? false;
 
         parent::__construct();
 
         $this->databaseManager = $databaseManager;
         $this->requestRepository = $requestRepository;
+
+        $this->sleepMilliseconds = 500;
     }
 
     /**
      * return true
+     * @uses legacyToFour
+     * @uses threeToFourAssociations
+     * @uses threeToFourRequests
      */
     public function handle()
     {
-        $this->info('version-unique marker (**Should** be immediately-previous commit): a1eaf51');
-        $this->info('--------------------------------------settings--------------------------------------');
-        $this->info('    Chunk size: ' . $this->chunkSize);
-        $this->info('    Processed rows ' . ($this->deleteProcessed ? 'WILL' : 'will NOT' ) . ' be deleted');
-        $this->info('    "stopOnFailure" is set to: ' . ($this->stopOnFailure ? 'true' : 'false' ));
-        $this->info('    "limitChunkCount" is set to: ' . ($this->limitChunkCount ? $this->limitChunkCount : 'false' ));
-        $this->info('    "unacceptableDeletionDuration" is set to: ' . $this->unacceptableDeletionDuration);
-        $this->info('    "silenceBigUglyError" is set to: ' . ($this->silenceBigUglyError ? 'true' : 'false' ));
-        $this->info('------------------------------------------------------------------------------------');
-        $this->info('');
-
-        $toRun = $this->promptForOption($this->option('run') ?? null);
+        $toRun = $this->promptForOption($this->option('run') ?? false);
 
         return $this->$toRun();
     }
 
     /**
-     * @param null $supplied
+     * @param bool|string $selection
      * @return bool|mixed
      */
-    private function promptForOption($supplied = null)
+    private function promptForOption($selection = false)
     {
         $methodsAvailable = [
             'legacyToFour',
@@ -90,12 +77,13 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         // get if supplied when command called.
 
-        $notNumeric = !is_numeric($supplied);
-        $tooHigh = $supplied > (count($methodsAvailable) - 1);
+        $notNumeric = !is_numeric($selection);
+        $tooHigh = ((int) $selection) > (count($methodsAvailable) - 1);
 
-        $selection = $supplied;
+        $selectionProvided = $selection !== false;
+        $selectionInvalid = $notNumeric || $tooHigh;
 
-        if($notNumeric || $tooHigh) {
+        if($selectionInvalid && $selectionProvided) {
             $this->info('Invalid. Select option from list or try again.' . PHP_EOL);
             $selection = false;
         }
@@ -119,51 +107,25 @@ class LegacyMigrate extends \Illuminate\Console\Command
             }
         }
 
+
+
+        $this->info('Starting ' . $methodsAvailable[$selection]);
+        $this->info('');
+        $this->info('(Note: "stopOnFailure" is set to: ' . ($this->stopOnFailure ? 'true' : 'false' ) . ')');
+
         return $methodsAvailable[$selection];
     }
 
-    private function fillHashes(Collection &$legacyData)
-    {
-        foreach($legacyData as &$legacyDatum){
-            $legacyDatum->url_query_string_hash = null;
-            $legacyDatum->url_referer_query_string_hash = null;
-            $legacyDatum->route_action_hash = null;
-            $legacyDatum->agent_name_hash = null;
-            $legacyDatum->exception_exception_class_hash = null;
-            $legacyDatum->exception_file_hash = null;
-            $legacyDatum->exception_message_hash = null;
-            $legacyDatum->exception_trace_hash = null;
 
-            if(isset($legacyDatum->url_query_string)){
-                $legacyDatum->url_query_string_hash = md5($legacyDatum->url_query_string);
-            }
-            if(isset($legacyDatum->url_referer_query_string)){
-                $legacyDatum->url_referer_query_string_hash = md5($legacyDatum->url_referer_query_string);
-            }
-            if(isset($legacyDatum->route_action)){
-                $legacyDatum->route_action_hash = md5($legacyDatum->route_action);
-            }
-            if(isset($legacyDatum->agent_name)){
-                $legacyDatum->agent_name_hash = md5($legacyDatum->agent_name);
-            }
-
-            if(isset($legacyDatum->exception_exception_class)){
-                $legacyDatum->exception_exception_class_hash = md5($legacyDatum->exception_exception_class);
-            }
-            if(isset($legacyDatum->exception_file)){
-                $legacyDatum->exception_file_hash = md5($legacyDatum->exception_file);
-            }
-            if(isset($legacyDatum->exception_message)){
-                $legacyDatum->exception_message_hash = md5($legacyDatum->exception_message);
-            }
-            if(isset($legacyDatum->exception_trace)){
-                $legacyDatum->exception_trace_hash = md5($legacyDatum->exception_trace);
-            }
-        }
-    }
+    // ================================================================================================================
+    // ==================================== PART I: legacy-to-4 processing methods ====================================
+    // ================================================================================================================
 
     private function legacyToFour()
     {
+        $this->chunkSize = 1000;
+        $this->info('running "legacyToFour" (chunk size: ' . $this->chunkSize . ')'); $this->info('');
+
         $this->info('#,duration(ms),avg(ms),vs avg as %,vs avg of 1st 5 as %,delete(ms)');
 
         $startTime = time();
@@ -301,32 +263,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         return false; // do not process any more chunks
                     }
 
-                    if($this->deleteProcessed){
-                        $idsToDelete = [];
-                        foreach($rows as $row){
-                            $idsToDelete[] = $row->id;
-                        }
-
-                        $highest = max($idsToDelete);
-                        $lowest = min($idsToDelete);
-
-                        $deleteQuery = "DELETE FROM railtracker_requests WHERE id >= $lowest AND id <= $highest";
-
-                        //$this->info('Running delete query "' . $deleteQuery . '"');
-
-                        $deleteStartTime = round(microtime(true) * 1000);
-
-                        $this->databaseManager->connection()->delete($deleteQuery);
-
-                        $deleteEndTime = round(microtime(true) * 1000);
-
-                        $deleteDuration = $deleteEndTime - $deleteStartTime;
-
-                        if($deleteDuration > $this->unacceptableDeletionDuration){
-                            $this->info('Notice: deletion took more than ' . $this->unacceptableDeletionDuration .
-                                'ms (namely: ' . $deleteDuration . 'ms)');
-                        }
-                    }
+                    $deleteDuration = $this->deleteProcessed($rows);
 
                     $end = round(microtime(true) * 1000);
                     $duration = round($end - $start);
@@ -353,11 +290,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         if(!$success) return false; // do not process any more chunks on failure
                     }
 
-                    // Limit how many chunks to process—handy for debugging|dev.
-                    if($this->limitChunkCount !== false){
-                        if($chunkCounter > $this->limitChunkCount) return false;
-                    }
-
                     return true;
                 }
             );
@@ -370,6 +302,15 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->info('Finished. Total duration was: ' . $minutes . ':' . $secondsRemaining . ' (mmm:ss)');
     }
 
+
+    // =================================================================================================================
+    // ==================================== PART II: legacy-to-4 processing helpers ====================================
+    // =================================================================================================================
+
+    /**
+     * @param Collection $legacyData
+     * @return int
+     */
     private function migrateTheseRequests(Collection $legacyData)
     {
         $this->fillHashes($legacyData);
@@ -663,9 +604,170 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $presumablyCreatedRows->count();
     }
 
+    /**
+     * @param Collection $legacyData
+     */
+    private function fillHashes(Collection &$legacyData)
+    {
+        foreach($legacyData as &$legacyDatum){
+            $legacyDatum->url_query_string_hash = null;
+            $legacyDatum->url_referer_query_string_hash = null;
+            $legacyDatum->route_action_hash = null;
+            $legacyDatum->agent_name_hash = null;
+            $legacyDatum->exception_exception_class_hash = null;
+            $legacyDatum->exception_file_hash = null;
+            $legacyDatum->exception_message_hash = null;
+            $legacyDatum->exception_trace_hash = null;
+
+            if(isset($legacyDatum->url_query_string)){
+                $legacyDatum->url_query_string_hash = md5($legacyDatum->url_query_string);
+            }
+            if(isset($legacyDatum->url_referer_query_string)){
+                $legacyDatum->url_referer_query_string_hash = md5($legacyDatum->url_referer_query_string);
+            }
+            if(isset($legacyDatum->route_action)){
+                $legacyDatum->route_action_hash = md5($legacyDatum->route_action);
+            }
+            if(isset($legacyDatum->agent_name)){
+                $legacyDatum->agent_name_hash = md5($legacyDatum->agent_name);
+            }
+
+            if(isset($legacyDatum->exception_exception_class)){
+                $legacyDatum->exception_exception_class_hash = md5($legacyDatum->exception_exception_class);
+            }
+            if(isset($legacyDatum->exception_file)){
+                $legacyDatum->exception_file_hash = md5($legacyDatum->exception_file);
+            }
+            if(isset($legacyDatum->exception_message)){
+                $legacyDatum->exception_message_hash = md5($legacyDatum->exception_message);
+            }
+            if(isset($legacyDatum->exception_trace)){
+                $legacyDatum->exception_trace_hash = md5($legacyDatum->exception_trace);
+            }
+        }
+    }
+
+    /**
+     * @param $rows
+     * @return float
+     */
+    private function deleteProcessed($rows)
+    {
+        $deleteStartTime = round(microtime(true) * 1000);
+
+        foreach($rows as $row){
+            $idsToDelete[] = $row->id;
+        }
+        $highest = max($idsToDelete ?? []);
+        $lowest = min($idsToDelete ?? []);
+
+        $deleteQuery = "DELETE FROM railtracker_requests WHERE id >= $lowest AND id <= $highest";
+        $this->databaseManager->connection()->delete($deleteQuery);
+
+        return round(microtime(true) * 1000) - $deleteStartTime;
+    }
+
+
+    // =================================================================================================================
+    // ====================================== PART III: 3-to-4 processing methods ======================================
+    // =================================================================================================================
+
+    private function threeToFourAssociations()
+    {
+        $this->chunkSize = 1000;
+        $this->info('running "threeToFourAssociations" (chunk size: ' . $this->chunkSize . ')'); $this->info('');
+
+        $tablesToTransfer = [
+            'railtracker3_agent_browser_versions' => ['agent_browser_version'],
+            'railtracker3_agent_browsers' => ['agent_browser'],
+            'railtracker3_agent_strings' => ['agent_string_hash','agent_string'],
+            'railtracker3_device_kinds' => ['device_kind'],
+            'railtracker3_device_models' => ['device_model'],
+            'railtracker3_device_platforms' => ['device_platform'],
+            'railtracker3_device_versions' => ['device_version'],
+            'railtracker3_exception_classes' => ['exception_class_hash','exception_class'],
+            'railtracker3_exception_codes' => ['exception_code'],
+            'railtracker3_exception_files' => ['exception_file_hash','exception_file'],
+            'railtracker3_exception_lines' => ['exception_line'],
+            'railtracker3_exception_messages' => ['exception_message_hash','exception_message'],
+            'railtracker3_exception_traces' => ['exception_trace_hash','exception_trace'],
+            'railtracker3_ip_addresses' => ['ip_address'],
+            'railtracker3_ip_cities' => ['ip_city'],
+            'railtracker3_ip_country_codes' => ['ip_country_code'],
+            'railtracker3_ip_country_names' => ['ip_country_name'],
+            'railtracker3_ip_currencies' => ['ip_currency'],
+            'railtracker3_ip_latitudes' => ['ip_latitude'],
+            'railtracker3_ip_longitudes' => ['ip_longitude'],
+            'railtracker3_ip_postal_zip_codes' => ['ip_postal_zip_code'],
+            'railtracker3_ip_regions' => ['ip_region'],
+            'railtracker3_ip_timezones' => ['ip_timezone'],
+            'railtracker3_language_preferences' => ['language_preference'],
+            'railtracker3_language_ranges' => ['language_range'],
+            'railtracker3_methods' => ['method'],
+            'railtracker3_response_durations' => ['response_duration_ms'],
+            'railtracker3_response_status_codes' => ['response_status_code'],
+            'railtracker3_route_actions' => ['route_action_hash','route_action'],
+            'railtracker3_route_names' => ['route_name'],
+            'railtracker3_url_domains' => ['url_domain'],
+            'railtracker3_url_paths' => ['url_path'],
+            'railtracker3_url_protocols' => ['url_protocol'],
+            'railtracker3_url_queries' => ['url_query_hash','url_query'],
+        ];
+
+        $this->info('table,#,success,duration'); // duration is ms
+
+        foreach($tablesToTransfer as $table => $columnsToTransfer){
+
+            $chunkCount = 0;
+            $empty = false;
+
+            $orderByColumn = reset($columnsToTransfer);
+
+            $this->info(',,,'); // make formatted table easier to read.
+            $this->info($table . ',#,success,duration'); // duration is ms
+
+            while(!$empty){ // -----------------------------------------------------------------------------------------
+
+                usleep($this->sleepMilliseconds * 1000); // to prevent this command from monopolizing the server
+                $chunkCount++;
+
+                $startTime = round(microtime(true) * 1000);
+
+                $rows = $this->databaseManager
+                    ->table($table)
+                    ->select($columnsToTransfer)
+                    ->orderBy($orderByColumn)
+                    ->limit($this->chunkSize)
+                    ->skip(($chunkCount - 1) * $this->chunkSize)
+                    ->get();
+
+                $empty = count($rows) === 0;
+
+                if($empty) continue;
+
+                $successful = $this->transferTheseRow($rows, $table) ? 'yes' : '**NO!** FAILED HERE!';
+
+                /*
+                 * We don't delete the processed association rows because the foreign key constraint makes that
+                 * impossible... or at least impossibly to easily-enough implement here. But, if we could do it, this
+                 * is where we would.
+                 */
+
+                $this->info(
+                    ',' . // intentionally empty cell because col is for table-name
+                    $chunkCount . ',' .
+                    $successful . ',' .
+                    (round(microtime(true) * 1000) - $startTime)
+                );
+            } // -------------------------------------------------------------------------------------------------------
+        }
+        $this->info('done!');
+    }
+
     private function threeToFourRequests()
     {
         $this->chunkSize = 100;
+        $this->info('running "threeToFourRequests" (chunk size: ' . $this->chunkSize . ')'); $this->info('');
 
         $this->info('starting threeToFourRequests (chunk size maybe be unique to this option and is: ' .
             $this->chunkSize . ')');
@@ -734,9 +836,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $setAside = [];
         $unableToGet = [];
 
-        // =============================================================================================================
-        // The big loop starts =========================================================================================
-        // =============================================================================================================
+        // ----===================--------------------------------------------------------------------------------------
+        // --- The big loop starts -------------------------------------------------------------------------------------
+        // ----===================--------------------------------------------------------------------------------------
         while(!$empty){
 
             // ------------------ vars ------------------
@@ -744,7 +846,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $deletionOperationSuccess = '0';
             $deleteDuration = 'n/a';
 
-            sleep(1); // to prevent this command from monopolizing the server
+            usleep($this->sleepMilliseconds * 1000); // to prevent this command from monopolizing the server
             $chunkCount++;
 
             $startTime = round(microtime(true) * 1000);
@@ -792,55 +894,75 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $endTime = round(microtime(true) * 1000);
             $duration = $endTime - $startTime;
 
-            // ------------------ delete successfully migrated rows from source ------------------
+            // ------------------ figure out what was successfully migrated and what was not ------------------
 
             /*
              * figure out what rows actually inserted, so that we can delete only those, but also so those not inserted
              * can be set aside to address later and thus reduce the query time above in each iteration
              */
-            $uuidsSuccessfullyTransferred = [];
-            foreach($insertedOrUpdated as $row){
+
+            foreach($insertedOrUpdated as $key => $row){
                 if(!isset($row->uuid)){ // this will probably never happen
                     $this->info('UUID missing in delete eval in threeToFourRequests(). This should not be possible');
                     if($this->stopOnFailure) die();
+                    unset($insertedOrUpdated[$key]);
                     continue;
                 }
-                $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
             }
 
-            // rows not migrated to set aside for later lest they slow query on each iteration
+            $uuidsSuccessfullyTransferred = [];
             foreach($rows as $row){
-                if(!in_array(('\'' . $row->uuid . '\''), $uuidsSuccessfullyTransferred)){
-                    if(!in_array($row->uuid, $setAside)) $setAside[] = $row->uuid;
+                if(in_array($row->uuid, $uuidsSuccessfullyTransferred)){
+                    $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
+                }else{
+                    if(!in_array($row->uuid, $setAside)){
+                        // rows not migrated to set aside for later lest they slow query on each iteration
+                        $setAside[] = $row->uuid;
+                    }else{
+                        // this won't happen, ignore this.
+                        $this->info('uuid already in $setAside. It should not have been in the results because it ' .
+                            'should have been included in the whereNotIn clause. This is indicative of something ' .
+                            'broken in the the "logic" (I use the word bitterly because though this whole command is ' .
+                            'technically logical, it is stylistically abhorrent). It actually might not even break ' .
+                            'or effect anything, but just a heads up that if things go awry, you\'ve been warned.');
+                    }
                 }
             }
+
+            // ------------------ delete successfully migrated rows from source ------------------
+
             if(!empty($uuidsSuccessfullyTransferred)){ // only delete those rows that have been inserted
+
                 $deleteStartTime = round(microtime(true) * 1000);
+
                 $parameters = implode(',', $uuidsSuccessfullyTransferred);
+
                 $sql = "delete from railtracker3_requests where uuid in ($parameters)";
-                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
+                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql) ? 1 : 0;
+
                 if(!$deletionOperationSuccess){
                     $this->info('Failed to delete railtracker3_requests rows: ' . $parameters);
                     if($this->stopOnFailure) die();
                 }
+
                 $deleteDuration = round(microtime(true) * 1000) - $deleteStartTime;
             }
-            $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
+
+            // --------- output is Comma-Separated Values (CSV), for easy translation to markdown-styled table ---------
+
             $this->info(
                 $chunkCount . ',,' .
                 count($insertedOrUpdated) . ',' .
                 $duration . ',' .
-                $deletionSuccess . ',' .
+                $deletionOperationSuccess . ',' .
                 $deleteDuration
             );
         }
-        // =============================================================================================================
-        // ========================================================================================= end of the big loop
-        // =============================================================================================================
+        // --------------------------------------------------------------------------------------===================----
+        // ------------------------------------------------------------------------------------- end of the big loop ---
+        // --------------------------------------------------------------------------------------===================----
 
-
-        $this->info('');
-        $this->info('done!');
+        $this->info(''); $this->info('done!');
         $entireDurationSeconds = (round(microtime(true) * 1000) - $entireStart) / 1000;
         $entireDurationMinutesNoRemainder = floor($entireDurationSeconds/60);
         $entireDurationRemainderSeconds = round($entireDurationSeconds - ($entireDurationMinutesNoRemainder * 60));
@@ -853,134 +975,16 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }
     }
 
-    private function threeToFourAssociations()
-    {
-        $tablesToTransfer = [
-            'railtracker3_agent_browser_versions' => ['agent_browser_version'],
-            'railtracker3_agent_browsers' => ['agent_browser'],
-            'railtracker3_agent_strings' => ['agent_string_hash','agent_string'],
-            'railtracker3_device_kinds' => ['device_kind'],
-            'railtracker3_device_models' => ['device_model'],
-            'railtracker3_device_platforms' => ['device_platform'],
-            'railtracker3_device_versions' => ['device_version'],
-            'railtracker3_exception_classes' => ['exception_class_hash','exception_class'],
-            'railtracker3_exception_codes' => ['exception_code'],
-            'railtracker3_exception_files' => ['exception_file_hash','exception_file'],
-            'railtracker3_exception_lines' => ['exception_line'],
-            'railtracker3_exception_messages' => ['exception_message_hash','exception_message'],
-            'railtracker3_exception_traces' => ['exception_trace_hash','exception_trace'],
-            'railtracker3_ip_addresses' => ['ip_address'],
-            'railtracker3_ip_cities' => ['ip_city'],
-            'railtracker3_ip_country_codes' => ['ip_country_code'],
-            'railtracker3_ip_country_names' => ['ip_country_name'],
-            'railtracker3_ip_currencies' => ['ip_currency'],
-            'railtracker3_ip_latitudes' => ['ip_latitude'],
-            'railtracker3_ip_longitudes' => ['ip_longitude'],
-            'railtracker3_ip_postal_zip_codes' => ['ip_postal_zip_code'],
-            'railtracker3_ip_regions' => ['ip_region'],
-            'railtracker3_ip_timezones' => ['ip_timezone'],
-            'railtracker3_language_preferences' => ['language_preference'],
-            'railtracker3_language_ranges' => ['language_range'],
-            'railtracker3_methods' => ['method'],
-            'railtracker3_response_durations' => ['response_duration_ms'],
-            'railtracker3_response_status_codes' => ['response_status_code'],
-            'railtracker3_route_actions' => ['route_action_hash','route_action'],
-            'railtracker3_route_names' => ['route_name'],
-            'railtracker3_url_domains' => ['url_domain'],
-            'railtracker3_url_paths' => ['url_path'],
-            'railtracker3_url_protocols' => ['url_protocol'],
-            'railtracker3_url_queries' => ['url_query_hash','url_query'],
-        ];
 
-        $this->info('table,chunkCount,successful,duration(ms),deleted,del-dur(ms)');
+    // ================================================================================================================
+    // ====================================== PART IV: 3-to-4 processing helpers ======================================
+    // ================================================================================================================
 
-        foreach($tablesToTransfer as $table => $columnsToTransfer){
-            sleep(1); // to prevent this command from monopolizing the server
-
-            $chunkCount = 0;
-
-            $orderByColumn = reset($columnsToTransfer);
-
-            $empty = false;
-
-            $this->info($table . ',chunkCount,successful,duration(ms),deleted,del-dur(ms)');
-
-            while(!$empty){
-
-                $deletionOperationSuccess = false;
-                $deleteDuration = 'n/a';
-
-                sleep(1); // to prevent this command from monopolizing the server
-
-                $startTime = round(microtime(true) * 1000);
-
-                $chunkCount++;
-
-                $skip = ($chunkCount - 1) * $this->chunkSize;
-
-                $rows = $this->databaseManager
-                    ->table($table)
-                    ->select($columnsToTransfer)
-                    ->orderBy($orderByColumn)
-                    ->limit($this->chunkSize)
-                    ->skip($skip)
-                    ->get();
-
-                $empty = count($rows) === 0;
-
-                if($empty) continue;
-
-                $success = $this->transferTheseRow($rows, $table);
-
-                $endTime = round(microtime(true) * 1000);
-
-                $duration = $endTime - $startTime;
-
-                // ------------------------------------------------------------------------
-
-//                $deleteStartTime = round(microtime(true) * 1000);
-//
-//                $parameters = [];
-//
-//                foreach($rows as $row){
-//                    $value = $row->$orderByColumn;
-//                    if(gettype($value) === 'string'){
-//                        // escape single quotation-marks because they're used by our query
-//                        $value = str_replace('\'', '\\\'', $value);
-//                        $value = '\'' . $value . '\'';
-//                    }
-//                    $parameters[] = $value;
-//                }
-//
-//                $parametersImploded = implode(',', $parameters);
-//                $parametersString = '(' . $parametersImploded . ')';
-//
-//                $sql = "delete from $table where $orderByColumn in $parametersString";
-//
-//                $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql);
-//
-//                if(!$deletionOperationSuccess){
-//                    $this->info('Failed to delete railtracker3_requests rows: ' . $parametersString);
-//                    if($this->stopOnFailure){
-//                        die();
-//                    }
-//                }
-//
-//                $deleteEndTime = round(microtime(true) * 1000);
-//
-//                $deleteDuration = $deleteEndTime - $deleteStartTime;
-
-                // ------------------------------------------------------------------------
-
-                $successful = $success ? '1' : '0';
-                $deletionSuccess = $deletionOperationSuccess ? '1' : '0';
-                $this->info(',' . $chunkCount . ',' . $successful . ',' . $duration . ',' . $deletionSuccess .
-                    ',' . $deleteDuration);
-            }
-        }
-        $this->info('done!');
-    }
-
+    /**
+     * @param $rows
+     * @param $table
+     * @return bool
+     */
     private function transferTheseRow($rows, $table)
     {
         foreach($rows as $row){
@@ -1015,13 +1019,18 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
             return $this->databaseManager->connection()->insert($insertQuery);
         }catch(\Exception $e){
-            error_log($e);
-            if(!$this->silenceBigUglyError) dump('Error while writing to requests table ("' . $e->getMessage() . '")');
+            // error_log($e); // ← and ↓ silenced because $e->getMessage() can be 100,000+ characters!
+            // dump('Error while writing to requests table ("' . $e->getMessage() . '")');
             if($this->stopOnFailure) die();
             return false;
         }
     }
 
+    /**
+     * @param $rows
+     * @param $table
+     * @return array
+     */
     private function transferTheseRequests($rows, $table)
     {
         foreach($rows as $row){
@@ -1044,7 +1053,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 $value = 'NULL';
                 if(isset($rowToPrep->$column)){
                     $value = $rowToPrep->$column;
-                    $value = str_replace('\'', '\\\'', $value); // escape single quotEs because used by our query
+                    $value = str_replace('\'', '\\\'', $value); // escape single quotes because used by our query
                     $value = '\'' . $value . '\'';
                     if($column === 'uuid'){
                         $uuids[] = $value;
@@ -1092,8 +1101,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 $columnsString = implode(', ', $columnsForInsert);
                 $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values ($parametersString)";
                 try{
-                    $insertResult = $this->databaseManager->connection()->insert($insertQuery);
-                    $insertResults[] = $insertResult;
+                    $this->databaseManager->connection()->insert($insertQuery);
                 }catch(\Exception $e){
                     $parsedErrorMsg = $this->getInfoForOutputFromErrorMessage($e->getMessage(), $rowToPrep);
                     $causalKey = '?';
@@ -1113,6 +1121,11 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $rows;
     }
 
+    /**
+     * @param $errorMessage
+     * @param $row
+     * @return array|bool
+     */
     private function getInfoForOutputFromErrorMessage($errorMessage, $row)
     {
         $indicatingNeedle = '_foreign` FOREIGN KEY (`';
@@ -1139,4 +1152,5 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }
         return false;
     }
+
 }
