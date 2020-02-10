@@ -887,7 +887,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             // ------------------ the magic, this is where it happens ------------------
 
-            $insertedOrUpdated = $this->transferTheseRequests($rows, $table, true);
+            $insertedOrUpdated = $this->transferTheseRequests($rows->toArray(), $table);
 
             // ------------------ the magic, this is how long it took ------------------
 
@@ -1033,6 +1033,11 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private function transferTheseRequests($rows, $table)
     {
+        $uuids = [];
+        $successfullyInsertedUuids = [];
+        $uuidsCleaned = [];
+        $rowsInsertedOnSecondAttempt = [];
+
         foreach($rows as $row){
             $data[] = json_decode(json_encode($row), true);
         }
@@ -1046,7 +1051,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 }
             }
         }
-        $uuids = [];
+
+        if(array_search('id', $columns) !== false){
+            $position = array_search('id', $columns);
+            unset($columns[$position]);
+        }
+
         foreach($rows as $rowToPrep){
             $rowItemsForString = [];
             foreach($columns as $column){
@@ -1065,10 +1075,28 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }
         $parametersString = implode(', ', $stringsForRows);
         $columnsString = implode(', ', $columns);
+
         $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
         try{
             $this->databaseManager->connection()->insert($insertQuery);
         }catch(\Exception $e){
+            // do nothing, below we'll try re-inserting those that failed here.
+        }
+        if(empty($uuids)) return [];
+        $uuidsAsString = '(' . implode(',', $uuids) . ')';
+        $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
+        $rowsInserted = $this->databaseManager->connection()->select($selectQuery);
+        //$rowsInserted = json_decode(json_encode($rowsInserted), true);
+
+        foreach($rowsInserted as $rowInserted){
+            $successfullyInsertedUuids[] = $rowInserted->uuid;
+        }
+
+        foreach($uuids as $uuid){
+            $uuidsCleaned[] = str_replace('\'', '', $uuid);
+        }
+        $missing = array_diff($uuidsCleaned, $successfullyInsertedUuids);
+        if(!empty($missing)){
             /*
              * Try again, but one at a time. This addresses bulk-insert failures, because when inserted individually
              * some will now work because in some cases what caused the bulk insert to fail might have been trying to
@@ -1083,7 +1111,22 @@ class LegacyMigrate extends \Illuminate\Console\Command
              * Jonathan, February 2020
              */
             $subCount = 0;
+
+            $rowsToTryAgain = [];
             foreach($rows as $rowToPrep){
+                if(in_array($rowToPrep->uuid, $missing)){
+                    $rowsToTryAgain[] = $rowToPrep;
+                }
+            }
+
+            if(empty($rowsToTryAgain)){
+                $this->info('we should not have an empty "$rowsToTryAgain" array since we wouldn\'t be here if there' .
+                'we\'re some missing. Something is amiss.');
+            }else{
+                //$this->info('trying these rows (by uuid) again: ' . var_export(array_column($rowsToTryAgain, 'uuid'), true));
+            }
+
+            foreach($rowsToTryAgain as $rowToPrep){
                 $columnsForInsert = [];
                 $valuesToInsert = [];
                 $subCount++;
@@ -1112,13 +1155,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     }
                     $this->info(',' . $subCount . ',,,,,' . $causalKey . ',' . $causalValue);
                 }
+                $uuidsAsString = '(' . implode(',', $uuids) . ')';
+                $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
+                $rowsInsertedOnSecondAttempt = $this->databaseManager->connection()->select($selectQuery);
             }
         }
-        if(empty($uuids)) return [];
-        $uuidsAsString = '(' . implode(',', $uuids) . ')';
-        $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
-        $rows = $this->databaseManager->connection()->select($selectQuery);
-        return $rows;
+        return array_merge($rowsInserted, $rowsInsertedOnSecondAttempt);
     }
 
     /**
