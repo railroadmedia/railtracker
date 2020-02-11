@@ -13,12 +13,12 @@ class LegacyMigrate extends \Illuminate\Console\Command
     /**
      * @var string
      */
-    protected $description = 'Migrate data from legacy tables.';
+    protected $description = 'Migrate data from legacy tables (rt4 three tables to rt4 tables).';
 
     /**
      * @var string
      */
-    protected $signature = 'legacyMigrate {--run=}';
+    protected $signature = 'lmtf {--run=}';
 
     /**
      * @var DatabaseManager
@@ -887,7 +887,135 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             // ------------------ the magic, this is where it happens ------------------
 
-            $insertedOrUpdated = $this->transferTheseRequests($rows->toArray(), $table);
+            $rows = $rows->toArray();
+
+            $uuids = [];
+            $successfullyInsertedUuids = [];
+            $uuidsCleaned = [];
+            $rowsInsertedOnSecondAttempt = [];
+
+            $tableToUpdate = str_replace_first('3', '4', $table);
+            $columns = [];
+            $stringsForRows = [];
+            foreach($rows as $rowToPrep){
+                foreach($rowToPrep as $columnName => $value){
+                    if(!in_array($columnName, $columns)){
+                        $columns[] = $columnName;
+                    }
+                }
+            }
+
+            if(array_search('id', $columns) !== false){
+                $position = array_search('id', $columns);
+                unset($columns[$position]);
+            }
+
+            foreach($rows as $rowToPrep){
+                $rowItemsForString = [];
+                foreach($columns as $column){
+                    $value = 'NULL';
+                    if(isset($rowToPrep->$column)){
+                        $value = $rowToPrep->$column;
+                        $value = str_replace('\'', '\\\'', $value); // escape single quotes because used by our query
+                        $value = '\'' . $value . '\'';
+                        if($column === 'uuid'){
+                            $uuids[] = $value;
+                        }
+                    }
+                    $rowItemsForString[] = $value;
+                }
+                $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
+            }
+            $parametersString = implode(', ', $stringsForRows);
+            $columnsString = implode(', ', $columns);
+
+            $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
+            try{
+                $this->databaseManager->connection()->insert($insertQuery);
+            }catch(\Exception $e){
+                // do nothing, below we'll try re-inserting those that failed here.
+            }
+            if(empty($uuids)) return [];
+            $uuidsAsString = '(' . implode(',', $uuids) . ')';
+
+            $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
+            $rowsInserted = $this->databaseManager->connection()->select($selectQuery);
+            //$rowsInserted = json_decode(json_encode($rowsInserted), true);
+
+            foreach($rowsInserted as $rowInserted){
+                $successfullyInsertedUuids[] = $rowInserted->uuid;
+            }
+
+            foreach($uuids as $uuid){
+                $uuidsCleaned[] = str_replace('\'', '', $uuid);
+            }
+            $missing = array_diff($uuidsCleaned, $successfullyInsertedUuids);
+
+            if(!empty($missing)){
+                /*
+                 * Try again, but one at a time. This addresses bulk-insert failures, because when inserted individually
+                 * some will now work because in some cases what caused the bulk insert to fail might have been trying to
+                 * insert a null value in a foreign-key constrained column. For the individual inserts, we can omit null
+                 * values since we don't have conform the values array for each row to match the columns definition count.
+                 * Those individual inserts that do fail happen significantly less often and we output information about
+                 * what failed, so they can be address. What's more the command can be run as many times as needed, and
+                 * since successfully processed rows are deleted from railtracker3_requests, only the unprocessed rows will
+                 * be processed, thus allowing you pick up where you left off, and|or to see the all the rows that failed
+                 * migration as they will be the only ones remaining compared to all the successfully migrated rows.
+                 *
+                 * Jonathan, February 2020
+                 */
+                $subCount = 0;
+                $uuidsSecondAttempt = [];
+                $rowsToTryAgain = [];
+
+                foreach($rows as $rowToPrep){
+                    if(in_array($rowToPrep->uuid, $missing)){
+                        $rowsToTryAgain[] = $rowToPrep;
+                    }
+                }
+
+                if(empty($rowsToTryAgain)){
+                    $this->info(
+                        'we should not have an empty "$rowsToTryAgain" array since we wouldn\'t be here if there' .
+                        'we\'re some missing. Something is amiss.');
+                }
+
+                foreach($rowsToTryAgain as $rowToPrep){
+                    $columnsForInsert = [];
+                    $valuesToInsert = [];
+                    $subCount++;
+                    foreach($columns as $column){
+                        if(isset($rowToPrep->$column)){
+                            $value = $rowToPrep->$column;
+                            $value = str_replace('\'', '\\\'', $value); // escape single quotes because used by query
+                            $value = '\'' . $value . '\'';
+                            if($column === 'uuid') $uuidsSecondAttempt[] = $value;
+                            $valuesToInsert[] = $value;
+                            $columnsForInsert[] = $column;
+                        }
+                    }
+                    $parametersString = implode(', ', $valuesToInsert);
+                    $columnsString = implode(', ', $columnsForInsert);
+                    $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values ($parametersString)";
+                    try{
+                        $this->databaseManager->connection()->insert($insertQuery);
+                    }catch(\Exception $e){
+                        $parsedErrorMsg = $this->getInfoForOutputFromErrorMessage($e->getMessage(), $rowToPrep);
+                        $causalKey = '?';
+                        $causalValue = '?';
+                        if($parsedErrorMsg !== false){
+                            $causalKey = $parsedErrorMsg['causalKey'];
+                            $causalValue = $parsedErrorMsg['causalValue'];
+                        }
+                        $this->info(',' . $subCount . ',,,,,' . $causalKey . ',' . $causalValue);
+                    }
+                    $uuidsAsStringSecondAttempt = '(' . implode(',', $uuidsSecondAttempt) . ')';
+                    $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsStringSecondAttempt";
+                    $rowsInsertedOnSecondAttempt = $this->databaseManager->connection()->select($selectQuery);
+                }
+            }
+            $insertedOrUpdated = array_merge($rowsInserted, $rowsInsertedOnSecondAttempt);
 
             // ------------------ the magic, this is how long it took ------------------
 
@@ -931,7 +1059,14 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             // ------------------ delete successfully migrated rows from source ------------------
 
+            dump('$uuidsSuccessfullyTransferred');
+            dump($uuidsSuccessfullyTransferred);
+            dump('$setAside');
+            dump($setAside);
+
             if(!empty($uuidsSuccessfullyTransferred)){ // only delete those rows that have been inserted
+
+                dd($uuidsSuccessfullyTransferred);
 
                 $deleteStartTime = round(microtime(true) * 1000);
 
@@ -1033,134 +1168,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private function transferTheseRequests($rows, $table)
     {
-        $uuids = [];
-        $successfullyInsertedUuids = [];
-        $uuidsCleaned = [];
-        $rowsInsertedOnSecondAttempt = [];
 
-        foreach($rows as $row){
-            $data[] = json_decode(json_encode($row), true);
-        }
-        $tableToUpdate = str_replace_first('3', '4', $table);
-        $columns = [];
-        $stringsForRows = [];
-        foreach($rows as $rowToPrep){
-            foreach($rowToPrep as $columnName => $value){
-                if(!in_array($columnName, $columns)){
-                    $columns[] = $columnName;
-                }
-            }
-        }
-
-        if(array_search('id', $columns) !== false){
-            $position = array_search('id', $columns);
-            unset($columns[$position]);
-        }
-
-        foreach($rows as $rowToPrep){
-            $rowItemsForString = [];
-            foreach($columns as $column){
-                $value = 'NULL';
-                if(isset($rowToPrep->$column)){
-                    $value = $rowToPrep->$column;
-                    $value = str_replace('\'', '\\\'', $value); // escape single quotes because used by our query
-                    $value = '\'' . $value . '\'';
-                    if($column === 'uuid'){
-                        $uuids[] = $value;
-                    }
-                }
-                $rowItemsForString[] = $value;
-            }
-            $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
-        }
-        $parametersString = implode(', ', $stringsForRows);
-        $columnsString = implode(', ', $columns);
-
-        $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
-        try{
-            $this->databaseManager->connection()->insert($insertQuery);
-        }catch(\Exception $e){
-            // do nothing, below we'll try re-inserting those that failed here.
-        }
-        if(empty($uuids)) return [];
-        $uuidsAsString = '(' . implode(',', $uuids) . ')';
-        $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
-        $rowsInserted = $this->databaseManager->connection()->select($selectQuery);
-        //$rowsInserted = json_decode(json_encode($rowsInserted), true);
-
-        foreach($rowsInserted as $rowInserted){
-            $successfullyInsertedUuids[] = $rowInserted->uuid;
-        }
-
-        foreach($uuids as $uuid){
-            $uuidsCleaned[] = str_replace('\'', '', $uuid);
-        }
-        $missing = array_diff($uuidsCleaned, $successfullyInsertedUuids);
-        if(!empty($missing)){
-            /*
-             * Try again, but one at a time. This addresses bulk-insert failures, because when inserted individually
-             * some will now work because in some cases what caused the bulk insert to fail might have been trying to
-             * insert a null value in a foreign-key constrained column. For the individual inserts, we can omit null
-             * values since we don't have conform the values array for each row to match the columns definition count.
-             * Those individual inserts that do fail happen significantly less often and we output information about
-             * what failed, so they can be address. What's more the command can be run as many times as needed, and
-             * since successfully processed rows are deleted from railtracker3_requests, only the unprocessed rows will
-             * be processed, thus allowing you pick up where you left off, and|or to see the all the rows that failed
-             * migration as they will be the only ones remaining compared to all the successfully migrated rows.
-             *
-             * Jonathan, February 2020
-             */
-            $subCount = 0;
-
-            $rowsToTryAgain = [];
-            foreach($rows as $rowToPrep){
-                if(in_array($rowToPrep->uuid, $missing)){
-                    $rowsToTryAgain[] = $rowToPrep;
-                }
-            }
-
-            if(empty($rowsToTryAgain)){
-                $this->info('we should not have an empty "$rowsToTryAgain" array since we wouldn\'t be here if there' .
-                'we\'re some missing. Something is amiss.');
-            }else{
-                //$this->info('trying these rows (by uuid) again: ' . var_export(array_column($rowsToTryAgain, 'uuid'), true));
-            }
-
-            foreach($rowsToTryAgain as $rowToPrep){
-                $columnsForInsert = [];
-                $valuesToInsert = [];
-                $subCount++;
-                foreach($columns as $column){
-                    if(isset($rowToPrep->$column)){
-                        $value = $rowToPrep->$column;
-                        $value = str_replace('\'', '\\\'', $value); // escape single quotes because used by query
-                        $value = '\'' . $value . '\'';
-                        if($column === 'uuid') $uuids[] = $value;
-                        $valuesToInsert[] = $value;
-                        $columnsForInsert[] = $column;
-                    }
-                }
-                $parametersString = implode(', ', $valuesToInsert);
-                $columnsString = implode(', ', $columnsForInsert);
-                $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values ($parametersString)";
-                try{
-                    $this->databaseManager->connection()->insert($insertQuery);
-                }catch(\Exception $e){
-                    $parsedErrorMsg = $this->getInfoForOutputFromErrorMessage($e->getMessage(), $rowToPrep);
-                    $causalKey = '?';
-                    $causalValue = '?';
-                    if($parsedErrorMsg !== false){
-                        $causalKey = $parsedErrorMsg['causalKey'];
-                        $causalValue = $parsedErrorMsg['causalValue'];
-                    }
-                    $this->info(',' . $subCount . ',,,,,' . $causalKey . ',' . $causalValue);
-                }
-                $uuidsAsString = '(' . implode(',', $uuids) . ')';
-                $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
-                $rowsInsertedOnSecondAttempt = $this->databaseManager->connection()->select($selectQuery);
-            }
-        }
-        return array_merge($rowsInserted, $rowsInsertedOnSecondAttempt);
     }
 
     /**
