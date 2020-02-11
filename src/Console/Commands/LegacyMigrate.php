@@ -18,7 +18,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
     /**
      * @var string
      */
-    protected $signature = 'lmtf {--run=}';
+    protected $signature = 'legacyMigrate {--run=}';
 
     /**
      * @var DatabaseManager
@@ -774,8 +774,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $entireStart = round(microtime(true) * 1000);
 
-        $table = 'railtracker3_requests';
-
         $columnsToTransfer = [
             'id',
             'uuid',
@@ -827,7 +825,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
         $this->info('-----------------------------------------------------------------------------------------------');
         $this->info('');
-        $this->info('chunkCount,subChunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration,causalKey,causalValue');
+        $this->info('chunkCount,subChunkCount,insertedOrUpdated,duration(ms),deletionSuccess,deleteDuration,causalKey,causalValue,example uuid transferred');
 
         $empty = false;
         $onlySetAsideRemains = false;
@@ -853,7 +851,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             // ------------------ query ------------------
 
-            $query = $this->databaseManager->table($table)->select($columnsToTransfer);
+            $query = $this->databaseManager->table('railtracker3_requests')->select($columnsToTransfer);
 
             // at the very end, all the rows that have failed migration once are tried again. But only at the end.
             if(!$onlySetAsideRemains) $query = $query->whereNotIn('uuid', $setAside);
@@ -894,7 +892,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $uuidsCleaned = [];
             $rowsInsertedOnSecondAttempt = [];
 
-            $tableToUpdate = str_replace_first('3', '4', $table);
             $columns = [];
             $stringsForRows = [];
             foreach($rows as $rowToPrep){
@@ -929,7 +926,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
             $parametersString = implode(', ', $stringsForRows);
             $columnsString = implode(', ', $columns);
 
-            $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values $parametersString";
+            $insertQuery = "insert ignore into railtracker4_requests ($columnsString) values $parametersString";
             try{
                 $this->databaseManager->connection()->insert($insertQuery);
             }catch(\Exception $e){
@@ -938,9 +935,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
             if(empty($uuids)) return [];
             $uuidsAsString = '(' . implode(',', $uuids) . ')';
 
-            $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsString";
+            $selectQuery = "SELECT * FROM railtracker4_requests WHERE uuid in $uuidsAsString";
             $rowsInserted = $this->databaseManager->connection()->select($selectQuery);
-            //$rowsInserted = json_decode(json_encode($rowsInserted), true);
 
             foreach($rowsInserted as $rowInserted){
                 $successfullyInsertedUuids[] = $rowInserted->uuid;
@@ -997,7 +993,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     }
                     $parametersString = implode(', ', $valuesToInsert);
                     $columnsString = implode(', ', $columnsForInsert);
-                    $insertQuery = "insert ignore into $tableToUpdate ($columnsString) values ($parametersString)";
+                    $insertQuery = "insert ignore into railtracker4_requests ($columnsString) values ($parametersString)";
                     try{
                         $this->databaseManager->connection()->insert($insertQuery);
                     }catch(\Exception $e){
@@ -1011,8 +1007,23 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         $this->info(',' . $subCount . ',,,,,' . $causalKey . ',' . $causalValue);
                     }
                     $uuidsAsStringSecondAttempt = '(' . implode(',', $uuidsSecondAttempt) . ')';
-                    $selectQuery = "SELECT * FROM $tableToUpdate WHERE uuid in $uuidsAsStringSecondAttempt";
-                    $rowsInsertedOnSecondAttempt = $this->databaseManager->connection()->select($selectQuery);
+                    $selectQuery = "SELECT * FROM railtracker4_requests WHERE uuid in $uuidsAsStringSecondAttempt";
+                    $rowsInsertedOnSecondAttempt[] = $this->databaseManager->connection()->select($selectQuery);
+                }
+
+                $uuidsOfRowsToTryAgain = []; // here?
+                $uuidsOfRowsInsertedOnSecondAttempt = []; // here?
+
+                if(!empty($rowsToTryAgain)){
+                    foreach($rowsToTryAgain as $rowToTryAgain){
+                        $uuidsOfRowsToTryAgain[] = $rowToTryAgain->uuid;
+                    }
+                }
+                foreach($rowsInsertedOnSecondAttempt as $resultFromRowOnSecondAttempt){
+                    if(!empty($resultFromRowOnSecondAttempt)){
+                        $rowInsertedOnSecondAttempt = reset($resultFromRowOnSecondAttempt);
+                        $uuidsOfRowsInsertedOnSecondAttempt[] = $rowInsertedOnSecondAttempt->uuid;
+                    }
                 }
             }
             $insertedOrUpdated = array_merge($rowsInserted, $rowsInsertedOnSecondAttempt);
@@ -1029,48 +1040,48 @@ class LegacyMigrate extends \Illuminate\Console\Command
              * can be set aside to address later and thus reduce the query time above in each iteration
              */
 
-            foreach($insertedOrUpdated as $key => $row){
-                if(!isset($row->uuid)){ // this will probably never happen
-                    $this->info('UUID missing in delete eval in threeToFourRequests(). This should not be possible');
-                    if($this->stopOnFailure) die();
-                    unset($insertedOrUpdated[$key]);
-                    continue;
-                }
-            }
-
             $uuidsSuccessfullyTransferred = [];
-            foreach($rows as $row){
-                if(in_array($row->uuid, $uuidsSuccessfullyTransferred)){
-                    $uuidsSuccessfullyTransferred[] = '\'' . $row->uuid . '\'';
-                }else{
-                    if(!in_array($row->uuid, $setAside)){
-                        // rows not migrated to set aside for later lest they slow query on each iteration
-                        $setAside[] = $row->uuid;
-                    }else{
-                        // this won't happen, ignore this.
-                        $this->info('uuid already in $setAside. It should not have been in the results because it ' .
-                            'should have been included in the whereNotIn clause. This is indicative of something ' .
-                            'broken in the the "logic" (I use the word bitterly because though this whole command is ' .
-                            'technically logical, it is stylistically abhorrent). It actually might not even break ' .
-                            'or effect anything, but just a heads up that if things go awry, you\'ve been warned.');
+            if(!empty($insertedOrUpdated)){
+                foreach($insertedOrUpdated as $successfulRow){
+                    if(empty($successfulRow)){
+                        continue;
+                    }
+                    if(gettype($successfulRow) === 'object'){
+                        $uuidsSuccessfullyTransferred[] = $successfulRow->uuid;
+                    }
+                    if(gettype($successfulRow) === 'array'){
+                        if(isset($successfulRow['uuid'])){
+                            $uuidsSuccessfullyTransferred[] = $successfulRow['uuid'];
+                        }else{
+                            foreach($successfulRow as $actuallySuccessfulRow){
+                                if(isset($actuallySuccessfulRow['uuid'])) {
+                                    $uuidsSuccessfullyTransferred[] = $actuallySuccessfulRow['uuid'];
+                                }else{
+                                    $this->info(
+                                        'error getting uuid from $insertedOrUpdated item that is array. Value of ' .
+                                        'part that was expected to have uuid is:'
+                                    );
+                                    dump($actuallySuccessfulRow);
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            // ------------------ delete successfully migrated rows from source ------------------
+            $addToSetAside = array_diff($uuidsCleaned, $uuidsSuccessfullyTransferred);
+            $setAside = array_merge($setAside, $addToSetAside);
 
-            dump('$uuidsSuccessfullyTransferred');
-            dump($uuidsSuccessfullyTransferred);
-            dump('$setAside');
-            dump($setAside);
+            $uuidsPreppedForDelete = [];
+            foreach($uuidsSuccessfullyTransferred as $uuidForRowToDelete){
+                $uuidsPreppedForDelete[] = '\'' . $uuidForRowToDelete . '\'';
+            }
 
             if(!empty($uuidsSuccessfullyTransferred)){ // only delete those rows that have been inserted
 
-                dd($uuidsSuccessfullyTransferred);
-
                 $deleteStartTime = round(microtime(true) * 1000);
 
-                $parameters = implode(',', $uuidsSuccessfullyTransferred);
+                $parameters = implode(',', $uuidsPreppedForDelete);
 
                 $sql = "delete from railtracker3_requests where uuid in ($parameters)";
                 $deletionOperationSuccess = $this->databaseManager->connection()->delete($sql) ? 1 : 0;
@@ -1086,11 +1097,15 @@ class LegacyMigrate extends \Illuminate\Console\Command
             // --------- output is Comma-Separated Values (CSV), for easy translation to markdown-styled table ---------
 
             $this->info(
-                $chunkCount . ',,' .
-                count($insertedOrUpdated) . ',' .
+                $chunkCount . ',' .
+                ',' . // 2. "subchunk" count
+                count($uuidsSuccessfullyTransferred) . ',' .
                 $duration . ',' .
                 $deletionOperationSuccess . ',' .
-                $deleteDuration
+                $deleteDuration  . ',' .
+                 ',' . // 7 $causalKey
+                 ',' . // 8 $causalValue
+                reset($uuidsSuccessfullyTransferred)
             );
         }
         // --------------------------------------------------------------------------------------===================----
@@ -1108,8 +1123,9 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }else{
             $this->info('Successfully transferred all rows!');
         }
-    }
 
+        return true;
+    }
 
     // ================================================================================================================
     // ====================================== PART IV: 3-to-4 processing helpers ======================================
@@ -1159,16 +1175,6 @@ class LegacyMigrate extends \Illuminate\Console\Command
             if($this->stopOnFailure) die();
             return false;
         }
-    }
-
-    /**
-     * @param $rows
-     * @param $table
-     * @return array
-     */
-    private function transferTheseRequests($rows, $table)
-    {
-
     }
 
     /**
