@@ -45,10 +45,4 @@ return [
     //'test-ip' => '156.184.155.130',
 
     'updateUsersAnonymousRequests_processing_chunk_size' => 1000,
-
-    'legacy_migrate_chunk_size' => 1000, // Specify an integer or null. If not specified, default is (int) 1000.
-    'legacy_migrate_delete_processed' => false, // if not specified, default is (bool) true
-    'legacy_migrate_stop_on_failure' => true, // if not specified, default is (bool) true
-    'legacy_migrate_limit_chunk_count' => 10, // Specify an integer, (bool) false, or null—if not specified, default is (bool) false
-    'unacceptable_deletion_duration' => 250,  // Specify an integer for milliseconds—if not specified, default is 250
 ];

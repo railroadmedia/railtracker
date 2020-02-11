@@ -39,8 +39,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
         RequestRepository $requestRepository
     )
     {
-        $this->chunkSize = config('railtracker.legacy_migrate_chunk_size') ?? 1000;
-        $this->stopOnFailure = config('railtracker.legacy_migrate_stop_on_failure') ?? true;
+        $this->chunkSize = 1000;
+        $this->stopOnFailure = true;
 
         parent::__construct();
 
