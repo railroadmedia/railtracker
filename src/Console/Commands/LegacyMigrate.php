@@ -126,7 +126,15 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->chunkSize = 1000;
         $this->info('running "legacyToFour" (chunk size: ' . $this->chunkSize . ')'); $this->info('');
 
-        $this->info('#,duration(ms),avg(ms),vs avg as %,vs avg of 1st 5 as %,delete(ms),count($attackContainingRequests)');
+        $this->info(
+            '#,duration(ms),' .
+            'avg(ms),' .
+            'vs avg as %,' .
+            'vs avg of 1st 5 as %,' .
+            'delete(ms),' .
+            'rowsPassedToDelete,' .
+            'count($attackContainingRequests)'
+        );
 
         $startTime = time();
         $chunkCounter = 0;
@@ -270,8 +278,10 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         $attackContainingRequests
                     );
 
-                    error_log('railtracker legacy migrate legacy-to-4 did not process these rows (by uuid): ' .
-                        implode(',', $attackContainingRequestsForThisChunk));
+                    if(!empty($attackContainingRequestsForThisChunk)){
+                        error_log('railtracker legacy migrate legacy-to-4 did not process these rows (by uuid): ' .
+                            implode(',', $attackContainingRequestsForThisChunk));
+                    }
 
                     foreach($rows as $key => $row){
                         if(in_array($row->uuid, $attackContainingRequestsForThisChunk)){
@@ -289,6 +299,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         }
                     }
 
+                    $rowsPassedToDelete = count($rows);
                     $deleteDuration = $this->deleteProcessed($rows);
 
                     $end = round(microtime(true) * 1000);
@@ -310,6 +321,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         $percentDifferenceFromAverage. ',' .
                         $percentDifferenceFromAverageOfFirstFive . ',' .
                         ($deleteDuration ?? 'n/a') . ',' .
+                        $rowsPassedToDelete . ',' .
                         count($attackContainingRequests)
                     );
 
