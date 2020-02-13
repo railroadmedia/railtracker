@@ -659,15 +659,18 @@ class LegacyMigrate extends \Illuminate\Console\Command
         foreach($rows as $row){
             $idsToDelete[] = $row->id;
         }
-        $highest = max($idsToDelete ?? []);
-        $lowest = min($idsToDelete ?? []);
 
-        $deleteQuery = "DELETE FROM railtracker_requests WHERE id >= $lowest AND id <= $highest";
-        $this->databaseManager->connection()->delete($deleteQuery);
+        if(!empty($idsToDelete)){
+            $highest = max($idsToDelete ?? []);
+            $lowest = min($idsToDelete ?? []);
 
-        return round(microtime(true) * 1000) - $deleteStartTime;
+            $deleteQuery = "DELETE FROM railtracker_requests WHERE id >= $lowest AND id <= $highest";
+            $this->databaseManager->connection()->delete($deleteQuery);
+
+            return round(microtime(true) * 1000) - $deleteStartTime;
+        }
+        return 0;
     }
-
 
     // =================================================================================================================
     // ====================================== PART III: 3-to-4 processing methods ======================================
