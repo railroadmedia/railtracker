@@ -258,9 +258,10 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     try{
                         $success = $this->migrateTheseRequests($rows);
                     }catch(\Exception $e){
-                        $this->info($e->getMessage());
                         error_log($e);
-                        return false; // do not process any more chunks
+                        if($this->stopOnFailure) {
+                            return false; // do not process any more chunks
+                        }
                     }
 
                     $deleteDuration = $this->deleteProcessed($rows);
