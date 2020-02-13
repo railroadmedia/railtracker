@@ -126,7 +126,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $this->chunkSize = 1000;
         $this->info('running "legacyToFour" (chunk size: ' . $this->chunkSize . ')'); $this->info('');
 
-        $this->info('#,duration(ms),avg(ms),vs avg as %,vs avg of 1st 5 as %,delete(ms)');
+        $this->info('#,duration(ms),avg(ms),vs avg as %,vs avg of 1st 5 as %,delete(ms),count($attackContainingRequests)');
 
         $startTime = time();
         $chunkCounter = 0;
@@ -134,13 +134,21 @@ class LegacyMigrate extends \Illuminate\Console\Command
         $durations = [];
         $averageOfFirstFive = null;
 
+        $attackContainingRequests = [];
+
         $this->databaseManager
             ->table('railtracker_requests')
             ->select('railtracker_requests.id')
             ->orderBy('id')
             ->chunkById(
                 $this->chunkSize,
-                function($ids) use (&$chunkCounter, &$average, &$durations, &$averageOfFirstFive) {
+                function($ids) use (
+                    &$chunkCounter,
+                    &$average,
+                    &$durations,
+                    &$averageOfFirstFive,
+                    &$attackContainingRequests
+                ) {
 
                     $chunkCounter++;
 
@@ -251,9 +259,26 @@ class LegacyMigrate extends \Illuminate\Console\Command
                             'exceptions.hash AS exception_hash'
                         )
                         ->whereIn('railtracker_requests.id', $idsToUse)
+                        ->whereNotIn('railtracker_requests.uuid', $attackContainingRequests)
                         ->get();
 
                     $start = round(microtime(true) * 1000);
+
+                    $attackContainingRequestsForThisChunk = $this->attackContainingRequests($rows);
+                    $attackContainingRequests = array_merge(
+                        $attackContainingRequestsForThisChunk,
+                        $attackContainingRequests
+                    );
+
+                    error_log('railtracker legacy migrate legacy-to-4 did not process these rows (by uuid): ' .
+                        implode(',', $attackContainingRequestsForThisChunk));
+
+                    foreach($rows as $key => $row){
+                        if(in_array($row->uuid, $attackContainingRequestsForThisChunk)){
+                            $removedBeforeProcessing[] = $row;
+                            unset($rows[$key]);
+                        }
+                    }
 
                     try{
                         $success = $this->migrateTheseRequests($rows);
@@ -284,7 +309,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         $average . ',' .
                         $percentDifferenceFromAverage. ',' .
                         $percentDifferenceFromAverageOfFirstFive . ',' .
-                        ($deleteDuration ?? 'n/a')
+                        ($deleteDuration ?? 'n/a') . ',' .
+                        count($attackContainingRequests)
                     );
 
                     if($this->stopOnFailure){
@@ -307,6 +333,40 @@ class LegacyMigrate extends \Illuminate\Console\Command
     // =================================================================================================================
     // ==================================== PART II: legacy-to-4 processing helpers ====================================
     // =================================================================================================================
+
+    /**
+     * @param Collection $legacyData
+     * @return array
+     */
+    private function attackContainingRequests(Collection $legacyData)
+    {
+        foreach($legacyData as $legacyDatum){
+            if (!empty($legacyDatum->url_query_string)) {
+                $potentialAttack = false;
+                $hasAMarker = false;
+                $defaultMarkers = [
+                    'select',
+                    'union',
+                    'concat',
+                    'substring',
+                ];
+                $markers = config('railtracker.sqlInjectionMarkers') ?? $defaultMarkers;
+                foreach ($markers as $marker) {
+                    if(strpos(strtolower($legacyDatum->url_query_string), $marker) !== false){
+                        $hasAMarker = true;
+                    }
+                }
+                $hasASpace = strpos(strtolower($legacyDatum->url_query_string), '%20') !== false;
+                if($hasASpace && $hasAMarker){
+                    $potentialAttack = true;
+                }
+                if($potentialAttack){
+                    $uuidsWithAttacks[] = $legacyDatum->uuid;
+                }
+            }
+        }
+        return $uuidsWithAttacks ?? [];
+    }
 
     /**
      * @param Collection $legacyData
