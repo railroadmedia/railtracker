@@ -58,9 +58,16 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     public function handle()
     {
+        $this->breathingRoom();
+        $this->info('Starting at ' . $this->getDateAsNiceString());
+
         $toRun = $this->promptForOption($this->option('run') ?? false);
 
-        return $this->$toRun();
+        $this->$toRun();
+
+        $this->info('Finished at : ' . $this->getDateAsNiceString());
+
+        return true;
     }
 
     /**
@@ -116,6 +123,25 @@ class LegacyMigrate extends \Illuminate\Console\Command
         return $methodsAvailable[$selection];
     }
 
+    /**
+     * @return false|string
+     */
+    private function getDateAsNiceString()
+    {
+        $time = time();
+        $hoursWeAreBehindUTC = 8;
+        $minutesWeAreBehindUTC = $hoursWeAreBehindUTC * 60;
+        $secondsWeAreBehindUTC = $minutesWeAreBehindUTC * 60;
+        $timeAdjusted = $time - $secondsWeAreBehindUTC;
+        return date('g:ia\, D M jS', $timeAdjusted);
+    }
+
+    private function breathingRoom($lines = 20)
+    {
+        for($i = 0; $i < $lines; $i++){
+            $this->info('');
+        }
+    }
 
     // ================================================================================================================
     // ==================================== PART I: legacy-to-4 processing methods ====================================
@@ -1179,24 +1205,43 @@ class LegacyMigrate extends \Illuminate\Console\Command
                         $uuidsSuccessfullyTransferred[] = $successfulRow->uuid;
                     }
                     if(gettype($successfulRow) === 'array'){
-                        if(isset($successfulRow['uuid'])){
-                            $uuidsSuccessfullyTransferred[] = $successfulRow['uuid'];
-                        }else{
-                            foreach($successfulRow as $actuallySuccessfulRow){
-                                if(is_array($actuallySuccessfulRow)){
-                                    if(isset($actuallySuccessfulRow['uuid'])) {
-                                        $uuidsSuccessfullyTransferred[] = $actuallySuccessfulRow['uuid'];
-                                    }else{
-                                        $this->info(
-                                            'error getting uuid from $insertedOrUpdated item that is array. Value of ' .
-                                            'part that was expected to have uuid is:'
-                                        );
-                                        dump($actuallySuccessfulRow);
-                                    }
+
+                        $successfulRow = reset($successfulRow);
+
+                        if(is_object($successfulRow)){
+
+                            if(property_exists($successfulRow, 'uuid')){
+
+                                $uuidToSet = $successfulRow->uuid;
+
+                                if(is_string($uuidToSet)){
+                                    $uuidsSuccessfullyTransferred[] = $uuidToSet;
                                 }else{
-                                    $this->info('error with this row: ' . var_export($actuallySuccessfulRow, true));
+                                    $this->info('----------------------------------------start');
+                                    dump($uuidToSet);
+                                    $this->info('------------------------------------------end');
+                                    $this->info('apparently ↑ what should be the uuid is not a string');
+                                    $this->info('(ending at ' . $this->getDateAsNiceString() . ')');
+                                    $this->breathingRoom();
+                                    die();
                                 }
+                            }else{
+                                $this->info('----------------------------------------start');
+                                dump($successfulRow);
+                                $this->info('------------------------------------------end');
+                                $this->info('apparently ↑ does not have a uuid property');
+                                $this->info('(ending at ' . $this->getDateAsNiceString() . ')');
+                                $this->breathingRoom();
+                                die();
                             }
+                        }else{
+                            $this->info('----------------------------------------start');
+                            dump($successfulRow);
+                            $this->info('------------------------------------------end');
+                            $this->info('is not an object');
+                            $this->info('(ending at ' . $this->getDateAsNiceString() . ')');
+                            $this->breathingRoom();
+                            die();
                         }
                     }
                 }
