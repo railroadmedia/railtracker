@@ -386,6 +386,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
      */
     private function migrateTheseRequests(Collection $legacyData)
     {
+        $replaceKeyWithValue = [];
+
         $this->fillHashes($legacyData);
 
         $dbConnectionName = config('railtracker.database_connection_name');
@@ -588,7 +590,46 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             $sql = "insert ignore into railtracker4_$table ($columnsString) values $parametersString";
 
-            $this->databaseManager->connection()->insert($sql);
+            try{
+                $this->databaseManager->connection()->insert($sql);
+            }catch(\Exception $e){
+                error_log($e);
+
+                foreach($rowsToCreate as $rowToPrep){
+                    $rowItemsForString = [];
+                    foreach($columns as $column){
+                        // escape single quotation-marks because they're used by our query
+                        if(!isset($rowToPrep[$column])){
+                            error_log('Value for column (\'' . $column . '\') not defined. This should not be possible.');
+                            continue;
+                        }
+                        $value = $rowToPrep[$column];
+                        $value = str_replace('\'', '\\\'', $value);
+                        $value = '\'' . $value . '\'';
+
+                        $newValue = preg_replace("/[^A-Za-z0-9 ]/", '', $value);
+                        $newValue = '(note: potential sql injection, all non-alphanumeric characters removed during ' .
+                            'legacy migrate)' . $newValue;
+//                        if(is_null($newValue)){
+//                            dd($rowToPrep);
+//                        }
+                        $replaceKeyWithValue[(string) $value] = $newValue;
+
+                        $rowItemsForString[] = $value;
+                    }
+                    $stringsForRows[] = '(' . implode(', ', $rowItemsForString) . ')';
+
+                    $parametersString = implode(', ', $stringsForRows);
+
+                    $sql = "insert ignore into railtracker4_$table ($columnsString) values $parametersString";
+
+                    try{
+                        $this->databaseManager->connection()->insert($sql);
+                    }catch(\Exception $e) {
+                        error_log($e);
+                    }
+                }
+            }
         }
 
         // second, store requests table
@@ -658,11 +699,23 @@ class LegacyMigrate extends \Illuminate\Console\Command
 
             if (empty($chunkOfBulkInsertData)) continue;
 
+            foreach($chunkOfBulkInsertData as &$chunkForRow){
+                foreach($chunkForRow as $colKey => $colValue){
+                    if(array_key_exists((string) $colValue, $replaceKeyWithValue)){
+                        $chunkForRow[$colKey] = $replaceKeyWithValue[$colKey];
+                    }
+                }
+            }
+
             try{
                 $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);
             }catch(\Exception $e){
                 error_log($e);
-                dump('Error while writing to requests table ("' . $e->getMessage() . '")');
+                dump(
+                    'Error while writing to requests table ("' .
+                    substr($e->getMessage(), 512) .
+                    '..." (see logs for more details)'
+                );
             }
         }
 
