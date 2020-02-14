@@ -1183,14 +1183,18 @@ class LegacyMigrate extends \Illuminate\Console\Command
                             $uuidsSuccessfullyTransferred[] = $successfulRow['uuid'];
                         }else{
                             foreach($successfulRow as $actuallySuccessfulRow){
-                                if(isset($actuallySuccessfulRow['uuid'])) {
-                                    $uuidsSuccessfullyTransferred[] = $actuallySuccessfulRow['uuid'];
+                                if(is_array($actuallySuccessfulRow)){
+                                    if(isset($actuallySuccessfulRow['uuid'])) {
+                                        $uuidsSuccessfullyTransferred[] = $actuallySuccessfulRow['uuid'];
+                                    }else{
+                                        $this->info(
+                                            'error getting uuid from $insertedOrUpdated item that is array. Value of ' .
+                                            'part that was expected to have uuid is:'
+                                        );
+                                        dump($actuallySuccessfulRow);
+                                    }
                                 }else{
-                                    $this->info(
-                                        'error getting uuid from $insertedOrUpdated item that is array. Value of ' .
-                                        'part that was expected to have uuid is:'
-                                    );
-                                    dump($actuallySuccessfulRow);
+                                    $this->info('error with this row: ' . var_export($actuallySuccessfulRow, true));
                                 }
                             }
                         }
