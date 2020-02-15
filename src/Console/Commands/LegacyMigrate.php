@@ -40,7 +40,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
     )
     {
         $this->chunkSize = 1000;
-        $this->stopOnFailure = true;
+        $this->stopOnFailure = false;
 
         parent::__construct();
 
