@@ -739,7 +739,7 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 error_log($e);
                 dump(
                     'Error while writing to requests table ("' .
-                    substr($e->getMessage(), 512) .
+                    substr($e->getMessage(), 0, 512) .
                     '..." (see logs for more details)'
                 );
             }
