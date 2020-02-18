@@ -568,7 +568,14 @@ class LegacyMigrate extends \Illuminate\Console\Command
                     foreach($columnPropertySets as $column => $property){
 
                         if(isset($legacyDatum->$property)){
-                            $row[$column] = $legacyDatum->$property;
+
+                            if($table === 'language_preferences'){
+                                $row[$column] = substr($legacyDatum->$property, 0, 10);
+                            }elseif($table === 'language_ranges'){
+                                $row[$column] = substr($legacyDatum->$property, 0, 64);
+                            }else{
+                                $row[$column] = $legacyDatum->$property;
+                            }
                         }
 
                         if(is_null($legacyDatum->$property) && in_array($column, $specialCases)){
@@ -683,8 +690,8 @@ class LegacyMigrate extends \Illuminate\Console\Command
                 'referer_url_protocol' =>   $legacyDatum->url_referer_protocol ?? null,
                 'referer_url_domain' =>     $legacyDatum->url_referer_name ?? null,
                 'referer_url_path' =>       $legacyDatum->url_referer_path ?? null,
-                'language_preference' =>    $legacyDatum->language_preference ?? null,
-                'language_range' =>         $legacyDatum->language_language_range ?? null,
+                'language_preference' =>    substr($legacyDatum->language_preference ?? null, 0, 10),
+                'language_range' =>         substr($legacyDatum->language_language_range ?? null, 0, 64),
                 'ip_address' =>             $legacyDatum->geoip_ip_address ?? null,
 
                 'ip_latitude' =>            $legacyDatum->geoip_latitude ?? null, // see note above
@@ -1386,5 +1393,5 @@ class LegacyMigrate extends \Illuminate\Console\Command
         }
         return false;
     }
-
+    // end
 }
