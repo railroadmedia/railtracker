@@ -116,17 +116,69 @@ class FixMissingIpData extends \Illuminate\Console\Command
         $idFilterMarker = 0;
 
         // while loop
+        // =============================================================================================================
 
-            // while rows are returned keep going. when we get an empty db result then stop...? NO!! we're filtering
-            // ... here so we may sometimes not get results back. Sooooo... we need the max id, and if our
-            // "$idFilterMarker" (what we'll to set our min and max values for each query.)
+        // while rows are returned keep going. when we get an empty db result then stop...? NO!! we're filtering
+        // ... here so we may sometimes not get results back. Sooooo... we need the max id, and if our
+        // "$idFilterMarker" (what we'll to set our min and max values for each query.)
 
-            // when you get results, then process that.
+        // when you get results, then process that.
 
+        $oneThousand = 1000;
+        $oneHundredThousand = 100 * $oneThousand;
+        $oneMillion = 1000000;
 
+        /*
+         * to see number of relevant rows run this query:
+         *
+         *      SELECT id FROM railtracker4_requests
+         *      where ip_address is not null and ip_latitude is null and ip_longitude is null
+         *      order by id desc limit 1
+         *
+         * omit the second line (comment out with `#` to get the highest id in the whole table.
+         */
 
+        $maxId = config('railtracker.fix_missing_ip_data_max_id', $oneMillion * 110);
 
+        $whileChunkSize = config('railtracker.fix_missing_ip_data_while_chunk_size', $oneHundredThousand);
 
+        $keepGoing = true;
+
+        while ($keepGoing) {
+
+            usleep(250000);
+
+            $idMinForChunk = $idFilterMarker;
+            $idFilterMarker = $idFilterMarker + $whileChunkSize;
+            $idMaxForChunk = $idFilterMarker;
+            $keepGoing = $idFilterMarker < $maxId;
+            $this->info(
+                '$idMinForChunk: ' . $idMinForChunk .
+                ', $idMaxForChunk: ' . $idMaxForChunk .
+                ', $keepGoing is ' . ($keepGoing ? 'true' : 'false')
+            );
+
+            $this->databaseManager
+                ->table($table)
+                ->select('id', 'ip_address')
+                ->where(['ip_longitude' => null, 'ip_latitude' => null])
+                ->whereNotNull('ip_address')
+                ->where('id', '>', $idMinForChunk)
+                ->where('id', '<', $idMaxForChunk)
+                ->groupBy('ip_address', 'id')
+                ->orderBy('id')
+                ->chunkById(100, function($ip_addresses) use ($updates){
+                    usleep(250000);
+                    $updateStatusInfo = $this->fillForIpAddresses($ip_addresses);
+                    $this->info(
+                        '(csvForTable),' .
+                        count($ip_addresses) . ',' .
+                        $updateStatusInfo['requestTableUpdatesCount'] . ',' .
+                        $updateStatusInfo['associationTableUpdateCount']
+                    );
+                    if(rand(0,2)) return false;
+                });
+        }
 
         return true;
     }
