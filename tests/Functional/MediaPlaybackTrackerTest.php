@@ -30,7 +30,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         $this->mediaPlaybackTracker->trackMediaType($type, $category);
 
         $this->assertDatabaseHas(
-            config('railtracker.tables.media_playback_types'),
+            config('railtracker.table_prefix_media_playback_tracking') . config('railtracker.media_playback_types_table'),
             [
                 'type' => $type,
                 'category' => $category,
@@ -63,7 +63,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            config('railtracker.tables.media_playback_sessions'),
+            config('railtracker.table_prefix_media_playback_tracking') . config('railtracker.media_playback_sessions_table'),
             [
                 'media_id' => $mediaId,
                 'media_length_seconds' => $mediaLength,
@@ -96,7 +96,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            config('railtracker.tables.media_playback_sessions'),
+            config('railtracker.table_prefix_media_playback_tracking') . config('railtracker.media_playback_sessions_table'),
             [
                 'media_id' => $mediaId,
                 'media_length_seconds' => $mediaLength,
@@ -140,7 +140,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            config('railtracker.tables.media_playback_sessions'),
+            config('railtracker.table_prefix_media_playback_tracking') . config('railtracker.media_playback_sessions_table'),
             [
                 'id' => $sessionId,
                 'seconds_played' => $secondsPlayed,
@@ -186,7 +186,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
         );
 
         $this->assertDatabaseHas(
-            config('railtracker.tables.media_playback_sessions'),
+            config('railtracker.table_prefix_media_playback_tracking') . config('railtracker.media_playback_sessions_table'),
             [
                 'id' => $sessionId,
                 'seconds_played' => $secondsPlayed,
@@ -233,7 +233,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
             );
 
             $this->assertDatabaseHas(
-                config('railtracker.tables.media_playback_sessions'),
+                config('railtracker.table_prefix_media_playback_tracking') . config('railtracker.media_playback_sessions_table'),
                 [
                     'media_id' => $mediaId,
                     'media_length_seconds' => $mediaLength,

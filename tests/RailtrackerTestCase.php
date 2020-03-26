@@ -96,6 +96,10 @@ class RailtrackerTestCase extends BaseTestCase
             $this->batchService->cache()
                 ->del($toDelete);
         }
+
+        $this->databaseManager->connection()->table(config('railtracker.table_prefix') . 'requests')->truncate();
+
+        Carbon::setTestNow(Carbon::parse('2020-03-26 17:50:38.84123'));
     }
 
     public function tearDown()

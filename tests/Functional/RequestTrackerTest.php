@@ -74,6 +74,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         $expectedInDatabase = IpDataApiStubDataProvider::expectedInDatabase($expected, $output);
 
         foreach($expectedInDatabase as $expectedRow){
+            $expectedRow['ip_latitude'] =  number_format($expectedRow['ip_latitude'], 8);
+            $expectedRow['ip_longitude'] =  number_format($expectedRow['ip_longitude'], 8);
+
             $this->assertDatabaseHas(
                 config('railtracker.table_prefix') . 'requests',
                 $expectedRow
@@ -94,6 +97,9 @@ class RequestTrackerTest extends RailtrackerTestCase
         }
 
         foreach($expectedInDatabase as $expectedRow){
+            $expectedRow['ip_latitude'] =  number_format($expectedRow['ip_latitude'], 8);
+            $expectedRow['ip_longitude'] =  number_format($expectedRow['ip_longitude'], 8);
+            
             $this->assertDatabaseHas(
                 config('railtracker.table_prefix') . 'requests',
                 $expectedRow

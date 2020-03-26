@@ -556,14 +556,15 @@ class IpDataApiStubDataProvider
                 if($ip === $requestVO->ipAddress){
                     $requestVO->ipLatitude = $outputForIp['latitude'] ?? null;
                     $requestVO->ipLongitude = $outputForIp['longitude'] ?? null;
-                    $requestVO->ipCountryCode = $outputForIp['country_code'] ?? null;
-                    $requestVO->ipCountryName = $outputForIp['country_name'] ?? null;
-                    $requestVO->ipRegion = $outputForIp['region_code'] ?? null;
-                    $requestVO->ipCity = $outputForIp['city'] ?? null;
-                    $requestVO->ipPostalZipCode = $outputForIp['postal'] ?? null;
+                    $requestVO->ipCountryCode = !empty($outputForIp['country_code']) ? $outputForIp['country_code'] : null;
+                    $requestVO->ipCountryName = !empty($outputForIp['country_name']) ? $outputForIp['country_name'] : null;
 
-                    $requestVO->ipTimezone = $outputForIp['time_zone'] ? $outputForIp['time_zone']->name : null;
-                    $requestVO->ipCurrency = $outputForIp['currency'] ? $outputForIp['currency']->code : null;
+                    $requestVO->ipRegion = !empty($outputForIp['region_code']) ? $outputForIp['region_code'] : null;
+                    $requestVO->ipCity = !empty($outputForIp['city']) ? $outputForIp['city'] : null;
+                    $requestVO->ipPostalZipCode = !empty($outputForIp['postal']) ? $outputForIp['postal'] : null;
+
+                    $requestVO->ipTimezone = !empty($outputForIp['time_zone']->name) ? $outputForIp['time_zone']->name : null;
+                    $requestVO->ipCurrency = !empty($outputForIp['currency']->code) ? $outputForIp['currency']->code : null;
                 }
             }
 

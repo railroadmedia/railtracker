@@ -60,7 +60,7 @@ class ProcessTrackingsTest extends RailtrackerTestCase
             [
                 'id' => 1,
                 'response_status_code' => 200,
-                'responded_on' => Carbon::now()->format(RequestVO::$TIME_FORMAT),
+                'responded_on' => rtrim(Carbon::now()->format(RequestVO::$TIME_FORMAT), '0'),
             ]
         );
     }
