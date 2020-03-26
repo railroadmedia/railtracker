@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-class CreateGeoIpFixTempLibraryTables extends Migration
+class CreateGeoIpFixTempLibraryTable extends Migration
 {
     /**
      * Run the migrations.
@@ -38,6 +38,7 @@ class CreateGeoIpFixTempLibraryTables extends Migration
                 $table->string('ip_timezone', 64)->index()->nullable();
                 $table->string('ip_currency', 16)->index()->nullable();
 
+                $table->boolean('local')->nullable();
                 $table->dateTime('created', 5)->index();
                 $table->dateTime('filled', 5)->index()->nullable();
             }

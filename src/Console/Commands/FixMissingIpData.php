@@ -2,6 +2,7 @@
 
 namespace Railroad\Railtracker\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
@@ -17,6 +18,14 @@ class FixMissingIpData extends \Illuminate\Console\Command
      * @var string
      */
     protected $description = 'Fix missing IP-Data.';
+
+    protected $signature = 'fixMissingIpData {selection?}';
+
+    private static $ACTIONS = [
+        'tempTableAdd',
+        'tempTableFill',
+        'updateRequests',
+    ];
 
     /**
      * @var DatabaseManager
@@ -43,6 +52,10 @@ class FixMissingIpData extends \Illuminate\Console\Command
         'ip_currencies' => 'ip_currency',
     ];
 
+    private $tempTable;
+
+    private $requestsTable;
+
     /**
      * ProcessTrackings constructor.
      * @param DatabaseManager $databaseManager
@@ -56,26 +69,66 @@ class FixMissingIpData extends \Illuminate\Console\Command
         parent::__construct();
         $this->databaseManager = $databaseManager;
         $this->ipDataApiSdkService = $ipDataApiSdkService;
+
+        $this->requestsTable = config('railtracker.table_prefix') . 'requests';
+        $this->tempTable = config('railtracker.table_prefix') . 'geo_ip_fix_temp_library';
     }
 
     /**
+     * @uses tempTableAdd
+     * @uses tempTableFill
+     * @uses updateRequests
      * return true
      */
     public function handle()
     {
-        $table = config('railtracker.table_prefix') . 'requests';
+        $explodedSig = explode(' ', $this->signature);
+        $signatureStart = reset($explodedSig);
 
+        $validOptionSupplied = in_array(
+            $this->argument('selection'),
+            array_keys(self::$ACTIONS),
+            !is_numeric($this->argument('selection'))
+        );
+
+        if(!$validOptionSupplied){
+
+            $this->info('Please try again, specifying an option from the list below:');
+
+            foreach(self::$ACTIONS as $key => $value){
+                $this->info('    ' . $key . '. ' . $value);
+            }
+
+            $randOption = rand(0,(count(self::$ACTIONS)-1));
+
+            $this->info(
+                'Ex: `artisan ' . $signatureStart . ' ' . $randOption . '` if you want the "' .
+                self::$ACTIONS[$randOption] . '" option'
+            );
+
+            return true;
+        }
+
+        $methodToRun = self::$ACTIONS[$this->argument('selection')];
+
+        $timeString = Carbon::now()->timezone('America/Vancouver')->toDateTimeString();
+
+        $this->info($timeString . ', starting "' . $methodToRun . '"');
+
+        $this->info('');
+
+        $this->$methodToRun();
+        return true;
+    }
+
+    private function tempTableAdd()
+    {
         $updates = [];
-
-        /*
-         * All output lines that start with "(csvForTable)," can be copied to "donatstudios.com/CsvToMarkdownTable" for
-         * beautification to a markdown table.
-         */
-        $this->info('(csvForTable),chunk size,request table updates,association tables updates');
 
 
         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
+        DONT MAKE THIS MISTAKE AGAIN
         This old version is SHIT - it fucking shreks the prod server. Absolute bullshit. Kill it with fire!
         ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 
@@ -84,7 +137,7 @@ class FixMissingIpData extends \Illuminate\Console\Command
 
         * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 //        $this->databaseManager
-//            ->table($table)
+//            ->table($this->requestsTable)
 //            ->select('id', 'ip_address')
 //            ->where(['ip_longitude' => null, 'ip_latitude' => null])
 //            ->groupBy('ip_address', 'id')
@@ -98,20 +151,6 @@ class FixMissingIpData extends \Illuminate\Console\Command
 //                    $updateStatusInfo['associationTableUpdateCount']
 //                );
 //            });
-
-
-        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-        This is the new version below
-        ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-
-        To get even better than filtering by `ip_address IS NOT NULL`, **ALSO** filter by id. We *will* have a somewhat
-        convoluted loop of going through ids, but oh well, it's better than fucking destroying the DB server for like a
-        fucking hour.
-
-        * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-        // consider getting count of table (railtracker4_requests)
 
         $idFilterMarker = 0;
 
@@ -142,24 +181,32 @@ class FixMissingIpData extends \Illuminate\Console\Command
 
         $whileChunkSize = config('railtracker.fix_missing_ip_data_while_chunk_size', $oneHundredThousand);
 
+        $whileCount = 0;
+
         $keepGoing = true;
+
+        $this->info('whileCount,idMinForChunk,idMaxForChunk,chunkCount,insertSuccess');
 
         while ($keepGoing) {
 
-            usleep(250000);
+            //usleep(250000);
+
+            $whileCount++;
+
+            $timestamp = Carbon::now()->toDateTimeString();
+
+            //dd($timestamp);
 
             $idMinForChunk = $idFilterMarker;
             $idFilterMarker = $idFilterMarker + $whileChunkSize;
             $idMaxForChunk = $idFilterMarker;
             $keepGoing = $idFilterMarker < $maxId;
-            $this->info(
-                '$idMinForChunk: ' . $idMinForChunk .
-                ', $idMaxForChunk: ' . $idMaxForChunk .
-                ', $keepGoing is ' . ($keepGoing ? 'true' : 'false')
-            );
+            $this->info($whileCount . ',' . $idMinForChunk . ',' . $idMaxForChunk . ',,');
+
+            $chunkNumber = 0;
 
             $this->databaseManager
-                ->table($table)
+                ->table($this->requestsTable)
                 ->select('id', 'ip_address')
                 ->where(['ip_longitude' => null, 'ip_latitude' => null])
                 ->whereNotNull('ip_address')
@@ -167,121 +214,59 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 ->where('id', '<', $idMaxForChunk)
                 ->groupBy('ip_address', 'id')
                 ->orderBy('id')
-                ->chunkById(100, function($ip_addresses) use ($updates){
-                    usleep(250000);
-                    $updateStatusInfo = $this->fillForIpAddresses($ip_addresses);
-                    $this->info(
-                        '(csvForTable),' .
-                        count($ip_addresses) . ',' .
-                        $updateStatusInfo['requestTableUpdatesCount'] . ',' .
-                        $updateStatusInfo['associationTableUpdateCount']
-                    );
-                    if(rand(0,2)) return false;
+                ->chunkById(100, function($ip_addresses) use ($updates, $timestamp, $idMinForChunk, $idMaxForChunk, &$chunkNumber){
+                    usleep(25000);
+                    // --------------------------------------- add to temp table ---------------------------------------
+
+                    $chunkNumber++;
+
+                    $dataToInsert = [];
+
+                    foreach($ip_addresses as $row){
+                        $dataToInsert[] = [
+                            'ip_address' => $row->ip_address,
+                            'created' => $timestamp
+                        ];
+                    }
+
+                    $valuesString = '';
+                    $i = 1;
+                    foreach($dataToInsert as $row){
+                        $last = count($dataToInsert) === $i;
+                        if($last){
+                            $valuesString = $valuesString . '("' . $row['ip_address'] . '","' . $row['created'] . '")';
+                        }else{
+                            $valuesString = $valuesString . '("' . $row['ip_address'] . '","' . $row['created'] . '"),';
+                        }
+                        $i++;
+                    }
+
+                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
+                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
+                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
+                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
+                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
+
+                    $string = 'INSERT IGNORE INTO '. $this->tempTable .' (ip_address, created) VALUES' . $valuesString;
+
+                    $bulkInsertResult = $this->databaseManager->connection()->insert($string);
+
+                    $this->info(',,,' . $chunkNumber . ',' . ($bulkInsertResult ? 'true' : 'false'));
+
+                    return $bulkInsertResult;
                 });
         }
-
         return true;
     }
 
-    private function fillForIpAddresses(Collection $rowsRequiringData)
+    private function tempTableFill()
     {
 
-        $this->info('processing chunk containing these rows:');
-        $this->info('    id,ip_address');
-
-        foreach($rowsRequiringData as $row){
-            $this->info('    ' . $row->id . ',' . $row->ip_address);
-        }
-
-        $this->info('');
-
-        $idsByIpAddress = [];
-        $associationTableUpdateCount = 0;
-
-        foreach($rowsRequiringData as $row){
-            $idsByIpAddress[$row->ip_address][] = $row->id;
-        }
-
-        $ipData = $this->ipDataApiSdkService->bulkRequest(array_keys($idsByIpAddress));
-
-        // Uncomment ↓ to see "total number of requests made by your API key in the last 24 hrs. Updates once a minute."
-        //$this->info('API requests in past 24h: ' . end($ipData)['count'] ?? null);
-
-        dd($ipData);
-
-        foreach($idsByIpAddress as $ipAddress => $rowIds){
-
-            $updates = [];
-
-            // find relevant ip data
-            $relevantIpData = null;
-            foreach($ipData as $candidate){
-
-                if(empty($candidate['ip'])) continue;
-
-                if($candidate['ip'] === $ipAddress){
-                    $relevantIpData = $candidate;
-                };
-            }
-
-            if(empty($relevantIpData)) continue;
-
-            dd($relevantIpData);
-
-            // prepare ip data for db insertion
-            $dataForUpdate = [
-                'ip_latitude' => $relevantIpData['latitude'],
-                'ip_longitude' => $relevantIpData['longitude'],
-                'ip_country_code' => $relevantIpData['country_code'],
-                'ip_country_name' => $relevantIpData['country_name'],
-                'ip_region' => $relevantIpData['region_code'],
-                'ip_city' => $relevantIpData['city'],
-                'ip_postal_zip_code' => $relevantIpData['postal'],
-                'ip_timezone' => !empty($relevantIpData['time_zone']) ? $relevantIpData['time_zone']->name : null,
-                'ip_currency' => !empty($relevantIpData['currency']) ? $relevantIpData['currency']->code : null,
-            ];
-
-            // first update association tables
-            foreach(self::$tableColumnMap as $table => $column){
-                $table = config('railtracker.table_prefix') . $table;
-
-                $valuesToInsert = $dataForUpdate[$column];
-
-                if(empty($valuesToInsert)) continue;
-
-                $preexistingRecord = $this->databaseManager
-                    ->table($table)
-                    ->select()
-                    ->where([$column => $valuesToInsert])
-                    ->get()
-                    ->first();
-
-                $alreadyExists = !empty($preexistingRecord);
-
-                if($alreadyExists) continue;
-
-                try{
-                    $updates[] = $this->databaseManager->table($table)->updateOrInsert([$column => $valuesToInsert]);
-                }catch(\Exception $exception){
-                    error_log($exception);
-                    $this->info(
-                        'Association table insert failed for \'' . $table . '\' table. With exception message ' .
-                        $exception->getMessage() . '. IP-address: ' . $ipAddress . '. See error log.'
-                    );
-                }
-            }
-
-            $associationTableUpdateCount += count($updates);
-
-            // then update requests table
-            $requestTableUpdates[] = $this->databaseManager->table(config('railtracker.table_prefix') . 'requests')
-                ->wherein('id', $rowIds)
-                ->update($dataForUpdate);
-        }
-
-        return [
-            'requestTableUpdatesCount' => count($requestTableUpdates ?? []),
-            'associationTableUpdateCount' => $associationTableUpdateCount,
-        ];
     }
+
+    private function updateRequests()
+    {
+
+    }
+
 }
