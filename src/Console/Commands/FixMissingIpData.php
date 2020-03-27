@@ -21,6 +21,8 @@ class FixMissingIpData extends \Illuminate\Console\Command
 
     protected $signature = 'fixMissingIpData {selection?}';
 
+    private static $PAUSE_ON_LOCAL = false;
+
     private static $ACTIONS = [
         'tempTableAdd',
         'tempTableFill',
@@ -121,91 +123,58 @@ class FixMissingIpData extends \Illuminate\Console\Command
         return true;
     }
 
+    /**
+     * @param int $microSec
+     * @return void
+     */
+    private function pause($microSec = 25000)
+    {
+        $envIsDev = getenv()['APP_ENV'] === 'development';
+
+        if(!$envIsDev || self::$PAUSE_ON_LOCAL){
+            usleep($microSec);
+        }
+    }
+
+    /**
+     * @param array $items
+     * @return void
+     */
+    private function print(...$items)
+    {
+        $str = '';
+        foreach($items as $item){
+            $str = $str . $item . ',';
+        }
+        $this->info(rtrim($str,','));
+    }
+
     private function tempTableAdd()
     {
-        $updates = [];
-
-
-        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-        DONT MAKE THIS MISTAKE AGAIN
-        This old version is SHIT - it fucking shreks the prod server. Absolute bullshit. Kill it with fire!
-        ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-
-        The problem is that it has to query a massive amount of data. with a very fucking broad filter. It gets better
-        if we also filter by `ip_address IS NOT NULL`
-
-        * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-//        $this->databaseManager
-//            ->table($this->requestsTable)
-//            ->select('id', 'ip_address')
-//            ->where(['ip_longitude' => null, 'ip_latitude' => null])
-//            ->groupBy('ip_address', 'id')
-//            ->orderBy('id')
-//            ->chunkById(100, function($ip_addresses) use ($updates){
-//                $updateStatusInfo = $this->fillForIpAddresses($ip_addresses);
-//                $this->info(
-//                    '(csvForTable),' .
-//                    count($ip_addresses) . ',' .
-//                    $updateStatusInfo['requestTableUpdatesCount'] . ',' .
-//                    $updateStatusInfo['associationTableUpdateCount']
-//                );
-//            });
+        // todo: are minforchunk & maxforchunk good? check that we're not missing one or two from start|end every chunk
 
         $idFilterMarker = 0;
-
-        // while loop
-        // =============================================================================================================
-
-        // while rows are returned keep going. when we get an empty db result then stop...? NO!! we're filtering
-        // ... here so we may sometimes not get results back. Sooooo... we need the max id, and if our
-        // "$idFilterMarker" (what we'll to set our min and max values for each query.)
-
-        // when you get results, then process that.
-
         $oneThousand = 1000;
-        $oneHundredThousand = 100 * $oneThousand;
         $oneMillion = 1000000;
-
-        /*
-         * to see number of relevant rows run this query:
-         *
-         *      SELECT id FROM railtracker4_requests
-         *      where ip_address is not null and ip_latitude is null and ip_longitude is null
-         *      order by id desc limit 1
-         *
-         * omit the second line (comment out with `#` to get the highest id in the whole table.
-         */
-
-        $maxId = config('railtracker.fix_missing_ip_data_max_id', $oneMillion * 110);
-
-        $whileChunkSize = config('railtracker.fix_missing_ip_data_while_chunk_size', $oneHundredThousand);
-
-        $whileCount = 0;
-
+        $maxId = config('railtracker.fix_missing_ip_data_max_id', $oneMillion * 16);
+        $whileChunkSize = config('railtracker.fix_missing_ip_data_while_chunk_size', 10 * $oneThousand);
+        $chunkCount = 0;
         $keepGoing = true;
 
-        $this->info('whileCount,idMinForChunk,idMaxForChunk,chunkCount,insertSuccess');
+        $this->print('$chunkCount, $totalResults, $uniqueResults, $countBefore, $countAfter,((string) $bulkInsertResult)');
 
         while ($keepGoing) {
-
-            //usleep(250000);
-
-            $whileCount++;
-
-            $timestamp = Carbon::now()->toDateTimeString();
-
-            //dd($timestamp);
-
+            $ipAddresses = [];
+            $dataToInsert = [];
+            $chunkCount++;
             $idMinForChunk = $idFilterMarker;
             $idFilterMarker = $idFilterMarker + $whileChunkSize;
             $idMaxForChunk = $idFilterMarker;
             $keepGoing = $idFilterMarker < $maxId;
-            $this->info($whileCount . ',' . $idMinForChunk . ',' . $idMaxForChunk . ',,');
 
-            $chunkNumber = 0;
-
-            $this->databaseManager
+            $this->pause();
+            $timestamp = Carbon::now()->toDateTimeString();
+            $chunkResults = $this->databaseManager
                 ->table($this->requestsTable)
                 ->select('id', 'ip_address')
                 ->where(['ip_longitude' => null, 'ip_latitude' => null])
@@ -214,47 +183,77 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 ->where('id', '<', $idMaxForChunk)
                 ->groupBy('ip_address', 'id')
                 ->orderBy('id')
-                ->chunkById(100, function($ip_addresses) use ($updates, $timestamp, $idMinForChunk, $idMaxForChunk, &$chunkNumber){
-                    usleep(25000);
-                    // --------------------------------------- add to temp table ---------------------------------------
+                ->get();
 
-                    $chunkNumber++;
+            if($chunkResults->isEmpty()) continue;
 
-                    $dataToInsert = [];
+            foreach($chunkResults as $row){
+                $ipAddresses[] = $row->ip_address;
+            }
 
-                    foreach($ip_addresses as $row){
-                        $dataToInsert[] = [
-                            'ip_address' => $row->ip_address,
-                            'created' => $timestamp
-                        ];
+            $totalResults = count($ipAddresses);
+
+            $ipAddresses = array_unique($ipAddresses);
+
+            $uniqueResults = count($ipAddresses);
+
+            $this->pause();
+
+            $exists = $this->databaseManager->connection()
+                ->table($this->tempTable)
+                ->whereIn('ip_address', $ipAddresses)
+                ->get();
+
+            $countBefore = count($ipAddresses);
+
+            foreach($exists as $existentRecord){
+
+                $rowExistsForThisIpAddress = $existentRecord->ip_address;
+
+                foreach($ipAddresses as $key => $ipAddress){
+
+                    $keyToRemove = null;
+
+                    if($ipAddress === $rowExistsForThisIpAddress){
+                        $keyToRemove = $key;
                     }
 
-                    $valuesString = '';
-                    $i = 1;
-                    foreach($dataToInsert as $row){
-                        $last = count($dataToInsert) === $i;
-                        if($last){
-                            $valuesString = $valuesString . '("' . $row['ip_address'] . '","' . $row['created'] . '")';
-                        }else{
-                            $valuesString = $valuesString . '("' . $row['ip_address'] . '","' . $row['created'] . '"),';
-                        }
-                        $i++;
+                    if(!is_null($keyToRemove)){
+                        unset($ipAddresses[$keyToRemove]);
                     }
+                }
+            }
 
-                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
-                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
-                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
-                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
-                    // todo: pick up here, either remove 'created' from "where" criteria logic of statement below or just remove that col from table. Probably the latter tbh. It's not worth the effort.
+            $countAfter = count($ipAddresses);
 
-                    $string = 'INSERT IGNORE INTO '. $this->tempTable .' (ip_address, created) VALUES' . $valuesString;
+            // ---------------------------------------------------------------------------------------------------------
 
-                    $bulkInsertResult = $this->databaseManager->connection()->insert($string);
+            foreach($ipAddresses as $ipAddress){
+                $dataToInsert[] = [
+                    'ip_address' => $ipAddress,
+                    'created' => $timestamp
+                ];
+            }
 
-                    $this->info(',,,' . $chunkNumber . ',' . ($bulkInsertResult ? 'true' : 'false'));
+            if(empty($dataToInsert)) continue;
 
-                    return $bulkInsertResult;
-                });
+            $valuesString = '';
+            $i = 1;
+            foreach($dataToInsert as $row){
+                $last = count($dataToInsert) === $i;
+                if($last){
+                    $valuesString = $valuesString . '("' . $row['ip_address'] . '","' . $row['created'] . '")';
+                }else{
+                    $valuesString = $valuesString . '("' . $row['ip_address'] . '","' . $row['created'] . '"),';
+                }
+                $i++;
+            }
+
+            $this->pause();
+            $string = 'INSERT IGNORE INTO '. $this->tempTable .' (ip_address, created) VALUES' . $valuesString;
+            $bulkInsertResult = $this->databaseManager->connection()->insert($string);
+
+            $this->print($chunkCount, $totalResults, $uniqueResults, $countBefore, $countAfter,((string) $bulkInsertResult));
         }
         return true;
     }
