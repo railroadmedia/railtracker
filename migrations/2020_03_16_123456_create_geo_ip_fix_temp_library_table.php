@@ -17,7 +17,7 @@ class CreateGeoIpFixTempLibraryTable extends Migration
         // requests tables =============================================================================================
 
         $tablePrefix = config('railtracker.table_prefix');
-        $tableName = $tablePrefix . 'geo_ip_fix_temp_library';
+        $tableName = $tablePrefix . 'geo_ip_intermediary_lib';
 
         Schema::create(
             $tableName,
@@ -38,7 +38,8 @@ class CreateGeoIpFixTempLibraryTable extends Migration
                 $table->string('ip_timezone', 64)->index()->nullable();
                 $table->string('ip_currency', 16)->index()->nullable();
 
-                $table->boolean('local')->nullable();
+                $table->boolean('private')->nullable();
+                $table->boolean('failed')->nullable();
                 $table->dateTime('created', 5)->index();
                 $table->dateTime('filled', 5)->index()->nullable();
             }
@@ -53,6 +54,6 @@ class CreateGeoIpFixTempLibraryTable extends Migration
     public function down()
     {
         $tablePrefix = config('railtracker.table_prefix');
-        Schema::dropIfExists($tablePrefix . 'geo_ip_fix_temp_library');
+        Schema::dropIfExists($tablePrefix . 'geo_ip_intermediary_lib');
     }
 }
