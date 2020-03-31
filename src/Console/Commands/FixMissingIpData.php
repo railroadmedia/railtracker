@@ -5,6 +5,7 @@ namespace Railroad\Railtracker\Console\Commands;
 use Carbon\Carbon;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
+use Railroad\Railtracker\Repositories\RequestRepository;
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 
 class FixMissingIpData extends \Illuminate\Console\Command
@@ -174,21 +175,11 @@ class FixMissingIpData extends \Illuminate\Console\Command
 
             $this->pause();
             $timestamp = Carbon::now()->toDateTimeString();
-            $chunkResults = $this->databaseManager
-                ->table($this->requestsTable)
-                ->select('id', 'ip_address')
-                ->where(['ip_longitude' => null, 'ip_latitude' => null])
-                ->whereNotNull('ip_address')
-                ->where('id', '>', $idMinForChunk)
-                ->where('id', '<', $idMaxForChunk)
-                ->groupBy('ip_address', 'id')
-                ->orderBy('id')
-                ->get();
+            $chunkResults = $this->getRequestsRows($idMinForChunk, $idMaxForChunk);
 
             if($chunkResults->isEmpty()) continue;
 
             foreach($chunkResults as $row){
-
                 $ipAddresses[] = $row->ip_address;
             }
 
@@ -226,8 +217,6 @@ class FixMissingIpData extends \Illuminate\Console\Command
             }
 
             $countAfter = count($ipAddresses);
-
-            // ---------------------------------------------------------------------------------------------------------
 
             foreach($ipAddresses as $ipAddress){
                 $dataToInsert[] = [
@@ -393,9 +382,82 @@ class FixMissingIpData extends \Illuminate\Console\Command
         return true;
     }
 
+    private function getRequestsRows($idMinForChunk, $idMaxForChunk)
+    {
+        return $this->databaseManager
+            ->table($this->requestsTable)
+            ->select('id', 'ip_address')
+            ->where(['ip_longitude' => null, 'ip_latitude' => null])
+            ->whereNotNull('ip_address')
+            ->where('id', '>', $idMinForChunk)
+            ->where('id', '<', $idMaxForChunk)
+            ->groupBy('ip_address', 'id')
+            ->orderBy('id')
+            ->get();
+    }
+
     private function updateRequests()
     {
+        $idFilterMarker = 0;
+        $maxId = config('railtracker.fix_missing_ip_data_max_id', 1000 * 1000 * 16);
+        $whileChunkSize = 1000;
+        $chunkCount = 0;
+        $keepGoing = true;
 
+        //$this->print('chunkCount,totalResults,uniqueResults,countBefore,countAfter,successfulInsert');
+
+        while ($keepGoing) {
+            $chunkCount++;
+            $idMinForChunk = $idFilterMarker;
+            $idFilterMarker = $idFilterMarker + $whileChunkSize;
+            $idMaxForChunk = $idFilterMarker;
+            $keepGoing = $idFilterMarker < $maxId;
+
+            $this->pause();
+            $timestamp = Carbon::now()->toDateTimeString();
+            $chunkResults = $this->getRequestsRows($idMinForChunk, $idMaxForChunk);
+
+            if($chunkResults->isEmpty()) continue;
+            foreach($chunkResults as $row){
+                $ipAddresses[] = $row->ip_address;
+            }
+
+            $ipData = $this->databaseManager->connection()
+                ->table($this->tempTable)
+                ->whereIn('ip_address', $ipAddresses ?? [])
+                ->get();
+
+            $associationTables = [
+                'ip_addresse',
+                'ip_latitude',
+                'ip_longitude',
+                'ip_country_code',
+                'ip_country_name',
+                'ip_region',
+                'ip_citie',
+                'ip_postal_zip_code',
+                'ip_timezone',
+                'ip_currencie',
+            ];
+
+            // todo: pick up here, check that this works, and that it makes sense, and then work it out
+            foreach($ipData as $datum){
+                foreach($associationTables as $associationTable){
+                    $detailsForTable = RequestRepository::$rowsToInsertByTable[$associationTable];
+                    foreach($detailsForTable as $aRow){
+                        foreach($aRow as $columnName => $arrayKey){
+                            $valuesRequiredInAssociationTable[$associationTable][] = $datum[$arrayKey];
+                        }
+                    }
+                }
+            }
+
+
+
+            // todo: pick up here make inserts for $valuesRequiredInAssociationTable
+
+
+        }
     }
 
     //private static $dataForDev =

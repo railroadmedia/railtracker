@@ -12,7 +12,7 @@ class RequestRepository extends TrackerRepositoryBase
 {
     private static $BULK_INSERT_CHUNK_SIZE = 20;
 
-    private static $rowsToInsertByTable = [
+    public static $rowsToInsertByTable = [
         'url_protocols' => [
             ['url_protocol' => 'urlProtocol'],
             ['url_protocol' => 'refererUrlProtocol'],
