@@ -29,612 +29,6 @@ class FixMissingIpData extends \Illuminate\Console\Command
         'updateRequests',
     ];
 
-    private static $DEV_MODE = true;
-
-    private static $DEV_AID_1 = [
-        [
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => 19.5576,
-            "ip_longitude" => -99.2331,
-            "ip_country_code" => "MX",
-            "ip_country_name" => "Mexico",
-            "ip_region" => "México",
-            "ip_city" => "Ciudad Lopez Mateos",
-            "ip_postal_zip_code" => "52953",
-            "ip_timezone" => "America/Mexico_City",
-            "ip_currency" => "MXN",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 40.4735,
-            "ip_longitude" => -79.9558,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Pennsylvania",
-            "ip_city" => "Pittsburgh",
-            "ip_postal_zip_code" => "15201",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => false,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => null,
-            "ip_longitude" => null,
-            "ip_country_code" => null,
-            "ip_country_name" => null,
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => null,
-            "ip_currency" => null,
-            "private" => true,
-            "failed" => true,
-        ],[
-            "ip_latitude" => 43.6644,
-            "ip_longitude" => -79.4195,
-            "ip_country_code" => "CA",
-            "ip_country_name" => "Canada",
-            "ip_region" => "Ontario",
-            "ip_city" => "Toronto",
-            "ip_postal_zip_code" => "M6G",
-            "ip_timezone" => "America/Toronto",
-            "ip_currency" => "CAD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 48.1968,
-            "ip_longitude" => 16.3191,
-            "ip_country_code" => "AT",
-            "ip_country_name" => "Austria",
-            "ip_region" => "Vienna",
-            "ip_city" => "Vienna",
-            "ip_postal_zip_code" => "1150",
-            "ip_timezone" => "Europe/Vienna",
-            "ip_currency" => "EUR",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 35.7965,
-            "ip_longitude" => -78.7981,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "North Carolina",
-            "ip_city" => "Cary",
-            "ip_postal_zip_code" => "27513",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 28.5978,
-            "ip_longitude" => -81.3024,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Florida",
-            "ip_city" => "Winter Park",
-            "ip_postal_zip_code" => "32792",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 51.2993,
-            "ip_longitude" => 9.491,
-            "ip_country_code" => "DE",
-            "ip_country_name" => "Germany",
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => "Europe/Berlin",
-            "ip_currency" => "EUR",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 41.4098,
-            "ip_longitude" => -73.59,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "New York",
-            "ip_city" => "Brewster",
-            "ip_postal_zip_code" => "10509",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 34.7487,
-            "ip_longitude" => -80.7595,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "South Carolina",
-            "ip_city" => "Lancaster",
-            "ip_postal_zip_code" => "29720",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 50.0164,
-            "ip_longitude" => 8.4485,
-            "ip_country_code" => "DE",
-            "ip_country_name" => "Germany",
-            "ip_region" => "Hesse",
-            "ip_city" => "Raunheim",
-            "ip_postal_zip_code" => "65479",
-            "ip_timezone" => "Europe/Berlin",
-            "ip_currency" => "EUR",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 44.0197,
-            "ip_longitude" => -123.1008,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Oregon",
-            "ip_city" => "Eugene",
-            "ip_postal_zip_code" => "97405",
-            "ip_timezone" => "America/Los_Angeles",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 30.1655,
-            "ip_longitude" => -85.7116,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Florida",
-            "ip_city" => "Panama City",
-            "ip_postal_zip_code" => "32408",
-            "ip_timezone" => "America/Chicago",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 37.751,
-            "ip_longitude" => -97.822,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => "America/Chicago",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 26.8238,
-            "ip_longitude" => -80.1407,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Florida",
-            "ip_city" => "Palm Beach Gardens",
-            "ip_postal_zip_code" => "33418",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 37.9842,
-            "ip_longitude" => 23.7353,
-            "ip_country_code" => "GR",
-            "ip_country_name" => "Greece",
-            "ip_region" => "Attica",
-            "ip_city" => "Athens",
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => "Europe/Athens",
-            "ip_currency" => "EUR",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 51.4232,
-            "ip_longitude" => 7.0298,
-            "ip_country_code" => "DE",
-            "ip_country_name" => "Germany",
-            "ip_region" => "North Rhine-Westphalia",
-            "ip_city" => "Essen",
-            "ip_postal_zip_code" => "45134",
-            "ip_timezone" => "Europe/Berlin",
-            "ip_currency" => "EUR",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 40.7667,
-            "ip_longitude" => -82.5356,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Ohio",
-            "ip_city" => "Mansfield",
-            "ip_postal_zip_code" => "44903",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 36.0964,
-            "ip_longitude" => -86.8212,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Tennessee",
-            "ip_city" => "Nashville",
-            "ip_postal_zip_code" => "37215",
-            "ip_timezone" => "America/Chicago",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 45.3575,
-            "ip_longitude" => 11.7872,
-            "ip_country_code" => "IT",
-            "ip_country_name" => "Italy",
-            "ip_region" => "Veneto",
-            "ip_city" => "Abano Terme",
-            "ip_postal_zip_code" => "35031",
-            "ip_timezone" => "Europe/Rome",
-            "ip_currency" => "EUR",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 42.6563,
-            "ip_longitude" => -83.1231,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Michigan",
-            "ip_city" => "Rochester",
-            "ip_postal_zip_code" => "48307",
-            "ip_timezone" => "America/Detroit",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 50.9266,
-            "ip_longitude" => -113.9726,
-            "ip_country_code" => "CA",
-            "ip_country_name" => "Canada",
-            "ip_region" => "Alberta",
-            "ip_city" => "Calgary",
-            "ip_postal_zip_code" => "T2Z",
-            "ip_timezone" => "America/Edmonton",
-            "ip_currency" => "CAD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 21.1291,
-            "ip_longitude" => -101.6737,
-            "ip_country_code" => "MX",
-            "ip_country_name" => "Mexico",
-            "ip_region" => "Guanajuato",
-            "ip_city" => "León",
-            "ip_postal_zip_code" => "37000",
-            "ip_timezone" => "America/Mexico_City",
-            "ip_currency" => "MXN",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 51.5237,
-            "ip_longitude" => -0.089,
-            "ip_country_code" => "GB",
-            "ip_country_name" => "United Kingdom",
-            "ip_region" => "England",
-            "ip_city" => "London",
-            "ip_postal_zip_code" => "EC2A",
-            "ip_timezone" => "Europe/London",
-            "ip_currency" => "GBP",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 47.3664,
-            "ip_longitude" => 8.5546,
-            "ip_country_code" => "CH",
-            "ip_country_name" => "Switzerland",
-            "ip_region" => "Zurich",
-            "ip_city" => "Zurich",
-            "ip_postal_zip_code" => "8041",
-            "ip_timezone" => "Europe/Zurich",
-            "ip_currency" => "CHF",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 37.751,
-            "ip_longitude" => -97.822,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => null,
-            "ip_city" => null,
-            "ip_postal_zip_code" => null,
-            "ip_timezone" => "America/Chicago",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 44.6707,
-            "ip_longitude" => -93.2588,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "Minnesota",
-            "ip_city" => "Lakeville",
-            "ip_postal_zip_code" => "55044",
-            "ip_timezone" => "America/Chicago",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ],[
-            "ip_latitude" => 40.8364,
-            "ip_longitude" => -74.1403,
-            "ip_country_code" => "US",
-            "ip_country_name" => "United States",
-            "ip_region" => "New Jersey",
-            "ip_city" => "Clifton",
-            "ip_postal_zip_code" => "07014",
-            "ip_timezone" => "America/New_York",
-            "ip_currency" => "USD",
-            "private" => false,
-            "failed" => false,
-        ]
-    ];
-
     /**
      * @var DatabaseManager
      */
@@ -794,6 +188,7 @@ class FixMissingIpData extends \Illuminate\Console\Command
             if($chunkResults->isEmpty()) continue;
 
             foreach($chunkResults as $row){
+
                 $ipAddresses[] = $row->ip_address;
             }
 
@@ -869,18 +264,6 @@ class FixMissingIpData extends \Illuminate\Console\Command
     {
         $chunkSize = IpDataApiSdkService::$apiBulkLimit;
 
-        if(self::$DEV_MODE){                            // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('');                            // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('');                            // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('self::$DEV_MODE is true (!!)');// TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('self::$DEV_MODE is true (!!)');// TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('self::$DEV_MODE is true (!!)');// TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('self::$DEV_MODE is true (!!)');// TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('');                            // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $this->info('');                            // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-            $chunkSize = 50;                            // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-        }
-
         $chunkCount = 0;
 
         $this->databaseManager->connection()
@@ -888,111 +271,126 @@ class FixMissingIpData extends \Illuminate\Console\Command
             ->select('id', 'ip_address')
             ->whereNull('filled')
             ->chunkById($chunkSize, function($rows) use (&$chunkCount){
-
                 $chunkCount++;
-
-                if(self::$DEV_MODE) {   // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-                    if ($chunkCount === 1) return true; // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
+                if(empty($rows)){
+                    $this->info($chunkCount === 1 ? 'No rows need filling.' : 'Chunk ' . $chunkCount . ' empty.');
+                    return false;
                 }
-
                 $idsByIpAddress = [];
-                $rowsToInsert = [];
+                $insertSuccesses = [];
 
                 foreach($rows as $row){
                     $idsByIpAddress[$row->ip_address][] = $row->id;
                 }
 
-                if(!self::$DEV_MODE){
-                    $ipData = $this->ipDataApiSdkService->bulkRequest(array_keys($idsByIpAddress));
+                $ipData = $this->ipDataApiSdkService->bulkRequest(array_keys($idsByIpAddress));
+
+                foreach($ipData as $ipDatum){
+
+                    $privateIp = false;
+
+                    if(!empty($ipDatum['message'])) {
+                        $message = $ipDatum['message'];
+                        $privateIp = count($ipDatum) && (strpos($message, ' is a private IP address') !== false);
+                        $invalidIpAddress = strpos($message, ' does not appear to be an IPv4 or IPv6 address') !== false;
+
+                        if($privateIp){
+                            $ipWhenResultSaysPrivate = rtrim($message, ' is a private IP address');
+                            //$this->info('$ipWhenResultSaysPrivate: ' . $ipWhenResultSaysPrivate);
+                        }
+                    }
+
+                    if($invalidIpAddress ?? false) continue; // these are handled below
+
+                    $ip = (!$privateIp) ? ($ipDatum['ip'] ?? null) : ($ipWhenResultSaysPrivate ?? null);
+
+                    $this->update($privateIp, $rows, $ip, $idsByIpAddress, $insertSuccesses);
                 }
 
+                $this->info(
+                    'successfully updated ' . count($insertSuccesses ?? []) . ' rows (ids: ' .
+                    var_export(implode(', ', $insertSuccesses ?? []), true) . ')'
+                );
 
-                if(!self::$DEV_MODE){
-                    $rowsToInsert = self::$DEV_AID_1;
+                if(empty($idsByIpAddress)){
+                    $this->info('all processed in this chunk');
                 }else{
-
-
-
-                    dump('LOSE!!!!!!'); // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-                    dump('LOSE!!!!!!'); // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-                    dump('LOSE!!!!!!'); // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-                    dump('LOSE!!!!!!'); // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-                    dump('LOSE!!!!!!'); // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-//                    die();    // TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP
-
-
-
-
-                    $ipData = $this->ipDataApiSdkService->bulkRequest(array_keys($idsByIpAddress));
-
-                    $rowsToInsert = [];
-
-                    foreach($ipData as $ipDatum){
-
-                        $privateIp = false;
-
-                        if(!empty($ipDatum['message'])) {
-                            $message = $ipDatum['message'];
-                            $privateIp = count($ipDatum) && (strpos($message, ' is a private IP address') !== false);
-                            if($privateIp){
-                                $ipWhenResultSaysPrivate = rtrim($message, ' is a private IP address');
-                                $this->info('$ipWhenResultSaysPrivate: ' . $ipWhenResultSaysPrivate);
-                            }
-                        }
-
-                        $ip = (!$privateIp) ? ($ipDatum['ip'] ?? null) : ($ipWhenResultSaysPrivate ?? null);
-
-                        $rowToInsert = [
-                            'ip_latitude' => $ipDatum['latitude'] ?? null,
-                            'ip_longitude' => $ipDatum['longitude'] ?? null,
-                            'ip_country_code' => $ipDatum['country_code'] ?? null,
-                            'ip_country_name' => $ipDatum['country_name'] ?? null,
-                            'ip_region' => $ipDatum['region'] ?? null,
-                            'ip_city' => $ipDatum['city'] ?? null,
-                            'ip_postal_zip_code' => $ipDatum['postal'] ?? null,
-                            'ip_timezone' => $ipDatum['time_zone']->name ?? null,
-                            'ip_currency' => $ipDatum['currency']->code ?? null,
-                            'private' => $privateIp,
-                        ];
-
-                        // determine if not private but didn't get info
-                        $rowToInsertCopy = $rowToInsert;
-                        unset($rowToInsertCopy['private']);
-                        $allEmpty = true;
-                        foreach($rowToInsertCopy as $field){
-                            if(!empty($field)) $allEmpty = false;
-                        }
-
-                        $rowToInsert['failed'] = $allEmpty;
-
-                        if(!empty($rowsToInsert[$ip])){
-                            $this->info(
-                                'Warning! "$rowsToInsert[$ip]" is already set for ' . $ip .
-                                '. This should not be possible. The one already set is: '
-                            );
-                            $this->info(var_export($rowsToInsert[$ip], true));
-                            $this->info('The new one is:');
-                            $this->info(var_export($rowToInsert, true));
-                        }
-
-                        $rowsToInsert[$ip] = $rowToInsert;
+                    $this->info('Failed to process ' . count($idsByIpAddress) . ' rows. They are: ' .
+                        var_export($idsByIpAddress, true)
+                    );
+                    $this->info('Some of them may be invalid ip addresses. Processing those now');
+                    foreach($idsByIpAddress as $ip => $ids){
+                        $success = $this->update(false, $rows, $ip, $idsByIpAddress, $insertSuccesses);
+                        $this->info('processing ip "' . $ip . '" ' . ($success ? 'succeeded' : 'failed'));
                     }
                 }
 
-                // todo: insert here (PICK UP HERE)
-                // todo: insert here (PICK UP HERE)
-                // todo: insert here (PICK UP HERE)
-                // todo: insert here (PICK UP HERE)
-                // todo: insert here (PICK UP HERE)
-                // todo: insert here (PICK UP HERE)
+                if(!empty($idsByIpAddress)){
+                    $this->info('there\'s still still some that failed be processed');
+                    $this->info(var_export($idsByIpAddress, true));
+                    $stop = !$this->confirm('Do you wish to continue?');
+                    if($stop){
+                        return false;
+                    }
+                }
 
-                // update DB "geo_ip_intermediary_lib"
-
-                dd($rowsToInsert);
-
+                $this->info('');
+                return true;
             }); // end of chunk
 
         // end of "tempTableFill" method
+    }
+
+    private function update($privateIp, $rows, $ip, &$idsByIpAddress, &$insertSuccesses)
+    {
+        $rowToInsert = [
+            'ip_latitude' => $ipDatum['latitude'] ?? null,
+            'ip_longitude' => $ipDatum['longitude'] ?? null,
+            'ip_country_code' => $ipDatum['country_code'] ?? null,
+            'ip_country_name' => $ipDatum['country_name'] ?? null,
+            'ip_region' => $ipDatum['region'] ?? null,
+            'ip_city' => $ipDatum['city'] ?? null,
+            'ip_postal_zip_code' => $ipDatum['postal'] ?? null,
+            'ip_timezone' => $ipDatum['time_zone']->name ?? null,
+            'ip_currency' => $ipDatum['currency']->code ?? null,
+            'private' => $privateIp,
+            'filled' => Carbon::now()->toDateTimeString(),
+        ];
+
+        // determine if not private but didn't get info
+        $rowToInsertCopy = $rowToInsert;
+        unset($rowToInsertCopy['private']);
+        $allEmpty = true;
+        foreach($rowToInsertCopy as $field){
+            if(!empty($field)) $allEmpty = false;
+        }
+
+        $rowToInsert['failed'] = $allEmpty;
+
+        $id = null;
+        foreach($rows as $row){
+            if($row->ip_address === $ip) $id = $row->id;
+        }
+        if(empty($id)){
+            $this->info('failed to match id to rowToInsert. This is weird and unexpected');
+            return false;
+        }
+
+        $successfulInsert = $this->databaseManager->table($this->tempTable)
+            ->where('id', $id)
+            ->update($rowToInsert);
+
+        if($successfulInsert) {
+            unset($idsByIpAddress[$ip]);
+            $insertSuccesses[] = $id;
+        }else{
+            $this->info(
+                'Insert failed for id: ' . $id . ' with values: ' .
+                $this->info(var_export($rowToInsert, true))
+            );
+        }
+
+        return true;
     }
 
     private function updateRequests()
