@@ -354,6 +354,10 @@ class FixMissingIpData extends \Illuminate\Console\Command
             if(!empty($field)) $allEmpty = false;
         }
 
+        // todo: fix this? Its not working I think
+        // todo: fix this? Its not working I think
+        // todo: fix this? Its not working I think
+        // todo: fix this? Its not working I think
         $rowToInsert['failed'] = $allEmpty;
 
         $id = null;
@@ -457,138 +461,73 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 continue;
             }
 
+            $this->info('');
             $this->info(
                 'Proceeding with filling-missing operation now that at least ' . $fillingChunkSize .
                 ' ip-addresses collected. (actually: ' . count($idsGroupedByIp) . ')'
             );
+            $this->info('');
 
             $ipData = $this->databaseManager->connection()
                 ->table($this->tempTable)
                 ->whereIn('ip_address', array_keys($idsGroupedByIp) ?? [])
-                ->get();
+//                ->whereNotNull('ip_latitude')
+//                ->whereNotNull('ip_longitude')
+//                ->whereNotNull('ip_country_code')
+//                ->whereNotNull('ip_country_name')
+//                ->whereNotNull('ip_region')
+//                ->whereNotNull('ip_city')
+//                ->whereNotNull('ip_postal_zip_code')
+//                ->whereNotNull('ip_timezone')
+//                ->whereNotNull('ip_currency')
+//                ->Where('private', '!=', true)
+                //->orWhere('failed', '!=', true)
+                ->get()
+                ->toArray();
 
-//            $this->info('ipData =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=');dump($ipData);
-//            $this->info('justIpsForJustCurrentProcessingBatch =-=-=-=-=-=-=-=-=-=');dump($idsGroupedByIp);
-//            die();
+            if(empty($ipData)){
+                $idsGroupedByIp = [];
+                continue;
+            }
 
+            foreach($ipData as $key => $ipDatum){
+                $allNull =
+                    $ipDatum->ip_latitude === null &&
+                    $ipDatum->ip_longitude === null &&
+                    $ipDatum->ip_country_code === null &&
+                    $ipDatum->ip_country_name === null &&
+                    $ipDatum->ip_region === null &&
+                    $ipDatum->ip_city === null &&
+                    $ipDatum->ip_postal_zip_code === null &&
+                    $ipDatum->ip_timezone === null &&
+                    $ipDatum->ip_currency === null;
 
-            // we don't want to keep gathering the same private ip addresses in the while-chunks, and since we don't have a
-            // good way to deal with it right now, we'll just store a list here that's built as we go.
-            // maybe we could add a column to railtracker4_requests that marks the ip_address as private or invalid, but for
-            // now let's just do this to get through this important part.
-
-            foreach($idsGroupedByIp as $ip => $ids){
-                foreach($ipData as $key => $ipDatum){
-                    if($ipDatum->ip_address === $ip){
-                        $allNull =
-                            $ipDatum->ip_latitude === null &&
-                            $ipDatum->ip_longitude === null &&
-                            $ipDatum->ip_country_code === null &&
-                            $ipDatum->ip_country_name === null &&
-                            $ipDatum->ip_region === null &&
-                            $ipDatum->ip_city === null &&
-                            $ipDatum->ip_postal_zip_code === null &&
-                            $ipDatum->ip_timezone === null &&
-                            $ipDatum->ip_currency === null;
-
-                        $this->info(',,,' . $allNull . ',' . $ipDatum->failed . ',' . $ipDatum->private);
-
-                        if($allNull || $ipDatum->failed || $ipDatum->private){
-                            // if private there's nothing we can do right to mark it has such, so just add it to the blacklist
-                            if(array_search($ip, $ipBlacklist) === false) $ipBlacklist[] = $ip;
-                            // and then remove it from the current set
-                            unset($idsGroupedByIp[$ip]);
-
-                            /*
-                             * this isn't necessary, and in fact it might be good to just keep this data in each loop rather
-                             * than pull it every time, but that might take then not requesting in each new pull... which
-                             * might be worth doing...? But can be done later, so leaving it for now.
-                             */
-                            unset($ipData[$key]);
-
-                            continue;
-                        }
-
-                        dd($ipDatum);
-
-                        if(array_key_exists($ip, $ipsWithIdsAndData)){
-                            $this->info(' -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=-');
-                            $this->info('    -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=-');
-                            $this->info(' -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=-');
-                            $this->info('    -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=-');
-                            $this->info(' -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=- -=0=-');
-                            $this->info('');
-                            $this->info('WARNING, $ipsWithIdsAndData already has an entry for ip ' . $ip);
-                            $this->info('');
-                            $this->info('pre-existent:');
-                            $this->info($ipsWithIdsAndData[$ip]);
-                            $this->info('');
-                            $this->info('challenger:');
-                            $this->info($ipDatum);
-                            $this->info('');
-                            $this->info('$chunkCount: ' . $chunkCount);
-                            die();
-                        }
-
-                        $ipsWithIdsAndData[$ip]['ids'] = $ids;
-                        $ipsWithIdsAndData[$ip]['data'] = $ipDatum;
-                    }
+                if($allNull){
+                    unset($ipData[$key]);
                 }
             }
 
-            if(count($ipsWithIdsAndData) === 5){
-                $this->info('');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $this->info('------------ processing ' . count($ipsWithIdsAndData) . ' ips... ------------');
-                $timeStart = time();
-                $success = $this->processIpsWithIdsAndData($ipsWithIdsAndData);
-                $durationInSeconds = time() - $timeStart;
-                $this->info(
-                    'Processing ' . ($success ? 'succeeded' : 'failed in some way') . ', and took ' .
-                    $durationInSeconds . ' seconds'
-                );
-                die();
+            if(empty($ipData)){
+                continue;
             }
+
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dump('=========================WIN=========================');
+            dd($ipData);
+
+            // todo: pick up here
+            // todo: pick up here
+            // todo: pick up here
+//            foreach($idsGroupedByIp as $ip => $ids) {
+//
+//            }
         }
     }
 
