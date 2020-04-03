@@ -178,11 +178,7 @@ class FixMissingIpData extends \Illuminate\Console\Command
             $timestamp = Carbon::now()->toDateTimeString();
             $chunkResults = $this->getRequestsRows($idMinForChunk, $idMaxForChunk);
 
-            dump($chunkResults);
-
             if($chunkResults->isEmpty()) continue;
-
-            dd($chunkResults);
 
             foreach($chunkResults as $row){
                 $ipAddresses[] = $row->ip_address;
@@ -420,10 +416,9 @@ class FixMissingIpData extends \Illuminate\Console\Command
          */
 
         $idsGroupedByIp = [];
-        $ipsWithIdsAndData = [];
         $ipBlacklist = []; // private or invalid IP addresses
         $idFilterMarker = 0;
-        //$idFilterMarker = 4129000; // TEMP 12:42 Apr 1 -TEMP 12:42 Apr 1 - TEMP 12:42 Apr 1 - TEMP 12:42 Apr 1 - TEMP 12:42 Apr 1 -
+        //$idFilterMarker = 4129000; // dev-aid: use to skip the first couple million rows that because *they* don't need fixing?
         $maxId = config('railtracker.fix_missing_ip_data_max_id', 1000 * 1000 * 16);
         $whileChunkSize = 1000;
         $fillingChunkSize = 100;
@@ -432,7 +427,8 @@ class FixMissingIpData extends \Illuminate\Console\Command
 
         $this->info('Gathering rows that require filling');
         $this->info('');
-        $this->info('chunkCount,idMinForChunk,idMaxForChunk,assoc-rows-to-write-count,assoc-successful-inserts-count,ips-filled-in-requests-table,notes');
+        //$this->info('chunkCount,idMinForChunk,idMaxForChunk,assoc-rows-to-write-count,assoc-successful-inserts-count,ips-filled-in-requests-table,notes');
+        $this->info('chunkCount,idMinForChunk,idMaxForChunk,assoc-rows-to-write-count,ips-filled-in-requests-table,notes');
 
         while ($keepGoing) {
             $chunkCount++;
@@ -450,11 +446,12 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 $idsGroupedByIp[$row->ip_address][] = $row->id;
             }
 
-            if(count($idsGroupedByIp) < $fillingChunkSize){
-                continue;
-            }
+            if(count($idsGroupedByIp) < $fillingChunkSize) continue;
 
-            //$this->info('Proceeding with filling-missing operation now that at least ' . $fillingChunkSize . ' ip-addresses collected. (actually: ' . count($idsGroupedByIp) . ')');
+            //$this->info(
+            //    'Proceeding with filling-missing operation now that at least ' . $fillingChunkSize .
+            //    ' ip-addresses collected. (actually: ' . count($idsGroupedByIp) . ')'
+            //);
 
             $ipData = $this->databaseManager->connection()
                 ->table($this->tempTable)
@@ -469,7 +466,6 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 ->whereNotNull('ip_timezone')
                 ->whereNotNull('ip_currency')
                 ->Where('private', '!=', true)
-                //->orWhere('failed', '!=', true)
                 ->get()
                 ->toArray();
 
@@ -554,12 +550,8 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 if(count($valuesToInsertPrepped) === count($results ?? [])) continue;
 
                 $this->info(
-                    ',,,,,,association table ' . $table . ' will have ' . count($valuesToInsertPrepped) . ' row inserted...'
+                    ',,,,,,association table ' . $table . ' will have ' . count($valuesToInsertPrepped) . ' rows inserted...'
                 );
-
-                // --------------------------------
-                // we'll work about inserting later
-                // --------------------------------
 
                 $insertQuery = "insert ignore into railtracker4_$table($columnsString) values ($parametersString)";
 
@@ -576,35 +568,47 @@ class FixMissingIpData extends \Illuminate\Console\Command
                 $this->info(',,,' . count($valuesToInsertPrepped));
             }
 
-            // ============================================ requests table ============================================
-            // ============================================ requests table ============================================
-            // ============================================ requests table ============================================
+            /*
+             * update requests table
+             *
+             * (We can now that we know the association tables have the required values (otherwise can't
+             * put those values in requests table without them in association table because that would violate the
+             * foreign key constraint)
+             */
 
             $successes = [];
+            $total = 0;
 
             foreach($ipsWithDataAndRelevantIds as $ip => $idsAndIpDatum){
                 $ids = $idsAndIpDatum['ids'];
                 $ipDatum = $idsAndIpDatum['ipDatum'];
-                $successes[$ip] = [
-                    'count' => count($ids),
-                    'updateSuccess' => $this->databaseManager->table('railtracker4_requests')
-                        ->whereIn('id', $ids)
-                        ->where('ip_address', '=', $ipDatum->ip_address)
-                        ->update([
-                            'ip_latitude' => $ipDatum->ip_latitude,
-                            'ip_longitude' => $ipDatum->ip_longitude,
-                            'ip_country_code' => $ipDatum->ip_country_code,
-                            'ip_country_name' => $ipDatum->ip_country_name,
-                            'ip_region' => $ipDatum->ip_region,
-                            'ip_city' => $ipDatum->ip_city,
-                            'ip_postal_zip_code' => $ipDatum->ip_postal_zip_code,
-                            'ip_timezone' => $ipDatum->ip_timezone,
-                            'ip_currency' => $ipDatum->ip_currency,
-                        ])
-                ];
-                $this->info(',,,,' . $successes[$ip]['count']);
+                try{
+                    $successes[$ip] = [
+                        'count' => count($ids),
+                        'updateSuccess' => $this->databaseManager->table('railtracker4_requests')
+                            ->whereIn('id', $ids)
+                            ->where('ip_address', '=', $ipDatum->ip_address)
+                            ->update([
+                                'ip_latitude' => $ipDatum->ip_latitude,
+                                'ip_longitude' => $ipDatum->ip_longitude,
+                                'ip_country_code' => $ipDatum->ip_country_code,
+                                'ip_country_name' => $ipDatum->ip_country_name,
+                                'ip_region' => $ipDatum->ip_region,
+                                'ip_city' => $ipDatum->ip_city,
+                                'ip_postal_zip_code' => $ipDatum->ip_postal_zip_code,
+                                'ip_timezone' => $ipDatum->ip_timezone,
+                                'ip_currency' => $ipDatum->ip_currency,
+                            ])
+                    ];
+                }catch(\Exception $e){
+                    dump($e); $this->info('');
+                    $this->info('Oh no!!! inserting into requests table failed. What you see above is the error');
+                    die();
+                }
+                $total = $total + count($ids);
             }
-            $this->info(',,,,,' . count($successes));
+            if($total ?? false) $this->info(',,,,,' . ($total ?? 0));
+            $this->info(',,,,' . count($successes));
         }
 
     }
