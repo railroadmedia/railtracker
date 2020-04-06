@@ -10,7 +10,7 @@ namespace Railroad\Railtracker\Services;
  */
 class IpDataApiSdkService
 {
-    private static $apiBulkLimit = 100;
+    public static $apiBulkLimit = 100;
 
     /**
      * @param array $ips
