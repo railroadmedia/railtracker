@@ -195,7 +195,7 @@ class RequestRepository extends TrackerRepositoryBase
             if ($isMySql) {
                 try{
                     $builder->from(config('railtracker.table_prefix') . $table)
-                        ->insertOrUpdate($dataToInsert);
+                        ->insertOrUpdate($dataToInsert); // todo: assess query performance
                 }catch(\Exception $e){
                     error_log($e);
                     dump('Error while writing to association tables ("' . $e->getMessage() . '")');
@@ -203,14 +203,32 @@ class RequestRepository extends TrackerRepositoryBase
             } else {  // need use-case here since sqlite doesn't support update on duplicate key update
                 foreach ($dataToInsert as $columnValues) {
                     try {
+
+
+                        // ---------------------------------------------------------------------------------------------
+                        // Which of these two is more performant?
+                        //  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+                        // $doesntExist = $this->databaseManager->connection($dbConnectionName)
+                        //     ->table(config('railtracker.table_prefix') . $table)
+                        //     ->where($columnValues)
+                        //     ->doesntExist();
+
+                        //  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
                         $results = $this->databaseManager->connection($dbConnectionName)
                             ->table(config('railtracker.table_prefix') . $table)
+                            ->select('id') // what about with or without this select?
                             ->where($columnValues)
                             ->get();
-                        if($results->isEmpty()){
+                        $doesntExist = empty($results);
+
+                        //  --------------------------------------------------------------------------------------------
+
+                        if($doesntExist){
                             $this->databaseManager->connection($dbConnectionName)
                                 ->table(config('railtracker.table_prefix') . $table)
-                                ->insert($columnValues);
+                                ->insert($columnValues); // todo: assess query performance
                         }
                     } catch (\Exception $e) {
                         error_log($e);
@@ -224,7 +242,7 @@ class RequestRepository extends TrackerRepositoryBase
 
         $bulkInsertData = [];
 
-        /**
+        /**$requestVOs
          * @var $requestVOs RequestVO[]
          */
         foreach ($requestVOs as $requestVO) {
@@ -239,9 +257,9 @@ class RequestRepository extends TrackerRepositoryBase
 
             try{
                 if ($isMySql) {
-                    $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);
+                    $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);// todo: assess query performance
                 }else{
-                    $builder->from($table)->insert($chunkOfBulkInsertData);
+                    $builder->from($table)->insert($chunkOfBulkInsertData);// todo: assess query performance
                 }
             }catch(\Exception $e){
                 error_log($e);
@@ -254,7 +272,7 @@ class RequestRepository extends TrackerRepositoryBase
         // because we cant' get created rows from insert, it seems
         $presumablyCreatedRows = $builder
                 ->from($table)
-                ->select()
+                ->select(['user_id','cookie_id'])
                 ->whereIn('uuid', $uuids)
                 ->get();
 
@@ -272,6 +290,7 @@ class RequestRepository extends TrackerRepositoryBase
 
         $existingRequests = $this->databaseManager->connection($dbConnectionName)
             ->table($table)
+            ->select('uuid')
             ->whereIn('uuid', $requestVOs->pluck('uuid')->toArray())
             ->get(['uuid'])
             ->keyBy('uuid');
@@ -303,7 +322,7 @@ class RequestRepository extends TrackerRepositoryBase
 
                 $noMatchThusUseCurrent = $respondedOnSetAndUuidMatchesCandidate->count() == 0;
 
-                /*
+                /*$requestVOs
                  * If there is no match, then the one we're currently looking at the is the only one with this uuid, and
                  * thus we want to use it.
                  *
@@ -343,6 +362,7 @@ class RequestRepository extends TrackerRepositoryBase
             $matchingRequests = $matchingRequests->merge(
                 $this->databaseManager->connection($dbConnectionName)
                     ->table($table)
+                    ->select(['id','ip_address','requested_on'])
                     ->where('ip_address', $ipAddress)
                     ->limit(1)
                     ->orderBy('requested_on', 'desc')
