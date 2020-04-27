@@ -362,7 +362,6 @@ class RequestRepository extends TrackerRepositoryBase
             $matchingRequests = $matchingRequests->merge(
                 $this->databaseManager->connection($dbConnectionName)
                     ->table($table)
-                    ->select(['id','ip_address','requested_on'])
                     ->where('ip_address', $ipAddress)
                     ->limit(1)
                     ->orderBy('requested_on', 'desc')

@@ -72,6 +72,8 @@ class RailtrackerTestCase extends BaseTestCase
     {
         parent::setUp();
 
+        $this->getEnvironmentSetUp($this->app);
+
         if (!defined('LARAVEL_START')) {
             define('LARAVEL_START', microtime(true));
         }
@@ -86,8 +88,6 @@ class RailtrackerTestCase extends BaseTestCase
         $this->batchService = $this->app->make(BatchService::class);
         $this->railtrackerMiddleware = $this->app->make(RailtrackerMiddleware::class);
 
-//        $this->getEnvironmentSetUp($this->app);
-
         // clear everything *first*
         $toDelete =
             $this->batchService->cache()
@@ -97,8 +97,20 @@ class RailtrackerTestCase extends BaseTestCase
                 ->del($toDelete);
         }
 
-        $this->databaseManager->connection()->table(config('railtracker.table_prefix') . 'requests')->truncate();
+        // truncate all tables
+        $tableNames = $this->databaseManager->connection()->getDoctrineSchemaManager()->listTableNames();
 
+        $this->databaseManager->connection()->statement('SET FOREIGN_KEY_CHECKS=0;');
+
+        foreach ($tableNames as $tableName) {
+            if ($tableName != 'migrations') {
+                $this->databaseManager->connection()->table($tableName)->truncate();
+            }
+        }
+
+        $this->databaseManager->connection()->statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // test time
         Carbon::setTestNow(Carbon::parse('2020-03-26 17:50:38.84123'));
     }
 
