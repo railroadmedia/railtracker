@@ -68,7 +68,7 @@ class RailtrackerTestCase extends BaseTestCase
 
     const USER_AGENT_CHROME_WINDOWS_10 = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36';
 
-    protected function setUp()
+    protected function setUp():void
     {
         parent::setUp();
 

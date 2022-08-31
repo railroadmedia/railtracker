@@ -15,7 +15,7 @@ class MediaPlaybackTrackerTest extends RailtrackerTestCase
      */
     protected $mediaPlaybackTracker;
 
-    public function setUp()
+    public function setUp():void
     {
         parent::setUp();
 
