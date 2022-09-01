@@ -80,7 +80,8 @@ class MediaPlaybackTrackingJsonController extends Controller
             $userId,
             $mediaTypeId,
             $request->input('current_second', 0),
-            $request->input('seconds_played', 0)
+            $request->input('seconds_played', 0),
+            $request->input('brand')
         );
 
         return response()->json(
@@ -92,6 +93,7 @@ class MediaPlaybackTrackingJsonController extends Controller
                 'media_length_seconds' => $data['media_length_seconds'],
                 'user_id' => $data['user_id'],
                 'type_id' => $data['type_id'],
+                'brand' => $data['brand'],
                 'current_second' => $data['current_second'],
                 'seconds_played' => $data['seconds_played'],
                 'started_on' => $data['started_on'],

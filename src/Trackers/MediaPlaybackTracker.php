@@ -38,6 +38,7 @@ class MediaPlaybackTracker extends TrackerBase
         $typeId,
         $currentSecond = 0,
         $secondsPlayed = 0,
+        $brand,
         $startedOn = null
     ) {
         if (empty($startedOn)) {
@@ -73,10 +74,11 @@ class MediaPlaybackTracker extends TrackerBase
                 $data['seconds_played'],
                 $data['current_second'],
                 $data['started_on'],
-                $data['last_updated_on']
+                $data['last_updated_on'],
+                $brand
             )
         );
-
+        $data['brand'] = $brand;
         return $data;
     }
 
@@ -132,7 +134,8 @@ class MediaPlaybackTracker extends TrackerBase
                     $data['seconds_played'],
                     $data['current_second'],
                     $session['started_on'],
-                    $data['last_updated_on']
+                    $data['last_updated_on'],
+                    $data['brand']
                 )
             );
 
