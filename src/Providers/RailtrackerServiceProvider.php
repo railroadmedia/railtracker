@@ -11,6 +11,8 @@ use Railroad\Railtracker\Console\Commands\LegacyMigrate;
 use Railroad\Railtracker\Console\Commands\PrintKeyCount;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Console\Commands\ReHashExistingData;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Doctrine\Common\Cache\Psr6\DoctrineProvider;
 use Redis;
 
 class RailtrackerServiceProvider extends ServiceProvider
@@ -46,17 +48,10 @@ class RailtrackerServiceProvider extends ServiceProvider
      */
     private function setupConfig()
     {
-        // setup redis
-        $redis = new Redis();
-        $redis->connect(
-            config('railtracker.redis_host'),
-            config('railtracker.redis_port')
-        );
-        $redisCache = new RedisCache();
-        $redisCache->setRedis($redis);
-
-        // redis cache instance is referenced in laravel container to be reused when needed
-        app()->instance(RedisCache::class, $redisCache);
+        // array cache
+        $arrayCacheAdapter = new ArrayAdapter();
+        $doctrineArrayCache = DoctrineProvider::wrap($arrayCacheAdapter);
+        app()->instance('RailtrackerArrayCache', $doctrineArrayCache);
 
         $this->commands([
             ProcessTrackings::class,
