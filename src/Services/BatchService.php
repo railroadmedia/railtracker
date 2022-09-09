@@ -29,8 +29,7 @@ class BatchService
     {
         $this->batchKeyPrefix = config('railtracker.batch_prefix', 'railtracker_');
 
-        $this->store = Cache::store('redis');
-        $this->connection = $this->store->connection();
+        $this->store = Cache::store(config('railtracker.cache_driver'));
     }
 
     /**
@@ -38,9 +37,13 @@ class BatchService
      */
     public function storeRequest(RequestVO $requestVO)
     {
-        $setKey = $this->batchKeyPrefix . 'set' . '_' . $requestVO->uuid;
+        if(Cache::store(config('railtracker.cache_driver')
+               ->getStore() instanceof RedisStore)) {
+            $setKey = $this->batchKeyPrefix.'set'.'_'.$requestVO->uuid;
 
-        $this->cache()->sadd($setKey, [serialize($requestVO)]);
+            $this->cache()
+                ->sadd($setKey, [serialize($requestVO)]);
+        }
     }
 
     // todo: test for this (it's not used anywhere, so delete it or write test for it?)
@@ -49,9 +52,13 @@ class BatchService
      */
     public function removeRequest(RequestVO $requestVO)
     {
-        $setKey = $this->batchKeyPrefix . 'set' . '_' . $requestVO->uuid;
+        if(Cache::store(config('railtracker.cache_driver')
+                            ->getStore() instanceof RedisStore)) {
+            $setKey = $this->batchKeyPrefix.'set'.'_'.$requestVO->uuid;
 
-        $this->cache()->del([$setKey]);
+            $this->cache()
+                ->del([$setKey]);
+        }
     }
 
     /**
@@ -60,11 +67,15 @@ class BatchService
      */
     public function storeException(ExceptionVO $exceptionVO)
     {
-        $uuid = $exceptionVO->uuid;
+        if(Cache::store(config('railtracker.cache_driver')
+                            ->getStore() instanceof RedisStore)) {
+            $uuid = $exceptionVO->uuid;
 
-        $setKey = $this->batchKeyPrefix . 'set' . '_' . $uuid;
+            $setKey = $this->batchKeyPrefix.'set'.'_'.$uuid;
 
-        $this->cache()->sadd($setKey, [serialize($exceptionVO)]);
+            $this->cache()
+                ->sadd($setKey, [serialize($exceptionVO)]);
+        }
     }
 
     // todo: test for this (it's not used anywhere, so delete it or write test for it?)
@@ -73,9 +84,13 @@ class BatchService
      */
     public function removeException($data)
     {
-        $setKey = $this->batchKeyPrefix . 'set' . $data['uuid'];
+        if(Cache::store(config('railtracker.cache_driver')
+                            ->getStore() instanceof RedisStore)) {
+            $setKey = $this->batchKeyPrefix.'set'.$data['uuid'];
 
-        $this->cache()->del([$setKey]);
+            $this->cache()
+                ->del([$setKey]);
+        }
     }
 
     /**
@@ -83,7 +98,7 @@ class BatchService
      */
     public function cache()
     {
-        return $this->connection;
+        return $this->store->connection();
     }
 
     /**
@@ -91,12 +106,16 @@ class BatchService
      */
     public function forget($forget)
     {
-        if(!is_array($forget)){
-            $forget = [$forget];
-        }
+        if(Cache::store(config('railtracker.cache_driver')
+                            ->getStore() instanceof RedisStore)) {
+            if (!is_array($forget)) {
+                $forget = [$forget];
+            }
 
-        foreach($forget as $key){
-            $this->cache()->del($key);
+            foreach ($forget as $key) {
+                $this->cache()
+                    ->del($key);
+            }
         }
     }
 }
