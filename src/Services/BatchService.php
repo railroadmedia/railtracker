@@ -29,7 +29,7 @@ class BatchService
     {
         $this->batchKeyPrefix = config('railtracker.batch_prefix', 'railtracker_');
 
-        $this->store = Cache::store('redis');
+        $this->store = Cache::store('array');
         $this->connection = $this->store->connection();
     }
 
