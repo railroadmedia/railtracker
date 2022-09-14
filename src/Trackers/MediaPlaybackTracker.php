@@ -95,7 +95,8 @@ class MediaPlaybackTracker extends TrackerBase
         $sessionId,
         $secondsPlayed,
         $currentSecond,
-        $lastUpdatedOn = null
+        $lastUpdatedOn = null,
+        $brand = null
     ) {
         if (empty($lastUpdatedOn)) {
             $lastUpdatedOn = Carbon::now()->toDateTimeString();
@@ -135,7 +136,7 @@ class MediaPlaybackTracker extends TrackerBase
                     $data['current_second'],
                     $session['started_on'],
                     $data['last_updated_on'],
-                    $data['brand']
+                    $brand
                 )
             );
 
