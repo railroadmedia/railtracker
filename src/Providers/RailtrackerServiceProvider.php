@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Providers;
 
 use Doctrine\Common\Cache\RedisCache;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\App;
 use Railroad\Railtracker\Console\Commands\FixDuplicates;
 use Railroad\Railtracker\Console\Commands\EmptyLocalCache;
 use Railroad\Railtracker\Console\Commands\FixMissingIpData;
@@ -26,9 +27,9 @@ class RailtrackerServiceProvider extends ServiceProvider
     {
         parent::boot();
 
-        try{
+        try {
             $this->setupConfig();
-        }catch(\Exception $exception){
+        } catch (\Exception $exception) {
             error_log($exception);
         }
 
@@ -38,7 +39,10 @@ class RailtrackerServiceProvider extends ServiceProvider
             ]
         );
 
-        $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
+        //disable running migrations for tests in MWP since migrations are failing in sqlite.
+        if (App::environment() != 'testing') {
+            $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
+        }
 
         $this->loadRoutesFrom(__DIR__ . '/../Routes/railtracker_routes.php');
     }
