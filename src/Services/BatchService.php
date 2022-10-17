@@ -2,16 +2,12 @@
 
 namespace Railroad\Railtracker\Services;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
-use Predis\ClientInterface;
 use Railroad\Railtracker\ValueObjects\ExceptionVO;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class BatchService
 {
-    public $connection;
-
     public $batchKeyPrefix;
 
     /**
@@ -20,12 +16,6 @@ class BatchService
     public function __construct()
     {
         $this->batchKeyPrefix = config('railtracker.batch_prefix', 'railtracker_');
-
-        try {
-            $this->connection = Redis::connection(config('railtracker.redis_connection_name'));
-        } catch (Throwable $exception) {
-            Log::error($exception);
-        }
     }
 
     /**
@@ -33,7 +23,7 @@ class BatchService
      */
     public function connection()
     {
-        return $this->connection;
+        return Redis::connection(config('railtracker.redis_connection_name'));
     }
 
     /**
@@ -41,10 +31,10 @@ class BatchService
      */
     public function storeRequest(RequestVO $requestVO)
     {
-        if ($this->connection) {
+        if ($this->connection()) {
             $setKey = $this->batchKeyPrefix . 'set' . '_' . $requestVO->uuid;
 
-            $this->connection->sadd($setKey, serialize($requestVO));
+            $this->connection()->sadd($setKey, serialize($requestVO));
         }
     }
 
@@ -53,10 +43,10 @@ class BatchService
      */
     public function removeRequest(RequestVO $requestVO)
     {
-        if ($this->connection) {
+        if ($this->connection()) {
             $setKey = $this->batchKeyPrefix . 'set' . '_' . $requestVO->uuid;
 
-            $this->connection->del([$setKey]);
+            $this->connection()->del([$setKey]);
         }
     }
 
@@ -66,12 +56,12 @@ class BatchService
      */
     public function storeException(ExceptionVO $exceptionVO)
     {
-        if ($this->connection) {
+        if ($this->connection()) {
             $uuid = $exceptionVO->uuid;
 
             $setKey = $this->batchKeyPrefix . 'set' . '_' . $uuid;
 
-            $this->connection->sadd($setKey, [serialize($exceptionVO)]);
+            $this->connection()->sadd($setKey, [serialize($exceptionVO)]);
         }
     }
 
@@ -82,10 +72,10 @@ class BatchService
      */
     public function removeException($data)
     {
-        if ($this->connection) {
+        if ($this->connection()) {
             $setKey = $this->batchKeyPrefix . 'set' . $data['uuid'];
 
-            $this->connection->del([$setKey]);
+            $this->connection()->del([$setKey]);
         }
     }
 
@@ -94,13 +84,13 @@ class BatchService
      */
     public function forget($forget)
     {
-        if ($this->connection) {
+        if ($this->connection()) {
             if (!is_array($forget)) {
                 $forget = [$forget];
             }
 
             foreach ($forget as $key) {
-                $this->connection->del($key);
+                $this->connection()->del($key);
             }
         }
     }
