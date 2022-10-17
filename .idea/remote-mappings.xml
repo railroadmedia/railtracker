@@ -4,6 +4,13 @@
     <list>
       <list>
         <remote-mappings server-id="php@5185a978-fec6-44f2-b3ba-259546e682d7" />
+        <remote-mappings server-id="php@90c5e1df-c772-47e0-96b9-151989c033fd">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/app/railtracker" />
+            </list>
+          </settings>
+        </remote-mappings>
       </list>
     </list>
   </component>
