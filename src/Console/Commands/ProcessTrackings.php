@@ -103,6 +103,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
         while ($redisIterator !== 0) {
 
             try {
+                Log::info('---------$this->batchService->batchKeyPrefix--------');
+                Log::info($this->batchService->batchKeyPrefix);
+
                 $scanResult = $this->batchService->connection()->scan(
                         $redisIterator,
                         [
