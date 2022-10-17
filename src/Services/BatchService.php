@@ -2,22 +2,14 @@
 
 namespace Railroad\Railtracker\Services;
 
-use Illuminate\Cache\RedisStore;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 use Predis\ClientInterface;
 use Railroad\Railtracker\ValueObjects\ExceptionVO;
 use Railroad\Railtracker\ValueObjects\RequestVO;
 
 class BatchService
 {
-    /**
-     * @var $store RedisStore
-     */
-    public $store;
-
-    /**
-     * @var ClientInterface $connection
-     */
     public $connection;
 
     public $batchKeyPrefix;
@@ -29,7 +21,19 @@ class BatchService
     {
         $this->batchKeyPrefix = config('railtracker.batch_prefix', 'railtracker_');
 
-        $this->store = Cache::store(config('railtracker.cache_driver'));
+        try {
+            $this->connection = Redis::connection(config('railtracker.redis_connection_name'));
+        } catch (Throwable $exception) {
+            Log::error($exception);
+        }
+    }
+
+    /**
+     * @return \Illuminate\Redis\Connections\Connection
+     */
+    public function connection()
+    {
+        return $this->connection;
     }
 
     /**
@@ -37,27 +41,22 @@ class BatchService
      */
     public function storeRequest(RequestVO $requestVO)
     {
-        if(Cache::store(config('railtracker.cache_driver')
-               ->getStore() instanceof RedisStore)) {
-            $setKey = $this->batchKeyPrefix.'set'.'_'.$requestVO->uuid;
+        if ($this->connection) {
+            $setKey = $this->batchKeyPrefix . 'set' . '_' . $requestVO->uuid;
 
-            $this->cache()
-                ->sadd($setKey, [serialize($requestVO)]);
+            $this->connection->sadd($setKey, serialize($requestVO));
         }
     }
 
-    // todo: test for this (it's not used anywhere, so delete it or write test for it?)
     /**
      * @param RequestVO $requestVO
      */
     public function removeRequest(RequestVO $requestVO)
     {
-        if(Cache::store(config('railtracker.cache_driver')
-                            ->getStore() instanceof RedisStore)) {
-            $setKey = $this->batchKeyPrefix.'set'.'_'.$requestVO->uuid;
+        if ($this->connection) {
+            $setKey = $this->batchKeyPrefix . 'set' . '_' . $requestVO->uuid;
 
-            $this->cache()
-                ->del([$setKey]);
+            $this->connection->del([$setKey]);
         }
     }
 
@@ -67,38 +66,27 @@ class BatchService
      */
     public function storeException(ExceptionVO $exceptionVO)
     {
-        if(Cache::store(config('railtracker.cache_driver')
-                            ->getStore() instanceof RedisStore)) {
+        if ($this->connection) {
             $uuid = $exceptionVO->uuid;
 
-            $setKey = $this->batchKeyPrefix.'set'.'_'.$uuid;
+            $setKey = $this->batchKeyPrefix . 'set' . '_' . $uuid;
 
-            $this->cache()
-                ->sadd($setKey, [serialize($exceptionVO)]);
+            $this->connection->sadd($setKey, [serialize($exceptionVO)]);
         }
     }
 
     // todo: test for this (it's not used anywhere, so delete it or write test for it?)
+
     /**
      * @param array $data
      */
     public function removeException($data)
     {
-        if(Cache::store(config('railtracker.cache_driver')
-                            ->getStore() instanceof RedisStore)) {
-            $setKey = $this->batchKeyPrefix.'set'.$data['uuid'];
+        if ($this->connection) {
+            $setKey = $this->batchKeyPrefix . 'set' . $data['uuid'];
 
-            $this->cache()
-                ->del([$setKey]);
+            $this->connection->del([$setKey]);
         }
-    }
-
-    /**
-     * @return ClientInterface
-     */
-    public function cache()
-    {
-        return $this->store->connection();
     }
 
     /**
@@ -106,15 +94,13 @@ class BatchService
      */
     public function forget($forget)
     {
-        if(Cache::store(config('railtracker.cache_driver')
-                            ->getStore() instanceof RedisStore)) {
+        if ($this->connection) {
             if (!is_array($forget)) {
                 $forget = [$forget];
             }
 
             foreach ($forget as $key) {
-                $this->cache()
-                    ->del($key);
+                $this->connection->del($key);
             }
         }
     }

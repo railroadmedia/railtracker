@@ -102,7 +102,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         while ($redisIterator !== 0) {
 
             try {
-                $scanResult = $this->batchService->cache()->scan(
+                $scanResult = $this->batchService->connection()->scan(
                         $redisIterator,
                         [
                             'MATCH' => $this->batchService->batchKeyPrefix . '*',
@@ -120,7 +120,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $valuesThisChunk = new Collection();
 
                 foreach ($keys as $keyThisChunk) {
-                    $values = $this->batchService->cache()->smembers($keyThisChunk);
+                    $values = $this->batchService->connection()->smembers($keyThisChunk);
 
                     foreach ($values as $value) {
                         $valuesThisChunk->push(unserialize($value));

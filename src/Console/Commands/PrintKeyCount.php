@@ -36,7 +36,7 @@ class PrintKeyCount extends \Illuminate\Console\Command
 
     public function handle()
     {
-        $requestKeys = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . 'request*');
+        $requestKeys = $this->batchService->connection()->keys($this->batchService->batchKeyPrefix . 'request*');
 
         $this->info(count($requestKeys) . ' request-response-pairs retrieved.');
     }

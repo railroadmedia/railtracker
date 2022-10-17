@@ -40,9 +40,9 @@ class EmptyLocalCache extends \Illuminate\Console\Command
 
         $this->info('Count before: ' . count($allKeysForPrefix));
 
-        $this->batchService->cache()->del($allKeysForPrefix);
+        $this->batchService->connection()->del($allKeysForPrefix);
 
-        $allKeysForPrefix = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . '*');
+        $allKeysForPrefix = $this->batchService->connection()->keys($this->batchService->batchKeyPrefix . '*');
 
         if(empty($allKeysForPrefix)){
             $this->info('Mass key-deletion successful.');
@@ -50,7 +50,7 @@ class EmptyLocalCache extends \Illuminate\Console\Command
             $this->info('Mass key-deletion failed.');
         }
 
-        $allKeysForPrefix = $this->batchService->cache()->keys($this->batchService->batchKeyPrefix . '*');
+        $allKeysForPrefix = $this->batchService->connection()->keys($this->batchService->batchKeyPrefix . '*');
 
         $this->info('Count after: ' . count($allKeysForPrefix));
     }
