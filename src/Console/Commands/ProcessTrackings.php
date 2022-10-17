@@ -120,14 +120,19 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 $valuesThisChunk = new Collection();
 
-                Log::info(var_export($valuesThisChunk, true));
+                Log::info('---------$scanResult--------');
+                Log::info(var_export($scanResult, true));
 
                 foreach ($keys as $keyThisChunk) {
                     $values = $this->batchService->connection()->smembers($keyThisChunk);
 
+                    Log::info('---------$values--------');
                     Log::info(var_export($values, true));
 
                     foreach ($values as $value) {
+                        Log::info('---------$value--------');
+                        Log::info(var_export($value, true));
+
                         $valuesThisChunk->push(unserialize($value));
                     }
                 }
