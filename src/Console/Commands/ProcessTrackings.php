@@ -103,14 +103,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
         while ($redisIterator !== 0) {
 
             try {
-                Log::info('---------$this->batchService->batchKeyPrefix--------');
-                Log::info($this->batchService->batchKeyPrefix);
-
                 $scanResult = $this->batchService->connection()->scan(
                         $redisIterator,
                         [
-                            'MATCH' => $this->batchService->batchKeyPrefix . '*',
-                            'COUNT' => config('railtracker.scan-size', 1000)
+                            'match' => $this->batchService->batchKeyPrefix . '*',
+                            'count' => config('railtracker.scan-size', 1000)
                         ]
                     );
 
@@ -123,19 +120,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 $valuesThisChunk = new Collection();
 
-                Log::info('---------$scanResult--------');
-                Log::info(var_export($scanResult, true));
-
                 foreach ($keys as $keyThisChunk) {
                     $values = $this->batchService->connection()->smembers($keyThisChunk);
 
-                    Log::info('---------$values--------');
-                    Log::info(var_export($values, true));
-
                     foreach ($values as $value) {
-                        Log::info('---------$value--------');
-                        Log::info(var_export($value, true));
-
                         $valuesThisChunk->push(unserialize($value));
                     }
                 }
