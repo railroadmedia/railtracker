@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Cookie\CookieJar;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Railroad\Railtracker\Events\RequestTracked;
 use Railroad\Railtracker\Repositories\RequestRepository;
 use Railroad\Railtracker\Services\BatchService;
@@ -119,8 +120,12 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 $valuesThisChunk = new Collection();
 
+                Log::info(var_export($valuesThisChunk, true));
+
                 foreach ($keys as $keyThisChunk) {
                     $values = $this->batchService->connection()->smembers($keyThisChunk);
+
+                    Log::info(var_export($values, true));
 
                     foreach ($values as $value) {
                         $valuesThisChunk->push(unserialize($value));
@@ -357,7 +362,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         // split VOs into those with ipData available from previous requests and those for which we have to query the API
 
-        list($requestVOsNotRequiringApiCall, $requestVOsRequiringApiQuery) = $requestVOs->partition(
+        [$requestVOsNotRequiringApiCall, $requestVOsRequiringApiQuery] = $requestVOs->partition(
             // if return true, value will be passed to param 1, if false then passed to param 2
             function($requestVO) use ($matchingRequests){
 
