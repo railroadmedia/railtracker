@@ -1,6 +1,6 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Functional\Trackers;
+namespace Railroad\Railtracker\Tests\Functional;
 
 use Railroad\Railtracker\Services\IpDataApiSdkService;
 use Railroad\Railtracker\Tests\RailtrackerTestCase;

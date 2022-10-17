@@ -1,6 +1,6 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Functional\Trackers;
+namespace Railroad\Railtracker\Tests\Functional;
 
 use Carbon\Carbon;
 use Railroad\Railtracker\Events\MediaPlaybackTracked;

@@ -4,7 +4,6 @@ namespace Railroad\Railtracker\Tests;
 
 use Carbon\Carbon;
 use Doctrine\ORM\EntityManager;
-use Dotenv\Dotenv;
 use Exception;
 use Faker\Generator;
 use Illuminate\Auth\AuthManager;
@@ -14,11 +13,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\DB;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
-use Railroad\Railtracker\Managers\RailtrackerEntityManager;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
 use Railroad\Railtracker\Providers\RailtrackerServiceProvider;
 use Railroad\Railtracker\Services\BatchService;
@@ -68,7 +65,7 @@ class RailtrackerTestCase extends BaseTestCase
 
     const USER_AGENT_CHROME_WINDOWS_10 = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36';
 
-    protected function setUp():void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -90,10 +87,10 @@ class RailtrackerTestCase extends BaseTestCase
 
         // clear everything *first*
         $toDelete =
-            $this->batchService->cache()
+            $this->batchService->connection()
                 ->keys('*');
         if (!empty($toDelete)) {
-            $this->batchService->cache()
+            $this->batchService->connection()
                 ->del($toDelete);
         }
 
@@ -114,14 +111,14 @@ class RailtrackerTestCase extends BaseTestCase
         Carbon::setTestNow(Carbon::parse('2020-03-26 17:50:38.84123'));
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $toDelete =
-            $this->batchService->cache()
+            $this->batchService->connection()
                 ->keys('*');
 
         if (!empty($toDelete)) {
-            $this->batchService->cache()
+            $this->batchService->connection()
                 ->del($toDelete);
         }
 
@@ -181,10 +178,10 @@ class RailtrackerTestCase extends BaseTestCase
         config()->set('railtracker.database_in_memory', false);
         config()->set('railtracker.enable_query_log', false);
 
-        if(empty(config('railtracker.charset'))){
+        if (empty(config('railtracker.charset'))) {
             config()->set('railtracker.charset', 'utf8mb4');
         }
-        if(empty(config('railtracker.collation'))){
+        if (empty(config('railtracker.collation'))) {
             config()->set('railtracker.collation', 'utf8mb4_unicode_ci');
         }
 
@@ -206,22 +203,22 @@ class RailtrackerTestCase extends BaseTestCase
         // create session table
         if (!$app['db']->connection()->getSchemaBuilder()->hasTable('sessions')) {
             $app['db']->connection()
-            ->getSchemaBuilder()
-            ->create(
-                'sessions',
-                function (Blueprint $table) {
-                    $table->string('id')
-                        ->unique();
-                    $table->integer('user_id')
-                        ->nullable();
-                    $table->string('ip_address', 45)
-                        ->nullable();
-                    $table->text('user_agent')
-                        ->nullable();
-                    $table->text('payload');
-                    $table->integer('last_activity');
-                }
-            );
+                ->getSchemaBuilder()
+                ->create(
+                    'sessions',
+                    function (Blueprint $table) {
+                        $table->string('id')
+                            ->unique();
+                        $table->integer('user_id')
+                            ->nullable();
+                        $table->string('ip_address', 45)
+                            ->nullable();
+                        $table->text('user_agent')
+                            ->nullable();
+                        $table->text('payload');
+                        $table->integer('last_activity');
+                    }
+                );
         }
 
         $app['config']->set(
@@ -344,8 +341,7 @@ class RailtrackerTestCase extends BaseTestCase
         $clientIp = '183.22.98.51',
         $method = 'GET',
         $cookies = []
-    )
-    {
+    ) {
         return Request::create(
             $url,
             $method,
@@ -530,8 +526,8 @@ class RailtrackerTestCase extends BaseTestCase
      */
     protected function sendRequest(Request $request, $response = 200)
     {
-        if(gettype($response) === 'integer' || gettype($response) === 'string'){
-            $response = $this->createResponse((integer) $response);
+        if (gettype($response) === 'integer' || gettype($response) === 'string') {
+            $response = $this->createResponse((integer)$response);
         }
 
         resolve(RailtrackerMiddleware::class)->handle(
@@ -554,8 +550,7 @@ class RailtrackerTestCase extends BaseTestCase
         $userId,
         $limit = 25,
         $skip = 0
-    )
-    {
+    ) {
         $results = $this->databaseManager
             ->table(config('railtracker.table_prefix') . 'requests')
             ->where('user_id', $userId)
@@ -580,8 +575,7 @@ class RailtrackerTestCase extends BaseTestCase
                     ->select('*')
                     ->get()
                     ->all();
-            foreach ($result as &$r)
-            { // this changes contents from "stdClass::__set_state(array(...))" to "array (...)"
+            foreach ($result as &$r) { // this changes contents from "stdClass::__set_state(array(...))" to "array (...)"
                 $r = json_decode(json_encode($r), true);
             }
             $results[$table] = $result;
@@ -604,8 +598,7 @@ class RailtrackerTestCase extends BaseTestCase
         $responseStatus = 500,
         Exception $exception = null,
         $exceptionMessage = 'Exception from throwExceptionDuringRequest method of RailtrackerTestCase'
-    )
-    {
+    ) {
         $response = $this->createResponse($responseStatus);
 
         if (!$exception) {

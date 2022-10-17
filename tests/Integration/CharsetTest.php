@@ -34,7 +34,7 @@ class CharsetTestextends extends RailtrackerTestCase
         app()->instance(IpDataApiSdkService::class, $this->ipDataApiSdkServiceMock);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $actions = [
             'truncate',

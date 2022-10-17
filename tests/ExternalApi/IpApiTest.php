@@ -10,7 +10,7 @@ class IpApiTest extends RailtrackerTestCase
     /** @var IpDataApiSdkService */
     private $ipDataApiSdkService;
 
-    protected function setup()
+    protected function setUp(): void
     {
         parent::setup();
 

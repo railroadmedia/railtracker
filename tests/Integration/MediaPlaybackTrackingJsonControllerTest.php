@@ -1,6 +1,6 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Integration\Repositories;
+namespace Railroad\Railtracker\Tests\Integration;
 
 use Carbon\Carbon;
 use Railroad\Railtracker\Repositories\MediaPlaybackRepository;
@@ -19,7 +19,7 @@ class MediaPlaybackTrackingJsonControllerTest extends RailtrackerTestCase
      */
     private $mediaPlaybackTracker;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 

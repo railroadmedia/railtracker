@@ -1,6 +1,6 @@
 <?php
 
-namespace Railroad\Railtracker\Tests\Integration\Trackers;
+namespace Railroad\Railtracker\Tests\Integration;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
