@@ -2,6 +2,7 @@
 
 return [
     'global_is_active' => true,
+    'brand' => 'musora',
 
     // database
     'database_connection_name' => 'mysql',
