@@ -28,7 +28,7 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
         $typesTable  = $tablePrefix . config('railtracker.media_playback_types', 'media_playback_types');
         $sessionsTable = $tablePrefix . config('railtracker.media_playback_sessions', 'media_playback_sessions');
 
-        $rows = $this->databaseManager->connection()->table($sessionsTable)
+        $rows = $this->databaseManager->connection(config('railtracker.database_connection_name'))->table($sessionsTable)
             ->leftJoin(
                 $typesTable,
                 function (JoinClause $join) use ($typesTable, $sessionsTable){
@@ -79,7 +79,7 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
         $typesTable  = $tablePrefix . config('railtracker.media_playback_types', 'media_playback_types');
         $sessionsTable = $tablePrefix . config('railtracker.media_playback_sessions', 'media_playback_sessions');
 
-        return $this->databaseManager->connection()->table($sessionsTable)
+        return $this->databaseManager->connection(config('railtracker.database_connection_name'))->table($sessionsTable)
             ->leftJoin(
                 $typesTable,
                 function (JoinClause $join) use ($typesTable, $sessionsTable){
