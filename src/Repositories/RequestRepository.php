@@ -359,8 +359,6 @@ class RequestRepository extends TrackerRepositoryBase
         $matchingRequests = new Collection();
 
         foreach (array_unique($ipAddresses) as $ipAddress) {
-            Log::info("Processing ip_address query $ipAddress");
-            $timeStart = microtime(true);
             $matchingRequests = $matchingRequests->merge(
                 $this->databaseManager->connection($dbConnectionName)
                     ->table($table)
@@ -369,9 +367,6 @@ class RequestRepository extends TrackerRepositoryBase
                     ->orderBy('requested_on', 'desc')
                     ->get()
             );
-            $diff = microtime(true) - $timeStart;
-            $sec = number_format((float)$diff, 3, '.', '');
-            Log::info("Finished Processing ip_address query ($sec s)");
         }
 
         return $matchingRequests;
