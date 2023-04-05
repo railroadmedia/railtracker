@@ -119,7 +119,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
                 $redisIterator = $scanResult ? (integer)$scanResult[0] : 0;
                 $keys = $scanResult ? $scanResult[1] : null;
-                $this->info($redisIterator);
 
                 if (empty($keys)) {
                     continue;
