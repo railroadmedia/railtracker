@@ -91,7 +91,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
     public function handle()
     {
-        $this->info("Processing $this->name");
+        $instance = rand(1, 10000);
+        $this->info("$instance:Processing $this->name");
         $timeStart = microtime(true);
 
         $redisIterator = null;
@@ -163,9 +164,9 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $diff = microtime(true) - $timeStart;
         $sec = number_format((float)$diff, 3, '.', '');
         if ($timedout) {
-            $this->info("Timeout $this->name ($sec s)");
+            $this->info("$instance:Timeout $this->name ($sec s)");
         } else {
-            $this->info("Finished $this->name ($sec s)");
+            $this->info("$instance:Finished $this->name ($sec s)");
         }
     }
 
