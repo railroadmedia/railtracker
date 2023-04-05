@@ -3,6 +3,7 @@
 namespace Railroad\Railtracker\Repositories;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateBuilder;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateMySqlGrammar;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateSqlLiteGrammar;
@@ -170,41 +171,40 @@ class RequestRepository extends TrackerRepositoryBase
         foreach (self::$rowsToInsertByTable as $table => $rowsToInsert) {
             $dataToInsert = [];
 
-            foreach($requestVOs as $requestVO){
-
-                foreach($rowsToInsert as $mappings){
+            foreach ($requestVOs as $requestVO) {
+                foreach ($rowsToInsert as $mappings) {
                     $row = [];
-                    foreach($mappings as $column => $property){
+                    foreach ($mappings as $column => $property) {
                         /*
                          * empty(0) returns true, but 0 is valid exception code, thus here explicitly allow
                          */
                         $specialException = ($table === 'exception_codes') && ($requestVO->$property === 0);
 
-                        if(!empty($requestVO->$property) || $specialException){
+                        if (!empty($requestVO->$property) || $specialException) {
                             $row[$column] = $requestVO->$property;
                         }
                     }
-                    if(!empty($row)){
+                    if (!empty($row)) {
                         $dataToInsert[] = $row;
                     }
                 }
             }
 
-            if(empty($dataToInsert)) continue;
+            if (empty($dataToInsert)) {
+                continue;
+            }
 
             if ($isMySql) {
-                try{
+                try {
                     $builder->from(config('railtracker.table_prefix') . $table)
                         ->insertOrUpdate($dataToInsert); // todo: assess query performance
-                }catch(\Exception $e){
+                } catch (\Exception $e) {
                     error_log($e);
                     dump('Error while writing to association tables ("' . $e->getMessage() . '")');
                 }
             } else {  // need use-case here since sqlite doesn't support update on duplicate key update
                 foreach ($dataToInsert as $columnValues) {
                     try {
-
-
                         // ---------------------------------------------------------------------------------------------
                         // Which of these two is more performant?
                         //  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -225,7 +225,7 @@ class RequestRepository extends TrackerRepositoryBase
 
                         //  --------------------------------------------------------------------------------------------
 
-                        if($doesntExist){
+                        if ($doesntExist) {
                             $this->databaseManager->connection($dbConnectionName)
                                 ->table(config('railtracker.table_prefix') . $table)
                                 ->insert($columnValues); // todo: assess query performance
@@ -251,17 +251,18 @@ class RequestRepository extends TrackerRepositoryBase
 
         $table = config('railtracker.table_prefix') . 'requests';
 
-        foreach(array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData){
+        foreach (array_chunk($bulkInsertData, self::$BULK_INSERT_CHUNK_SIZE) as $chunkOfBulkInsertData) {
+            if (empty($chunkOfBulkInsertData)) {
+                continue;
+            }
 
-            if (empty($chunkOfBulkInsertData)) continue;
-
-            try{
+            try {
                 if ($isMySql) {
                     $builder->from($table)->insertOrUpdate($chunkOfBulkInsertData);// todo: assess query performance
-                }else{
+                } else {
                     $builder->from($table)->insert($chunkOfBulkInsertData);// todo: assess query performance
                 }
-            }catch(\Exception $e){
+            } catch (\Exception $e) {
                 error_log($e);
                 dump('Error while writing to requests table ("' . $e->getMessage() . '")');
             }
@@ -271,10 +272,10 @@ class RequestRepository extends TrackerRepositoryBase
 
         // because we cant' get created rows from insert, it seems
         $presumablyCreatedRows = $builder
-                ->from($table)
-                ->select(['user_id','cookie_id'])
-                ->whereIn('uuid', $uuids)
-                ->get();
+            ->from($table)
+            ->select(['user_id', 'cookie_id'])
+            ->whereIn('uuid', $uuids)
+            ->get();
 
         return $presumablyCreatedRows ?? new Collection();
     }
@@ -310,7 +311,6 @@ class RequestRepository extends TrackerRepositoryBase
          */
         $requestVOs = $requestVOs->filter(
             function (RequestVO $candidate) use ($requestVOs) {
-
                 $respondedOnIsSetOnCandidate = !empty($candidate->respondedOn);
 
                 if ($respondedOnIsSetOnCandidate) {
@@ -348,17 +348,19 @@ class RequestRepository extends TrackerRepositoryBase
         $table = config('railtracker.table_prefix') . 'requests';
         $dbConnectionName = config('railtracker.database_connection_name');
 
-        foreach($requestVOs as $requestVO){
+        foreach ($requestVOs as $requestVO) {
             $ipAddresses[] = $requestVO->ipAddress;
         }
 
-        if(empty($ipAddresses)){
+        if (empty($ipAddresses)) {
             return collect([]);
         }
 
         $matchingRequests = new Collection();
 
         foreach (array_unique($ipAddresses) as $ipAddress) {
+            Log::info("Processing ip_address query $ipAddress");
+            $timeStart = microtime(true);
             $matchingRequests = $matchingRequests->merge(
                 $this->databaseManager->connection($dbConnectionName)
                     ->table($table)
@@ -367,6 +369,9 @@ class RequestRepository extends TrackerRepositoryBase
                     ->orderBy('requested_on', 'desc')
                     ->get()
             );
+            $diff = microtime(true) - $timeStart;
+            $sec = number_format((float)$diff, 3, '.', '');
+            Log::info("Finished Processing ip_address query ($sec s)");
         }
 
         return $matchingRequests;
