@@ -99,8 +99,16 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $exceptionsTrackedCount = 0;
         $successfulRequestsCount = 0;
 
+        $timedout = false;
+
         while ($redisIterator !== 0) {
             try {
+                $diff = microtime(true) - $timeStart;
+                if ($diff > 55) {
+                    $timedout = true;
+                    break;
+                }
+
                 $scanResult = $this->batchService->connection()->scan(
                     $redisIterator,
                     [
@@ -155,7 +163,11 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $diff = microtime(true) - $timeStart;
         $sec = number_format((float)$diff, 3, '.', '');
-        $this->info("Finished $this->name ($sec s)");
+        if ($timedout) {
+            $this->info("Timeout $this->name ($sec s)");
+        } else {
+            $this->info("Finished $this->name ($sec s)");
+        }
     }
 
     public function info($string, $verbosity = null)
