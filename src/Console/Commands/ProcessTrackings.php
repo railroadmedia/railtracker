@@ -78,8 +78,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         RequestRepository $requestRepository,
         DatabaseManager $databaseManager,
         CookieJar $cookieJar
-    )
-    {
+    ) {
         parent::__construct();
 
         $this->batchService = $batchService;
@@ -90,29 +89,29 @@ class ProcessTrackings extends \Illuminate\Console\Command
         $this->cookieJar = $cookieJar;
     }
 
-    /**
-     * return true
-     */
     public function handle()
     {
+        $this->info("Processing $this->name");
+        $timeStart = microtime(true);
+
         $redisIterator = null;
 
         $exceptionsTrackedCount = 0;
         $successfulRequestsCount = 0;
 
         while ($redisIterator !== 0) {
-
             try {
                 $scanResult = $this->batchService->connection()->scan(
-                        $redisIterator,
-                        [
-                            'match' => $this->batchService->batchKeyPrefix . '*',
-                            'count' => config('railtracker.scan-size', 1000)
-                        ]
-                    );
+                    $redisIterator,
+                    [
+                        'match' => $this->batchService->batchKeyPrefix . '*',
+                        'count' => config('railtracker.scan-size', 1000)
+                    ]
+                );
 
-                $redisIterator = (integer)$scanResult[0];
-                $keys = $scanResult[1];
+                $redisIterator = $scanResult ? (integer)$scanResult[0] : 0;
+                $keys = $scanResult ? $scanResult[1] : null;
+                $this->info($redisIterator);
 
                 if (empty($keys)) {
                     continue;
@@ -128,18 +127,18 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     }
                 }
 
-                $this->printInfo('Starting to process ' . $valuesThisChunk->count() . ' items.');
+                $this->info('Starting to process ' . count($keys) . ' items.');
 
                 $this->batchService->forget($keys);
 
-                try{
+                try {
                     $resultsCount = $this->processRequests($valuesThisChunk);
-                }catch(\Exception $e){
+                } catch (\Exception $e) {
                     dump($e->getMessage());
                 }
 
-                if(!empty($resultsCount)){
-                    $totalRequestsCount =  $resultsCount['requestsCount'];
+                if (!empty($resultsCount)) {
+                    $totalRequestsCount = $resultsCount['requestsCount'];
                     $exceptionsTrackedCount = $exceptionsTrackedCount + $resultsCount['exceptionsTrackedCount'];
                     $successfulRequestsCount =
                         $successfulRequestsCount + $totalRequestsCount - $resultsCount['exceptionsTrackedCount'];
@@ -149,15 +148,22 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
         }
 
-        // todo: repair|replace
-//        $this->printInfo(
-//            'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
-//            ', ' . $exceptionsTrackedCount
-//        );
-        $this->printInfo('Processing completed.');
+        $this->info(
+            'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
+            ', ' . $exceptionsTrackedCount
+        );
 
-        return true;
+        $diff = microtime(true) - $timeStart;
+        $sec = number_format((float)$diff, 3, '.', '');
+        $this->info("Finished $this->name ($sec s)");
     }
+
+    public function info($string, $verbosity = null)
+    {
+        Log::info($string); //also write info statements to log
+        $this->line($string, 'info', $verbosity);
+    }
+
 
     /**
      * @param Collection $objectsFromCache
@@ -184,40 +190,41 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $requestVOs = $this->getAndAttachGeoIpData($requestVOs);
 
-        foreach($objectsFromCache as $item){
+        foreach ($objectsFromCache as $item) {
             $type = get_class($item);
             $isExceptionVO = $type === ExceptionVO::class;
-            if($isExceptionVO){ /** @var ExceptionVO $item */
+            if ($isExceptionVO) {
+                /** @var ExceptionVO $item */
                 $uuid = $item->uuid;
                 $exceptionVOs[$uuid] = $item;
             }
         }
 
-        foreach($requestVOs as $requestVO){ /** @var RequestVO $requestVO */
+        foreach ($requestVOs as $requestVO) {
+            /** @var RequestVO $requestVO */
             $uuid = $requestVO->uuid;
-            if(!empty($exceptionVOs[$uuid])){
-
+            if (!empty($exceptionVOs[$uuid])) {
                 $matchingExceptionVO = $exceptionVOs[$uuid];
 
                 $requestVO->exceptionCode = $matchingExceptionVO->code;
                 $requestVO->exceptionLine = $matchingExceptionVO->line;
 
-                if(!empty($matchingExceptionVO->class)){
+                if (!empty($matchingExceptionVO->class)) {
                     $requestVO->exceptionClass = $matchingExceptionVO->class;
                     $requestVO->exceptionClassHash = md5($requestVO->exceptionClass);
                 }
 
-                if(!empty($matchingExceptionVO->file)){
+                if (!empty($matchingExceptionVO->file)) {
                     $requestVO->exceptionFile = $matchingExceptionVO->file;
                     $requestVO->exceptionFileHash = md5($requestVO->exceptionFile);
                 }
 
-                if(!empty($matchingExceptionVO->message)){
+                if (!empty($matchingExceptionVO->message)) {
                     $requestVO->exceptionMessage = $matchingExceptionVO->message;
                     $requestVO->exceptionMessageHash = md5($requestVO->exceptionMessage);
                 }
 
-                if(!empty($matchingExceptionVO->trace)){
+                if (!empty($matchingExceptionVO->trace)) {
                     $requestVO->exceptionTrace = $matchingExceptionVO->trace;
                     $requestVO->exceptionTraceHash = md5($requestVO->exceptionTrace);
                 }
@@ -242,7 +249,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
      */
     public function updateUsersAnonymousRequests(Collection $requests)
     {
-        foreach($requests as $request){
+        foreach ($requests as $request) {
             $userId = $request->user_id;
             $cookieId = $request->cookie_id;
 
@@ -256,7 +263,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     ->where(['cookie_id' => $cookieId])
                     ->whereNull('user_id')
                     ->orderBy('id')
-                    ->chunk($chunkSize, function($ids) use ($table, $userId){ /** @var $ids Collection */
+                    ->chunk($chunkSize, function ($ids) use ($table, $userId) {
+                        /** @var $ids Collection */
                         $this->databaseManager->table($table)
                             ->whereIn('id', $ids->pluck('id')->toArray())
                             ->update(['user_id' => $userId]);
@@ -282,20 +290,6 @@ class ProcessTrackings extends \Illuminate\Console\Command
             ->all();
 
         return $results;
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // used only by handle ---------------------------------------------------------------------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * @param $msg
-     */
-    public function printInfo($msg)
-    {
-        if (getenv('APP_ENV') !== 'testing') {
-            $this->info($msg);
-        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -359,9 +353,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
         // split VOs into those with ipData available from previous requests and those for which we have to query the API
 
         [$requestVOsNotRequiringApiCall, $requestVOsRequiringApiQuery] = $requestVOs->partition(
-            // if return true, value will be passed to param 1, if false then passed to param 2
-            function($requestVO) use ($matchingRequests){
-
+        // if return true, value will be passed to param 1, if false then passed to param 2
+            function ($requestVO) use ($matchingRequests) {
                 $matchingRequestsForIpAddress = $this->requestRecordMatchingIp($requestVO, $matchingRequests);
 
                 $matchExists = $matchingRequestsForIpAddress->count() > 0;
@@ -376,8 +369,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
         // for those RequestVOs that can get their geo-ip data from existing records, do that.
 
         $requestVOsNotRequiringApiCall->map(
-            function($requestVO) use($matchingRequests){
-
+            function ($requestVO) use ($matchingRequests) {
                 $dbRowWithIpData = $this->requestRecordMatchingIp($requestVO, $matchingRequests)->first();
 
                 $requestVO->ipLatitude = $dbRowWithIpData->ip_latitude ?? null;
@@ -396,17 +388,17 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
         $geoIpData = $this->getGeoIpData($requestVOsRequiringApiQuery);
 
-        $requestVOsRequiringApiQuery->map(function($requestVO) use ($geoIpData){
+        $requestVOsRequiringApiQuery->map(function ($requestVO) use ($geoIpData) {
             /** @var RequestVO $requestVO */
             $ipAddress = $requestVO->ipAddress;
 
             $ipDataForRequestVO = $geoIpData->filter(
-                function($candidate) use ($ipAddress){
+                function ($candidate) use ($ipAddress) {
                     return $ipAddress === ($candidate['ip'] ?? null);
                 }
             )->first();
 
-            if(!empty($ipDataForRequestVO)){
+            if (!empty($ipDataForRequestVO)) {
                 $requestVO->ipLatitude = $ipDataForRequestVO['latitude'];
                 $requestVO->ipLongitude = $ipDataForRequestVO['longitude'];
                 $requestVO->ipCountryCode = $ipDataForRequestVO['country_code'];
@@ -414,10 +406,10 @@ class ProcessTrackings extends \Illuminate\Console\Command
                 $requestVO->ipRegion = $ipDataForRequestVO['region_code'];
                 $requestVO->ipCity = $ipDataForRequestVO['city'];
                 $requestVO->ipPostalZipCode = $ipDataForRequestVO['postal'];
-                if(!empty($ipDataForRequestVO['time_zone'])){
+                if (!empty($ipDataForRequestVO['time_zone'])) {
                     $requestVO->ipTimezone = $ipDataForRequestVO['time_zone']->name;
                 }
-                if(!empty($ipDataForRequestVO['currency'])){
+                if (!empty($ipDataForRequestVO['currency'])) {
                     $requestVO->ipCurrency = $ipDataForRequestVO['currency']->code;
                 }
             }
