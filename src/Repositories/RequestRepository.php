@@ -4,6 +4,7 @@ namespace Railroad\Railtracker\Repositories;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use mysql_xdevapi\Exception;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateBuilder;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateMySqlGrammar;
 use Railroad\Railtracker\QueryBuilders\BulkInsertOrUpdateSqlLiteGrammar;
@@ -343,32 +344,37 @@ class RequestRepository extends TrackerRepositoryBase
      */
     public function getMostRecentRequestForEachIpAddress($requestVOs)
     {
-        $ipAddresses = [];
-
-        $table = config('railtracker.table_prefix') . 'requests';
-        $dbConnectionName = config('railtracker.database_connection_name');
-
-        foreach ($requestVOs as $requestVO) {
-            $ipAddresses[] = $requestVO->ipAddress;
-        }
-
-        if (empty($ipAddresses)) {
-            return collect([]);
-        }
-
         $matchingRequests = new Collection();
+        try {
+            $ipAddresses = [];
 
-        foreach (array_unique($ipAddresses) as $ipAddress) {
-            $matchingRequests = $matchingRequests->merge(
-                $this->databaseManager->connection($dbConnectionName)
-                    ->table($table)
-                    ->where('ip_address', $ipAddress)
-                    ->limit(1)
-                    ->orderBy('requested_on', 'desc')
-                    ->get()
-            );
+            $table = config('railtracker.table_prefix') . 'requests';
+            $dbConnectionName = config('railtracker.database_connection_name');
+
+            foreach ($requestVOs as $requestVO) {
+                $ipAddresses[] = $requestVO->ipAddress;
+            }
+
+            if (empty($ipAddresses)) {
+                return collect([]);
+            }
+
+
+            foreach (array_unique($ipAddresses) as $ipAddress) {
+                $matchingRequests = $matchingRequests->merge(
+                    $this->databaseManager->connection($dbConnectionName)
+                        ->table($table)
+                        ->where('ip_address', $ipAddress)
+                        ->limit(1)
+                        ->orderBy('requested_on', 'desc')
+                        ->get()
+                );
+            }
+
+        } catch (\Exception $e) {
+            Log::error($e);
         }
-
         return $matchingRequests;
+
     }
 }
