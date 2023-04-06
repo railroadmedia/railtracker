@@ -91,8 +91,8 @@ class ProcessTrackings extends \Illuminate\Console\Command
 
     public function handle()
     {
-        $instance = rand(1, 10000);
-        $this->info("$instance:Processing $this->name");
+        $instance = rand(1000, 9999);
+        $this->info("$instance:$this->name Processing");
         $timeStart = microtime(true);
 
         $redisIterator = null;
@@ -135,14 +135,14 @@ class ProcessTrackings extends \Illuminate\Console\Command
                     }
                 }
 
-                $this->info('Starting to process ' . count($keys) . ' items.');
+                //$this->info('Starting to process ' . count($keys) . ' items.');
 
                 $this->batchService->forget($keys);
 
                 try {
                     $resultsCount = $this->processRequests($valuesThisChunk);
                 } catch (\Exception $e) {
-                    dump($e->getMessage());
+                    Log::error($e);
                 }
 
                 if (!empty($resultsCount)) {
@@ -152,21 +152,23 @@ class ProcessTrackings extends \Illuminate\Console\Command
                         $successfulRequestsCount + $totalRequestsCount - $resultsCount['exceptionsTrackedCount'];
                 }
             } catch (Exception $exception) {
-                error_log($exception);
+                Log::error($e);
             }
         }
 
-        $this->info(
-            'Number of requests processed (without and with exceptions respectively): ' . $successfulRequestsCount .
-            ', ' . $exceptionsTrackedCount
-        );
+        $this->info("$instance:$this->name # requests success: $successfulRequestsCount");
+        if ($exceptionsTrackedCount > 0) {
+            $this->info(
+                "$instance:$this->name # requests failed: $exceptionsTrackedCount"
+            );
+        }
 
         $diff = microtime(true) - $timeStart;
         $sec = number_format((float)$diff, 3, '.', '');
         if ($timedout) {
-            $this->info("$instance:Timeout $this->name ($sec s)");
+            $this->info("$instance:$this->name Timeout ($sec s)");
         } else {
-            $this->info("$instance:Finished $this->name ($sec s)");
+            $this->info("$instance:$this->name Finished ($sec s)");
         }
     }
 
