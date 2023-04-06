@@ -359,22 +359,32 @@ class RequestRepository extends TrackerRepositoryBase
                 return collect([]);
             }
 
-
             foreach (array_unique($ipAddresses) as $ipAddress) {
                 $matchingRequests = $matchingRequests->merge(
                     $this->databaseManager->connection($dbConnectionName)
                         ->table($table)
+                        ->select([
+                            'id',
+                            'ip_address',
+                            'ip_latitude',
+                            'ip_longitude',
+                            'ip_country_code',
+                            'ip_country_name',
+                            'ip_region',
+                            'ip_city',
+                            'ip_postal_zip_code',
+                            'ip_timezone',
+                            'ip_currency'
+                        ])
                         ->where('ip_address', $ipAddress)
                         ->limit(1)
                         ->orderBy('requested_on', 'desc')
                         ->get()
                 );
             }
-
         } catch (\Exception $e) {
             Log::error($e);
         }
         return $matchingRequests;
-
     }
 }
