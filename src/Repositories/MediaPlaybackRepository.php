@@ -100,7 +100,7 @@ class MediaPlaybackRepository extends TrackerRepositoryBase
     {
         $tablePrefix = config('railtracker.table_prefix_media_playback_tracking');
         $assignmentTypeIds = $this->databaseManager->connection(config('railtracker.database_connection_name'))
-            ->table($tablePrefix . config('railtracker.media_playback_types', 'media_playback_types'))->where('type', 'assignment')->get('id');
+            ->table($tablePrefix . config('railtracker.media_playback_types', 'media_playback_types'))->where('type', '=','assignment')->get('id');
 
         return $assignmentTypeIds->pluck('id')->toArray();
     }
