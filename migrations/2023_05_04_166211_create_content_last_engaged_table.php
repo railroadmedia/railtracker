@@ -27,11 +27,9 @@ return new class extends Migration
                     $table->integer('content_id')->index();
                     $table->integer('parent_content_id')->nullable()->index();
                     $table->integer('parent_playlist_id')->nullable()->index();
-                    $table->integer('resume_time_seconds')->index();
 
                     $table->timestamps();
 
-                    $table->index(['user_id', 'content_id', 'parent_content_id'], 'ucpc');
                     $table->index(['user_id', 'parent_playlist_id'], 'upp');
                     $table->index(['user_id', 'parent_content_id'], 'upc');
 
