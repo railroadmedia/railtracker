@@ -25,5 +25,11 @@ Route::group(
             MediaPlaybackTrackingJsonController::class . '@update'
         )
             ->name('railtracker.media-playback-session.update');
+
+        Route::get(
+            '/railtracker/last-engaged/store',
+            \Railroad\Railtracker\Controllers\ContentLastEngagedJsonController::class . '@store'
+        )
+            ->name('railtracker.last-engaged.store');
     }
 );
