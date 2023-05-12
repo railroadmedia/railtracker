@@ -32,18 +32,21 @@ class ContentLastEngagedService
 
     /**
      * @param $userId
-     * @param $contentId
      * @param null $parentPlaylistId
      * @param null $parentContentId
      * @return int
      */
-    public function deleteEngagedContent($userId, $contentId, $parentPlaylistId = null, $parentContentId = null)
+    public function deleteEngagedContent($userId, $parentPlaylistId = null, $parentContentId = null)
     {
         return $this->contentLastEngagedRepository->delete(
             $userId,
-            $contentId,
             $parentPlaylistId,
             $parentContentId
         );
     }
+
+    public function getLastEngagedContentForPlaylistId($userId, $parentPlaylistId){
+        return $this->contentLastEngagedRepository->getLastEngagedContentForPlaylistId($userId, $parentPlaylistId);
+    }
+
 }

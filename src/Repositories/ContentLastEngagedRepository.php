@@ -55,6 +55,22 @@ class ContentLastEngagedRepository extends TrackerRepositoryBase
     }
 
     /**
+     * @param $userId
+     * @param null $parentPlaylistId
+     * @param null $parentContentId
+     * @return int
+     */
+    public function getLastEngagedContentForPlaylistId($userId, $parentPlaylistId)
+    {
+        return $this->query()
+            ->where([
+                        'user_id' => $userId,
+                        'parent_playlist_id' => $parentPlaylistId,
+                    ])
+            ->first();
+    }
+
+    /**
      * @return \Illuminate\Database\Query\Builder
      */
     private function query()
