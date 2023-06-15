@@ -52,6 +52,10 @@ class MediaPlaybackTracked
      * @var string
      */
     public $brand;
+    /**
+     * @var integer
+     */
+    public $contentId;
 
     /**
      * MediaPlaybackTracked constructor.
@@ -76,7 +80,8 @@ class MediaPlaybackTracked
         $currentSecond,
         $startedOn,
         $lastUpdatedOn,
-        $brand
+        $brand,
+        $contentId = null
     ) {
         $this->id = $id;
         $this->mediaId = $mediaId;
@@ -85,8 +90,9 @@ class MediaPlaybackTracked
         $this->typeId = $typeId;
         $this->secondsPlayed = $secondsPlayed;
         $this->currentSecond = $currentSecond;
-        $this->brand=$brand;
+        $this->brand = $brand;
         $this->startedOn = $startedOn;
         $this->lastUpdatedOn = $lastUpdatedOn;
+        $this->contentId = $contentId;
     }
 }

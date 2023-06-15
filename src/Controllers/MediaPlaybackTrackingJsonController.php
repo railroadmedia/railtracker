@@ -81,7 +81,8 @@ class MediaPlaybackTrackingJsonController extends Controller
             $mediaTypeId,
             $request->input('current_second', 0),
             $request->input('seconds_played', 0),
-            $request->input('brand')
+            $request->input('brand'),
+            contentId: $request->input('content_id')
         );
 
         return response()->json(
@@ -118,7 +119,6 @@ class MediaPlaybackTrackingJsonController extends Controller
                     'current_second' => 'required|numeric',
                 ]
             );
-
         } catch (ValidationException $exception) {
             throw new HttpResponseException(
                 response()->json(
