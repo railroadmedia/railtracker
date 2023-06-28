@@ -429,6 +429,32 @@ class ProcessTrackings extends \Illuminate\Console\Command
             }
         });
 
+        $dbConnectionName = config('railtracker.database_connection_name');
+        /** @var RequestVO $newIpData */
+        foreach ($requestVOsRequiringApiQuery as $newIpData) {
+            try {
+                $data = [
+                    'ip_address' => $newIpData->ipAddress,
+                    'ip_latitude' => $newIpData->ipLatitude,
+                    'ip_longitude' => $newIpData->ipLongitude,
+                    'ip_country_code' => $newIpData->ipCountryCode,
+                    'ip_country_name' => $newIpData->ipCountryName,
+                    'ip_region' => $newIpData->ipRegion,
+                    'ip_city' => $newIpData->ipCity,
+                    'ip_postal_zip_code' => $newIpData->ipPostalZipCode,
+                    'ip_timezone' => $newIpData->ipTimezone,
+                    'ip_currency' => $newIpData->ipCurrency
+                ];
+                $this->databaseManager->connection($dbConnectionName)
+                    ->table('railtracker4_ip_data')
+                    ->insert([
+                        $data
+                    ]);
+            } catch (\Throwable $e) {
+                Log::error("railtracker4_ip_data: Unable to log ip address " . $newIpData->ipAddress);
+            }
+        }
+
         // merge
         $requestVOsWithGeoIpData = $requestVOsRequiringApiQuery->merge($requestVOsNotRequiringApiCall);
 

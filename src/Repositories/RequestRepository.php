@@ -362,7 +362,7 @@ class RequestRepository extends TrackerRepositoryBase
             foreach (array_unique($ipAddresses) as $ipAddress) {
                 $matchingRequests = $matchingRequests->merge(
                     $this->databaseManager->connection($dbConnectionName)
-                        ->table($table)
+                        ->table('railtracker4_ip_data')
                         ->select([
                             'id',
                             'ip_address',
@@ -377,8 +377,6 @@ class RequestRepository extends TrackerRepositoryBase
                             'ip_currency'
                         ])
                         ->where('ip_address', $ipAddress)
-                        ->limit(1)
-                        ->orderBy('requested_on', 'desc')
                         ->get()
                 );
             }
