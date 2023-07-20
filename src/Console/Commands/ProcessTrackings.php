@@ -451,7 +451,7 @@ class ProcessTrackings extends \Illuminate\Console\Command
                         $data
                     ]);
             } catch (\Throwable $e) {
-                Log::error("railtracker4_ip_data: Unable to log ip address " . $newIpData->ipAddress);
+                Log::info("railtracker4_ip_data: Unable to log ip address " . $newIpData->ipAddress);
             }
         }
 
