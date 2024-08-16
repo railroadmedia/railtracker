@@ -4,3 +4,5 @@ vendor
 .idea
 .env
 .env.testing
+.phpunit*
+.codebuddy

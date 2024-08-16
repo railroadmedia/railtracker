@@ -39,10 +39,7 @@ class RailtrackerServiceProvider extends ServiceProvider
             ]
         );
 
-        //disable running migrations for tests in MWP since migrations are failing in sqlite.
-        if (App::environment() != 'testing') {
-            $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
-        }
+        $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
 
         $this->loadRoutesFrom(__DIR__ . '/../Routes/railtracker_routes.php');
     }

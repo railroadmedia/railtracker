@@ -13,7 +13,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use PDO;
+use PDOException;
+use PHPUnit\Framework\Assert;
 use Railroad\Railtracker\Console\Commands\ProcessTrackings;
 use Railroad\Railtracker\Loggers\RailtrackerQueryLogger;
 use Railroad\Railtracker\Middleware\RailtrackerMiddleware;
@@ -75,7 +79,7 @@ class RailtrackerTestCase extends BaseTestCase
             define('LARAVEL_START', microtime(true));
         }
 
-        $this->artisan('migrate');
+        $this->artisan('migrate:fresh');
         $this->artisan('cache:clear', []);
 
         $this->faker = $this->app->make(Generator::class);
@@ -95,7 +99,11 @@ class RailtrackerTestCase extends BaseTestCase
         }
 
         // truncate all tables
-        $tableNames = $this->databaseManager->connection()->getDoctrineSchemaManager()->listTableNames();
+        $tableNames = collect($this->databaseManager->connection()->select('show tables'))->map(function ($val) {
+            foreach ($val as $key => $tbl) {
+                return $tbl;
+            }
+        })->toArray();
 
         $this->databaseManager->connection()->statement('SET FOREIGN_KEY_CHECKS=0;');
 
@@ -106,6 +114,43 @@ class RailtrackerTestCase extends BaseTestCase
         }
 
         $this->databaseManager->connection()->statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // create test users table
+        if (!$this->databaseManager->connection()->getSchemaBuilder()->hasTable('users')) {
+            $this->databaseManager->connection()
+                ->getSchemaBuilder()
+                ->create(
+                    'users',
+                    function (Blueprint $table) {
+                        $table->increments('id');
+                        $table->string('email');
+                        $table->string('remember_token')
+                            ->nullable();
+                    }
+                );
+        }
+
+        // create session table
+        if (!$this->databaseManager->connection()->getSchemaBuilder()->hasTable('sessions')) {
+            $this->databaseManager->connection()
+                ->getSchemaBuilder()
+                ->create(
+                    'sessions',
+                    function (Blueprint $table) {
+                        $table->string('id')
+                            ->unique();
+                        $table->integer('user_id')
+                            ->nullable();
+                        $table->string('ip_address', 45)
+                            ->nullable();
+                        $table->text('user_agent')
+                            ->nullable();
+                        $table->text('payload');
+                        $table->integer('last_activity');
+                    }
+                );
+        }
+
 
         // test time
         Carbon::setTestNow(Carbon::parse('2020-03-26 17:50:38.84123'));
@@ -136,9 +181,15 @@ class RailtrackerTestCase extends BaseTestCase
         // Setup package config for testing
         $defaultConfig = require(__DIR__ . '/../config/railtracker.php');
 
+        $host = env('MYSQL_HOST', 'mysql8');
+        $port = env('MYSQL_PORT', '3306');
+        $username = env('MYSQL_USER_NAME', 'root');
+        $password = env('MYSQL_PASSWORD', 'root');
+        $database = env('MYSQL_DATABASE_NAME', 'railtracker_automated_tests');
+
         config()->set('app.key', 'base64:191XeCIUtk74j6+7Qi4mpPoWjEPUNHurWYt/S08qH1k=');
         config()->set('session.driver', 'database');
-        config()->set('session.connection', 'mysql-test');
+        config()->set('session.connection', $database);
 
         config()->set('railtracker.global_is_active', true);
         config()->set('railtracker.table_prefix', $defaultConfig['table_prefix']);
@@ -147,17 +198,27 @@ class RailtrackerTestCase extends BaseTestCase
 
         config()->set('auth.providers.users.model', User::class);
 
+        try {
+            $pdo = new PDO("mysql:host=$host;port=$port", $username, $password);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            // Create the database if it doesn't exist
+            $pdo->exec("CREATE DATABASE IF NOT EXISTS `$database`");
+        } catch (PDOException $e) {
+            die("DB ERROR: " . $e->getMessage());
+        }
+
         // db
         config()->set('railtracker.data_mode', 'host');
-        config()->set('railtracker.database_connection_name', 'mysql-test');
-        config()->set('database.default', 'mysql-test');
+        config()->set('railtracker.database_connection_name', $database);
+        config()->set('database.default', $database);
         config()->set(
-            'database.connections.' . 'mysql-test',
+            'database.connections.' . $database,
             [
                 'driver' => 'mysql',
                 'host' => 'mysql',
                 'port' => '3306',
-                'database' => 'railtracker_test',
+                'database' => $database,
                 'username' => 'root',
                 'password' => 'root',
                 'charset' => 'utf8',
@@ -183,42 +244,6 @@ class RailtrackerTestCase extends BaseTestCase
         }
         if (empty(config('railtracker.collation'))) {
             config()->set('railtracker.collation', 'utf8mb4_unicode_ci');
-        }
-
-        // create test users table
-        if (!$app['db']->connection()->getSchemaBuilder()->hasTable('users')) {
-            $app['db']->connection()
-                ->getSchemaBuilder()
-                ->create(
-                    'users',
-                    function (Blueprint $table) {
-                        $table->increments('id');
-                        $table->string('email');
-                        $table->string('remember_token')
-                            ->nullable();
-                    }
-                );
-        }
-
-        // create session table
-        if (!$app['db']->connection()->getSchemaBuilder()->hasTable('sessions')) {
-            $app['db']->connection()
-                ->getSchemaBuilder()
-                ->create(
-                    'sessions',
-                    function (Blueprint $table) {
-                        $table->string('id')
-                            ->unique();
-                        $table->integer('user_id')
-                            ->nullable();
-                        $table->string('ip_address', 45)
-                            ->nullable();
-                        $table->text('user_agent')
-                            ->nullable();
-                        $table->text('payload');
-                        $table->integer('last_activity');
-                    }
-                );
         }
 
         $app['config']->set(
@@ -253,7 +278,7 @@ class RailtrackerTestCase extends BaseTestCase
     }
 
     /**
-     * We don't want to use mockery so this is a reimplementation of the mockery version.
+     * We don't want to use mockery so this is a reimplementation of the event expectation.
      *
      * @param array|string $events
      * @return $this
@@ -262,22 +287,16 @@ class RailtrackerTestCase extends BaseTestCase
     {
         $events = is_array($events) ? $events : func_get_args();
 
-        $mock =
-            $this->getMockBuilder(Dispatcher::class)
-                ->setMethods(['fire', 'dispatch'])
-                ->getMockForAbstractClass();
+        $mock = $this->getMockBuilder(Dispatcher::class)
+            ->onlyMethods(['dispatch'])
+            ->getMockForAbstractClass();
 
-        $mock->method('fire')
+        $mock->expects($this->any())
+            ->method('dispatch')
             ->willReturnCallback(
                 function ($called) {
-                    $this->firedEvents[] = $called;
-                }
-            );
-
-        $mock->method('dispatch')
-            ->willReturnCallback(
-                function ($called) {
-                    $this->firedEvents[] = $called;
+                    $this->firedEvents[] = is_object($called) ? get_class($called) : $called;
+                    return null;
                 }
             );
 
@@ -286,15 +305,29 @@ class RailtrackerTestCase extends BaseTestCase
         $this->beforeApplicationDestroyed(
             function () use ($events) {
                 $fired = $this->getFiredEvents($events);
-                if ($eventsNotFired = array_diff($events, $fired)) {
-                    throw new Exception(
-                        'These expected events were not fired: [' . implode(', ', $eventsNotFired) . ']'
-                    );
-                }
+                $eventsNotFired = array_diff($events, $fired);
+
+                Assert::assertEmpty(
+                    $eventsNotFired,
+                    'These expected events were not fired: [' . implode(', ', $eventsNotFired) . ']'
+                );
             }
         );
 
         return $this;
+    }
+
+    /**
+     * Get the list of fired events that we're interested in.
+     *
+     * @param array $events
+     * @return array
+     */
+    protected function getFiredEvents(array $events)
+    {
+        return array_filter($this->firedEvents, function ($event) use ($events) {
+            return in_array(is_object($event) ? get_class($event) : $event, $events);
+        });
     }
 
     /**
